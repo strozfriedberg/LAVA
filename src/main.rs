@@ -1,4 +1,5 @@
 use clap::{arg, Command};
+use glob::glob;
 
 
 fn main() {
@@ -9,6 +10,12 @@ fn main() {
         .arg(arg!(-i --input <VALUE> "Input directory of log files to process").required(true))
         .get_matches();
 
-    let input_dir = matches.get_one::<String>("input").expect("required");
-    println!("two: {}", input_dir);
+    let input_dir = format!("{}/**/*.docx", matches.get_one::<String>("input").expect("required"));
+
+    for entry in glob(input_dir.as_str()).expect("Failed to read glob pattern") {
+        match entry {
+            Ok(path) => println!("{:?}", path.display()),
+            Err(e) => println!("{:?}", e),
+        }
+    }
 }
