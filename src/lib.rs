@@ -5,6 +5,8 @@ use std::io::{self, Read};
 use sha2::{Sha256, Digest};
 use std::error::Error;
 use rayon::prelude::*;
+use csv::Writer;
+use serde::Serialize;
 
 #[derive(PartialEq, Debug)]
 pub enum LogType{
@@ -18,7 +20,7 @@ pub struct LogFile {
     pub file_path: PathBuf,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Serialize)]
 pub struct ProcessedLogFile {
     pub sha256hash: String,
     pub filename: String,
@@ -43,9 +45,22 @@ pub fn iterate_through_input_dir(input_dir:String){
     .map(|path| process_file(path).expect("Error processing file"))
     .collect();
 
-    for result in results{
-        println!("File: {} - SHA-256 hash: {}", result.filename, result.sha256hash);
+    let _ = write_to_csv(&results).expect("Failed to open output file");
+}
+
+fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Result<(), Box<dyn Error>> {
+    let mut wtr = Writer::from_path("TEST_output.csv")?;
+    wtr.write_record(&["Filename", "SHA256 Hash", "File Path"])?;
+    for log_file in processed_log_files {
+        wtr.serialize((
+            &log_file.filename,
+            &log_file.file_path,
+            &log_file.sha256hash,
+        ))?;
     }
+    wtr.flush()?;
+    println!("Data written to output.csv");
+    Ok(())
 }
 
 pub fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile>{
