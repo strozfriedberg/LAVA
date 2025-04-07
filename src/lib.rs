@@ -4,6 +4,7 @@ use std::fs::File;
 use std::io::{self, Read};
 use sha2::{Sha256, Digest};
 use std::error::Error;
+use rayon::prelude::*;
 
 #[derive(PartialEq, Debug)]
 pub enum LogType{
@@ -38,7 +39,7 @@ pub fn iterate_through_input_dir(input_dir:String){
     let supported_files = categorize_files(&paths);
 
     let results: Vec<ProcessedLogFile> = supported_files
-    .iter()
+    .par_iter()
     .map(|path| process_file(path).expect("Error processing file"))
     .collect();
 
