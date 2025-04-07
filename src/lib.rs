@@ -19,6 +19,8 @@ pub struct LogFile {
 #[derive(PartialEq, Debug)]
 pub struct ProcessedLogFile {
     pub sha256hash: String,
+    pub filename: String,
+    pub file_path: String,
 }
 
 pub fn iterate_through_input_dir(input_dir:String){
@@ -36,7 +38,6 @@ pub fn iterate_through_input_dir(input_dir:String){
 
     for path in supported_files{
         process_file(path)
-        // println!("{}", path.file_path.display())
     }
 }
 
@@ -83,6 +84,7 @@ pub fn process_file(log_file: LogFile){
         Ok(hash) => {
             match log_file.file_path.file_name() {
                 Some(file_name) => {
+
                     println!("File: {} - SHA-256 hash: {}", file_name.to_string_lossy(), hash);
                 }
                 None => println!("No filename found."),
