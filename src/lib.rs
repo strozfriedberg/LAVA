@@ -84,7 +84,7 @@ fn calculate_sha256(file_path: &PathBuf) -> io::Result<String> {
     Ok(hash_hex)
 }
 
-pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile, Box<dyn Error>>{
+pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile, Box<dyn Error>>{ // Might be good to specify why type of error?
 
     let hash: String = calculate_sha256(&log_file.file_path)?; // The question mark here will propogate any possible error up.
     let file_name = log_file.file_path.file_name().expect("Error getting file name");
