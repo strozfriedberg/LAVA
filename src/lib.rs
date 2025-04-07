@@ -41,6 +41,10 @@ pub fn iterate_through_input_dir(input_dir:String){
     .iter()
     .map(|path| process_file(path).expect("Error processing file"))
     .collect();
+
+    for result in results{
+        println!("File: {} - SHA-256 hash: {}", result.filename, result.sha256hash);
+    }
 }
 
 pub fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile>{
@@ -82,9 +86,8 @@ fn calculate_sha256(file_path: &PathBuf) -> io::Result<String> {
 
 pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile, Box<dyn Error>>{
 
-    let hash: String = calculate_sha256(&log_file.file_path)?;
+    let hash: String = calculate_sha256(&log_file.file_path)?; // The question mark here will propogate any possible error up.
     let file_name = log_file.file_path.file_name().expect("Error getting file name");
-    println!("File: {} - SHA-256 hash: {}", file_name.to_string_lossy(), hash);
     Ok(
         ProcessedLogFile{
             sha256hash: hash,
