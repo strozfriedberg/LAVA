@@ -1,5 +1,7 @@
+use clap::builder::Str;
 use glob::glob;
 use std::path::PathBuf;
+use std::fmt;
 use std::fs::File;
 use std::io::{self, Read};
 use sha2::{Sha256, Digest};
@@ -11,8 +13,29 @@ use regex::Regex;
 use once_cell::sync::Lazy;
 // use polars::prelude::*;
 use csv::ReaderBuilder;
+use thiserror::Error;
 
-// type Result<T> = std::result::Result<T, CustomError>;
+// type Result<T> = std::result::Result<T, LogCheckError>;
+
+#[derive(Debug, Clone, Error)]
+pub enum LogCheckError {
+    #[error("LogCheckError: {0}")]
+    ForCSVOutput(String),
+    #[error("the data for key `{0}` is not available")]
+    UnexpectedError(String)
+}
+
+// impl LogCheckError {
+//     fn new(msg: String) -> Self {
+//         LogCheckError { msg }
+//     }
+// }
+
+// impl fmt::Display for LogCheckError {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         write!(f, "{}", self.msg)
+//     }
+// }
 
 #[derive(PartialEq, Debug)]
 pub enum LogType{
