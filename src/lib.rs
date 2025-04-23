@@ -7,6 +7,11 @@ use std::error::Error;
 use rayon::prelude::*;
 use csv::Writer;
 use serde::Serialize;
+use regex::Regex;
+// use polars::prelude::*;
+use csv::ReaderBuilder;
+
+// type Result<T> = std::result::Result<T, CustomError>;
 
 #[derive(PartialEq, Debug)]
 pub enum LogType{
@@ -26,6 +31,12 @@ pub struct ProcessedLogFile {
     pub filename: String,
     pub file_path: String,
     pub size: u64,
+}
+
+#[derive(PartialEq, Debug)]
+pub struct DateRegex {
+    pub date_format: String,
+    pub date_regex: Str,
 }
 
 pub fn iterate_through_input_dir(input_dir:String){
@@ -107,6 +118,8 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile, Box<dyn Erro
 
     let (hash, size) = get_hash_and_size(&log_file.file_path)?; // The question mark here will propogate any possible error up.
     let file_name = log_file.file_path.file_name().expect("Error getting file name");
+    println!("{} has the hash {}!", file_name.to_string_lossy().to_string(), hash);
+    find_timestamp_field(log_file);
     Ok(
         ProcessedLogFile{
             sha256hash: hash,
@@ -115,6 +128,24 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile, Box<dyn Erro
             size: size,
         }
     )
+}
+
+
+pub fn find_timestamp_field(log_file: &LogFile) -> Result<(), Box<dyn Error>> { //This is lazy here
+    if log_file.log_type == LogType::Csv {
+        let file = File::open(&log_file.file_path)?;
+        let mut reader = ReaderBuilder::new()
+            .has_headers(true) // Set to false if there's no header
+            .from_reader(file);
+
+        let headers = reader.headers()?; // this returns a &StringRecord
+        println!("Headers: {:?}", headers);
+
+        let record = reader.records().next().unwrap(); // Read the first line
+        println!("{:?}", record);
+    }
+
+    Ok(())
 }
 // pub fn process_csv_file(log_file: &LogFile) -> ProcessedLogFile{
     
