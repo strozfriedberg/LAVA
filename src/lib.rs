@@ -104,7 +104,7 @@ pub fn iterate_through_input_dir(input_dir:String){
 
 fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Result<(), Box<dyn Error>> {
     let mut wtr = Writer::from_path("TEST_output.csv")?;
-    wtr.write_record(&["Filename", "SHA256 Hash", "File Path", "Size"])?;
+    wtr.write_record(&["Filename", "File Path", "SHA256 Hash", "Size"])?;
     for log_file in processed_log_files {
         wtr.serialize((
             &log_file.filename,
