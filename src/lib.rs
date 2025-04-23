@@ -78,6 +78,10 @@ pub static DATE_REGEXES: Lazy<Vec<DateRegex>> = Lazy::new(|| {
             date_format: "M/D/YYYY H:MM AM/PM".to_string(), // 12-hour US time
             date_regex: Regex::new(r"^\d{1,2}/\d{1,2}/\d{4} \d{1,2}:\d{2} (AM|PM|am|pm)$").unwrap(),
         },
+        DateRegex {
+            date_format: "YYYY-MM-DDTHH:MM:SS.SSS".to_string(),
+            date_regex: Regex::new(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{1,3}$").unwrap(),
+        },
     ]
 });
 
@@ -184,8 +188,8 @@ pub fn find_timestamp_field(log_file: &LogFile) -> Result<(String, String), Box<
             .has_headers(true) // Set to false if there's no header
             .from_reader(file);
 
-        let headers = reader.headers()?.clone(); // this returns a &StringRecord
-        let record = reader.records().next().unwrap()?; // This is returning a result, that is why I had to use the question mark below before the iter()
+        let headers: csv::StringRecord = reader.headers()?.clone(); // this returns a &StringRecord
+        let record: csv::StringRecord = reader.records().next().unwrap()?; // This is returning a result, that is why I had to use the question mark below before the iter()
         for (i, field) in record.iter().enumerate() {
             for date_regex in DATE_REGEXES.iter() {
                 if date_regex.date_regex.is_match(field) {
