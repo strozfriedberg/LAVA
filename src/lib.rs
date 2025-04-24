@@ -14,28 +14,20 @@ use once_cell::sync::Lazy;
 // use polars::prelude::*;
 use csv::ReaderBuilder;
 use thiserror::Error;
+use chrono::Utc;
 
-// type Result<T> = std::result::Result<T, LogCheckError>;
+
+type Result<T> = std::result::Result<T, LogCheckError>;
 
 #[derive(Debug, Clone, Error)]
 pub enum LogCheckError {
     #[error("LogCheckError: {0}")]
     ForCSVOutput(String),
-    #[error("the data for key `{0}` is not available")]
+    #[error("{0}")]
     UnexpectedError(String)
 }
 
-// impl LogCheckError {
-//     fn new(msg: String) -> Self {
-//         LogCheckError { msg }
-//     }
-// }
 
-// impl fmt::Display for LogCheckError {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         write!(f, "{}", self.msg)
-//     }
-// }
 
 #[derive(PartialEq, Debug)]
 pub enum LogType{
@@ -55,6 +47,7 @@ pub struct ProcessedLogFile {
     pub filename: String,
     pub file_path: String,
     pub size: u64,
+    // pub error: Option<String>,
 }
 
 #[derive(Debug)]
@@ -129,18 +122,25 @@ pub fn iterate_through_input_dir(input_dir:String){
     let _ = write_to_csv(&results).expect("Failed to open output file");
 }
 
-fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Result<(), Box<dyn Error>> {
-    let mut wtr = Writer::from_path("TEST_output.csv")?;
-    wtr.write_record(&["Filename", "File Path", "SHA256 Hash", "Size"])?;
+fn generate_log_filename() -> String {
+    let now = Utc::now();
+    let formatted = now.format("%Y-%m-%d_%H-%M-%S_LogCheck_Output.csv");
+    formatted.to_string()
+}
+
+fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Result<()> {
+    //Add something here to create the 
+    let mut wtr = Writer::from_path(generate_log_filename()).map_err(|e| LogCheckError::UnexpectedError(format!("Error opening the output file. {e}")))?;
+    wtr.write_record(&["Filename", "File Path", "SHA256 Hash", "Size"]).map_err(|e| LogCheckError::UnexpectedError(format!("Error writing header of output file. {e}")))?;
     for log_file in processed_log_files {
         wtr.serialize((
             &log_file.filename,
             &log_file.file_path,
             &log_file.sha256hash,
             &log_file.size,
-        ))?;
+        )).map_err(|e| LogCheckError::UnexpectedError(format!("Error writing line of output file.")))?;
     }
-    wtr.flush()?;
+    wtr.flush().map_err(|e| LogCheckError::UnexpectedError(format!("Error flushing output file.")))?; //Is this really needed?
     println!("Data written to output.csv");
     Ok(())
 }
@@ -158,19 +158,21 @@ pub fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile>{
                     }
                 )
             }
+        }else{
+            println!("Error getting file extension for {}", file_path.to_string_lossy().to_string())
         }
     }
     supported_files
 }
 
-fn get_hash_and_size(file_path: &PathBuf) -> io::Result<(String, u64)> {
-    let mut file = File::open(file_path)?;
-    let size = file.metadata()?.len();
+fn get_hash_and_size(file_path: &PathBuf) -> Result<(String, u64)> {
+    let mut file = File::open(file_path).map_err(|e| LogCheckError::ForCSVOutput(format!("Error opening file, it may have been in use.")))?;
+    let size = file.metadata().map_err(|e| LogCheckError::ForCSVOutput(format!("Error getting size of file.")))?.len();
     let mut hasher = Sha256::new();
 
     let mut buffer = [0u8; 4096];
     loop {
-        let bytes_read = file.read(&mut buffer)?;
+        let bytes_read = file.read(&mut buffer).map_err(|e| LogCheckError::ForCSVOutput(format!("Error reading file during hashing operation.")))?;
         if bytes_read == 0 {
             break;
         }
@@ -183,9 +185,9 @@ fn get_hash_and_size(file_path: &PathBuf) -> io::Result<(String, u64)> {
     Ok((hash_hex, size))
 }
 
-pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile, Box<dyn Error>>{ // Might be good to specify why type of error?
+pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile>{
 
-    let (hash, size) = get_hash_and_size(&log_file.file_path)?; // The question mark here will propogate any possible error up.
+    let (hash, size) = get_hash_and_size(&log_file.file_path)?; // The question mark here will propogate any possible error up. DONT WANT TO DO THIS, WANT TO SOMEHOW HANDLE ERROR FROM ONE
     let file_name = log_file.file_path.file_name().expect("Error getting file name");
 
     let (time_header, time_format) = find_timestamp_field(log_file)?;
@@ -204,15 +206,15 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile, Box<dyn Erro
 }
 
 
-pub fn find_timestamp_field(log_file: &LogFile) -> Result<(String, String), Box<dyn Error>> { //This is lazy here
+pub fn find_timestamp_field(log_file: &LogFile) -> Result<(String, String)> { //This is lazy here
     if log_file.log_type == LogType::Csv {
-        let file = File::open(&log_file.file_path)?;
+        let file = File::open(&log_file.file_path).map_err(|e| LogCheckError::ForCSVOutput("Error reading file to find timestamp.".into()))?;
         let mut reader = ReaderBuilder::new()
             .has_headers(true) // Set to false if there's no header
             .from_reader(file);
 
-        let headers: csv::StringRecord = reader.headers()?.clone(); // this returns a &StringRecord
-        let record: csv::StringRecord = reader.records().next().unwrap()?; // This is returning a result, that is why I had to use the question mark below before the iter()
+        let headers: csv::StringRecord = reader.headers().map_err(|e| LogCheckError::ForCSVOutput("Error reading file headers.".into()))?.clone(); // this returns a &StringRecord
+        let record: csv::StringRecord = reader.records().next().unwrap().map_err(|e| LogCheckError::ForCSVOutput("Error reading first line of file.".into()))?; // This is returning a result, that is why I had to use the question mark below before the iter()
         for (i, field) in record.iter().enumerate() {
             for date_regex in DATE_REGEXES.iter() {
                 if date_regex.date_regex.is_match(field) {
@@ -222,7 +224,7 @@ pub fn find_timestamp_field(log_file: &LogFile) -> Result<(String, String), Box<
         }
     }
 
-    Err("No matching timestamp field found.".into())
+    Err(LogCheckError::ForCSVOutput("Error opening file, it may have been in use.".into()))
 }
 // pub fn process_csv_file(log_file: &LogFile) -> ProcessedLogFile{
     
