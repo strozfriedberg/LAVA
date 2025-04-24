@@ -298,8 +298,6 @@ pub fn find_timestamp_field(log_file: &LogFile) -> Result<(StructuredTimeColumnH
                             regex_info: date_regex.clone(),
                         }
                     )
-                        
-                        // (headers.get(i).unwrap().to_string(), date_regex.clone()));//I know the clone is lazy I am just tired
                 }
             }
         }
@@ -310,7 +308,11 @@ pub fn find_timestamp_field(log_file: &LogFile) -> Result<(StructuredTimeColumnH
 
 pub fn stream_csv_file(log_file: &LogFile, timestamp_hit: StructuredTimeColumnHit) -> Result<LogFileStatisticsAndAlerts>{ // not sure we want to include the whole hashset in this? Maybe only inlcude results
     let processing_object = LogFileStatisticsAndAlerts::new(); //maybe change this to default?? I think that is what is used more when it is making something with all empty values
+    // let file = File::open(log_file.file_path)?;
 
+    // let mut rdr = ReaderBuilder::new()
+    //     .has_headers(true)
+    //     .from_reader(file);
     Ok(processing_object)
 
 }
