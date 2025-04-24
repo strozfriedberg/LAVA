@@ -69,15 +69,23 @@ pub struct TimeGap {
 
 #[derive(PartialEq, Debug)]
 pub struct LogFileStatisticsAndAlerts {
-    pub min_timestamp: NaiveDateTime,
-    pub max_timestamp: NaiveDateTime,
-    pub largest_time_gap: TimeGap, // Eventually maybe make this store the top few?
+    pub min_timestamp: Option<NaiveDateTime>,
+    pub max_timestamp: Option<NaiveDateTime>,
+    pub largest_time_gap: Option<TimeGap>, // Eventually maybe make this store the top few?
     pub duplicate_checker_set: HashSet<String>,
 }
 
-// impl LogFileStatisticsAndAlerts {
-//     pub fn process_record(&mut self, )
-// }
+impl LogFileStatisticsAndAlerts {
+    pub fn new() -> Self {
+        Self {
+            min_timestamp: None,
+            max_timestamp: None,
+            largest_time_gap: None,
+            duplicate_checker_set: HashSet::new(),
+        }
+    }
+    // pub fn process_record(&mut self, )
+}
 
 #[derive(Debug)]
 pub struct DateRegex {
@@ -256,6 +264,8 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile>{
     base_processed_file.time_header = Some(time_header);
     base_processed_file.time_format = Some(time_format);
 
+    let _ = stream_csv_file(log_file);
+
     Ok(base_processed_file)
 }
 
@@ -285,6 +295,9 @@ pub fn find_timestamp_field(log_file: &LogFile) -> Result<(String, String)> { //
     Err(LogCheckError::ForCSVOutput("Could not find a supported timestamp format.".into()))
 }
 
-pub fn stream_csv_file(log_file: &LogFile) -> Result<(LogFileStatisticsAndAlerts)>{
-    ...
+pub fn stream_csv_file(log_file: &LogFile) -> Result<LogFileStatisticsAndAlerts>{ // not sure we want to include the whole hashset in this? Maybe only inlcude results
+    let processing_object = LogFileStatisticsAndAlerts::new(); //maybe change this to default?? I think that is what is used more when it is making something with all empty values
+
+    Ok(processing_object)
+
 }
