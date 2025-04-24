@@ -313,6 +313,12 @@ pub fn stream_csv_file(log_file: &LogFile, timestamp_hit: StructuredTimeColumnHi
     // let mut rdr = ReaderBuilder::new()
     //     .has_headers(true)
     //     .from_reader(file);
+    // for result in rdr.records() { // I think I should just include the index in the timestamp hit 
+    //     let record = result?;
+    //     if let Some(value) = record.get(column_index) {
+    //         println!("{}", value);
+    //     }
+    // }
     Ok(processing_object)
 
 }
