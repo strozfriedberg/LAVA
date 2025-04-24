@@ -6,7 +6,7 @@ use std::fs::File;
 use std::io::{self, Read};
 use sha2::{Sha256, Digest};
 use std::error::Error;
-use rayon::prelude::*;
+use rayon::{prelude::*, result};
 use csv::Writer;
 use serde::Serialize;
 use regex::Regex;
@@ -43,11 +43,13 @@ pub struct LogFile {
 
 #[derive(PartialEq, Debug, Serialize)]
 pub struct ProcessedLogFile {
-    pub sha256hash: String,
-    pub filename: String,
-    pub file_path: String,
-    pub size: u64,
-    // pub error: Option<String>,
+    pub sha256hash: Option<String>,
+    pub filename: Option<String>,
+    pub file_path: Option<String>,
+    pub size: Option<u64>,
+    pub time_header: Option<String>,
+    pub time_format: Option<String>,
+    pub error: Option<String>,
 }
 
 #[derive(Debug)]
@@ -131,13 +133,16 @@ fn generate_log_filename() -> String {
 fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Result<()> {
     //Add something here to create the 
     let mut wtr = Writer::from_path(generate_log_filename()).map_err(|e| LogCheckError::UnexpectedError(format!("Error opening the output file. {e}")))?;
-    wtr.write_record(&["Filename", "File Path", "SHA256 Hash", "Size"]).map_err(|e| LogCheckError::UnexpectedError(format!("Error writing header of output file. {e}")))?;
+    wtr.write_record(&["Filename", "File Path", "SHA256 Hash", "Size", "Header Used", "Timestamp Format","Error"]).map_err(|e| LogCheckError::UnexpectedError(format!("Error writing header of output file. {e}")))?;
     for log_file in processed_log_files {
         wtr.serialize((
-            &log_file.filename,
-            &log_file.file_path,
-            &log_file.sha256hash,
-            &log_file.size,
+            log_file.filename.as_deref().unwrap_or(""),
+            log_file.file_path.as_deref().unwrap_or(""),
+            log_file.sha256hash.as_deref().unwrap_or(""),
+            log_file.size.unwrap_or(0),
+            log_file.time_header.as_deref().unwrap_or(""),
+            log_file.time_format.as_deref().unwrap_or(""),
+            log_file.error.as_deref().unwrap_or(""),
         )).map_err(|e| LogCheckError::UnexpectedError(format!("Error writing line of output file.")))?;
     }
     wtr.flush().map_err(|e| LogCheckError::UnexpectedError(format!("Error flushing output file.")))?; //Is this really needed?
@@ -186,23 +191,46 @@ fn get_hash_and_size(file_path: &PathBuf) -> Result<(String, u64)> {
 }
 
 pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile>{
+    let mut base_processed_file = ProcessedLogFile {
+        file_path: None,
+        sha256hash: None,
+        filename: None,
+        size: None,
+        error: None,
+        time_header: None,
+        time_format: None,
+    };
+    //get hash and size
+    let (hash, size) = match get_hash_and_size(&log_file.file_path) {
+        Ok(result) => result,
+        Err(e) => {
+            base_processed_file.error = Some(format!("Failed to get hash and size: {}", e));
+            return Ok(base_processed_file);
+        }
+    };
+    base_processed_file.sha256hash = Some(hash);
+    base_processed_file.size = Some(size);
 
-    let (hash, size) = get_hash_and_size(&log_file.file_path)?; // The question mark here will propogate any possible error up. DONT WANT TO DO THIS, WANT TO SOMEHOW HANDLE ERROR FROM ONE
-    let file_name = log_file.file_path.file_name().expect("Error getting file name");
+    let file_name = log_file.file_path.file_name().expect("Error getting file name");// change this to happen inside the get hash and size
+    base_processed_file.filename = Some(file_name.to_string_lossy().to_string());
 
-    let (time_header, time_format) = find_timestamp_field(log_file)?;
+    // let (time_header, time_format) = find_timestamp_field(log_file)?;
+    let (time_header, time_format) = match find_timestamp_field(log_file) {
+        Ok(result) => result,
+        Err(e) => {
+            base_processed_file.error = Some(format!("Failed to process file: {}", e));
+            return Ok(base_processed_file);
+        }
+    };
     println!(
         "Match found Column '{}' matches the '{}' format in {}",
         time_header, time_format, log_file.file_path.to_string_lossy().to_string()
-    );
-    Ok(
-        ProcessedLogFile{
-            sha256hash: hash,
-            filename: file_name.to_string_lossy().to_string(),
-            file_path: log_file.file_path.to_string_lossy().to_string(),
-            size: size,
-        }
-    )
+    ); // Move this back inside the find timestamp function
+
+    base_processed_file.time_header = Some(time_header);
+    base_processed_file.time_format = Some(time_format);
+
+    Ok(base_processed_file)
 }
 
 
