@@ -223,8 +223,8 @@ pub fn find_timestamp_field(log_file: &LogFile) -> Result<(String, String)> { //
             }
         }
     }
-
-    Err(LogCheckError::ForCSVOutput("Error opening file, it may have been in use.".into()))
+    println!("Could not find a supported timestamp in {}", log_file.file_path.to_string_lossy().to_string());
+    Err(LogCheckError::ForCSVOutput("Could not find a supported timestamp format.".into()))
 }
 // pub fn process_csv_file(log_file: &LogFile) -> ProcessedLogFile{
     
