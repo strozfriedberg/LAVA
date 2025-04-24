@@ -20,12 +20,12 @@ use chrono::Utc;
 type Result<T> = std::result::Result<T, LogCheckError>;
 
 #[derive(Debug, Clone, Error)]
-pub enum LogCheckError {
-    #[error("LogCheckError: {0}")]
+pub enum LogCheckError { // I don't think as of now there is actually a reason to have both here?
+    #[error("{0}")]
     ForCSVOutput(String),
     #[error("{0}")]
     UnexpectedError(String)
-}
+}// Should prob actually use this for the different stages of processing, Metadata extraction error, File Error, etc
 
 
 
