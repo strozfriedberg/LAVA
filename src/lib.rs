@@ -6,6 +6,7 @@ use std::fs::File;
 use std::io::{self, Read};
 use sha2::{Sha256, Digest};
 use std::error::Error;
+use std::collections::HashSet;
 use rayon::{prelude::*, result};
 use csv::Writer;
 use serde::Serialize;
@@ -14,7 +15,7 @@ use once_cell::sync::Lazy;
 // use polars::prelude::*;
 use csv::ReaderBuilder;
 use thiserror::Error;
-use chrono::Utc;
+use chrono::{Utc, DateTime, NaiveDateTime, Duration};
 
 
 type Result<T> = std::result::Result<T, LogCheckError>;
@@ -41,6 +42,7 @@ pub struct LogFile {
     pub file_path: PathBuf,
 }
 
+
 #[derive(PartialEq, Debug, Serialize)]
 pub struct ProcessedLogFile {
     pub sha256hash: Option<String>,
@@ -51,6 +53,31 @@ pub struct ProcessedLogFile {
     pub time_format: Option<String>,
     pub error: Option<String>,
 }
+
+#[derive(PartialEq, Debug)]
+pub struct LogFileRecord {
+    pub hash_of_entire_record: String,
+    pub timestamp:NaiveDateTime,
+}
+
+#[derive(PartialEq, Debug)]
+pub struct TimeGap {
+    pub gap: Duration,
+    pub beginning_time: NaiveDateTime,
+    pub end_time: NaiveDateTime,
+}
+
+#[derive(PartialEq, Debug)]
+pub struct LogFileStatisticsAndAlerts {
+    pub min_timestamp: NaiveDateTime,
+    pub max_timestamp: NaiveDateTime,
+    pub largest_time_gap: TimeGap, // Eventually maybe make this store the top few?
+    pub duplicate_checker_set: HashSet<String>,
+}
+
+// impl LogFileStatisticsAndAlerts {
+//     pub fn process_record(&mut self, )
+// }
 
 #[derive(Debug)]
 pub struct DateRegex {
@@ -256,4 +283,8 @@ pub fn find_timestamp_field(log_file: &LogFile) -> Result<(String, String)> { //
     }
     println!("Could not find a supported timestamp in {}", log_file.file_path.to_string_lossy().to_string());
     Err(LogCheckError::ForCSVOutput("Could not find a supported timestamp format.".into()))
+}
+
+pub fn stream_csv_file(log_file: &LogFile) -> Result<(LogFileStatisticsAndAlerts)>{
+    ...
 }
