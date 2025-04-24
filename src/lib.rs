@@ -88,6 +88,12 @@ impl LogFileStatisticsAndAlerts {
 }
 
 #[derive(Debug, Clone)]
+pub struct StructuredTimeColumnHit { // Maybe add a date format pretty. and then also the date format that gets used by chrono
+    pub column: String,
+    pub regex_info: DateRegex,
+}
+
+#[derive(Debug, Clone)]
 pub struct DateRegex { // Maybe add a date format pretty. and then also the date format that gets used by chrono
     pub date_format: String,
     pub date_regex: Regex,
@@ -253,7 +259,7 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile>{
 
 
     // get the timestamp field. Will only do this if it is structured (json or csv)
-    let (time_header, date_regex_hit) = match find_timestamp_field(log_file) {
+    let timestamp_hit = match find_timestamp_field(log_file) {
         Ok(result) => result,
         Err(e) => {
             base_processed_file.error = Some(format!("Failed to process file: {}", e));
@@ -261,16 +267,16 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile>{
         }
     };
 
-    base_processed_file.time_header = Some(time_header);
-    base_processed_file.time_format = Some(date_regex_hit.date_format.clone());
+    base_processed_file.time_header = Some(timestamp_hit.column.clone());
+    base_processed_file.time_format = Some(timestamp_hit.regex_info.date_format.clone());
 
-    let _ = stream_csv_file(log_file, date_regex_hit);
+    let _ = stream_csv_file(log_file, timestamp_hit);
 
     Ok(base_processed_file)
 }
 
 
-pub fn find_timestamp_field(log_file: &LogFile) -> Result<(String, DateRegex)> { //This is lazy here
+pub fn find_timestamp_field(log_file: &LogFile) -> Result<(StructuredTimeColumnHit)> { //This is lazy here
     if log_file.log_type == LogType::Csv {
         let file = File::open(&log_file.file_path).map_err(|e| LogCheckError::ForCSVOutput("Error reading file to find timestamp.".into()))?;
         let mut reader = ReaderBuilder::new()
@@ -286,7 +292,14 @@ pub fn find_timestamp_field(log_file: &LogFile) -> Result<(String, DateRegex)> {
                         "Found match for '{}' time format in the '{}' column of {}",
                         date_regex.date_format, headers.get(i).unwrap().to_string(), log_file.file_path.to_string_lossy().to_string()
                     );
-                    return Ok((headers.get(i).unwrap().to_string(), date_regex.clone()));//I know the clone is lazy I am just tired
+                    return Ok(
+                        StructuredTimeColumnHit {
+                            column: headers.get(i).unwrap().to_string(),
+                            regex_info: date_regex.clone(),
+                        }
+                    )
+                        
+                        // (headers.get(i).unwrap().to_string(), date_regex.clone()));//I know the clone is lazy I am just tired
                 }
             }
         }
@@ -295,7 +308,7 @@ pub fn find_timestamp_field(log_file: &LogFile) -> Result<(String, DateRegex)> {
     Err(LogCheckError::ForCSVOutput("Could not find a supported timestamp format.".into()))
 }
 
-pub fn stream_csv_file(log_file: &LogFile, date_regex_to_use: DateRegex) -> Result<LogFileStatisticsAndAlerts>{ // not sure we want to include the whole hashset in this? Maybe only inlcude results
+pub fn stream_csv_file(log_file: &LogFile, timestamp_hit: StructuredTimeColumnHit) -> Result<LogFileStatisticsAndAlerts>{ // not sure we want to include the whole hashset in this? Maybe only inlcude results
     let processing_object = LogFileStatisticsAndAlerts::new(); //maybe change this to default?? I think that is what is used more when it is making something with all empty values
 
     Ok(processing_object)
