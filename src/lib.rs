@@ -130,9 +130,10 @@ fn generate_log_filename() -> String {
     formatted.to_string()
 }
 
-fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Result<()> {
+fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Result<()> { // in the final version, maybe have a full version that has tons of fields, and then a simplified version. Could have command line arg to trigger verbose one
     //Add something here to create the 
-    let mut wtr = Writer::from_path(generate_log_filename()).map_err(|e| LogCheckError::UnexpectedError(format!("Error opening the output file. {e}")))?;
+    let output_filename = generate_log_filename();
+    let mut wtr = Writer::from_path(&output_filename).map_err(|e| LogCheckError::UnexpectedError(format!("Error opening the output file. {e}")))?;
     wtr.write_record(&["Filename", "File Path", "SHA256 Hash", "Size", "Header Used", "Timestamp Format","Error"]).map_err(|e| LogCheckError::UnexpectedError(format!("Error writing header of output file. {e}")))?;
     for log_file in processed_log_files {
         wtr.serialize((
@@ -146,7 +147,7 @@ fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Result<()> {
         )).map_err(|e| LogCheckError::UnexpectedError(format!("Error writing line of output file.")))?;
     }
     wtr.flush().map_err(|e| LogCheckError::UnexpectedError(format!("Error flushing output file.")))?; //Is this really needed?
-    println!("Data written to output.csv");
+    println!("Data written to {output_filename}");
     Ok(())
 }
 
@@ -170,7 +171,7 @@ pub fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile>{
     supported_files
 }
 
-fn get_hash_and_size(file_path: &PathBuf) -> Result<(String, u64, String)> {
+fn get_metadata_and_hash(file_path: &PathBuf) -> Result<(String, u64, String, String)> {
     let mut file = File::open(file_path).map_err(|e| LogCheckError::ForCSVOutput(format!("Error opening file because of {e}")))?;
     let size = file.metadata().map_err(|e| LogCheckError::ForCSVOutput(format!("Error getting file size because of {e}")))?.len();
     let file_name = file_path.file_name().ok_or("").map_err(|e| LogCheckError::ForCSVOutput(format!("Error getting file name because of {e}")))?.to_string_lossy().to_string();
@@ -189,7 +190,7 @@ fn get_hash_and_size(file_path: &PathBuf) -> Result<(String, u64, String)> {
     let result = hasher.finalize();
     let hash_hex = format!("{:x}", result);
 
-    Ok((hash_hex, size, file_name))
+    Ok((hash_hex, size, file_name, file_path.to_string_lossy().to_string()))
 }
 
 pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile>{
@@ -202,8 +203,8 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile>{
         time_header: None,
         time_format: None,
     };
-    //get hash and size
-    let (hash, size, file_name) = match get_hash_and_size(&log_file.file_path) {
+    //get hash and size. Does not matter what kind of file it is for this function
+    let (hash, size, file_name, file_path ) = match get_metadata_and_hash(&log_file.file_path) {
         Ok(result) => result,
         Err(e) => {
             base_processed_file.error = Some(format!("Failed to get hash and size: {}", e));
@@ -213,8 +214,10 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile>{
     base_processed_file.sha256hash = Some(hash);
     base_processed_file.size = Some(size);
     base_processed_file.filename = Some(file_name);
+    base_processed_file.file_path = Some(file_path);
 
-    // get the timestamp field
+
+    // get the timestamp field. Will only do this if it is structured (json or csv)
     let (time_header, time_format) = match find_timestamp_field(log_file) {
         Ok(result) => result,
         Err(e) => {
