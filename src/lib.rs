@@ -214,7 +214,7 @@ pub fn find_timestamp_field(log_file: &LogFile) -> Result<(String, String)> { //
             .from_reader(file);
 
         let headers: csv::StringRecord = reader.headers().map_err(|e| LogCheckError::ForCSVOutput("Error reading file headers.".into()))?.clone(); // this returns a &StringRecord
-        let record: csv::StringRecord = reader.records().next().unwrap().map_err(|e| LogCheckError::ForCSVOutput("Error reading first line of file.".into()))?; // This is returning a result, that is why I had to use the question mark below before the iter()
+        let record: csv::StringRecord = reader.records().next().unwrap().map_err(|e| LogCheckError::ForCSVOutput(format!("Error reading first line of file. {e}")))?; // This is returning a result, that is why I had to use the question mark below before the iter()
         for (i, field) in record.iter().enumerate() {
             for date_regex in DATE_REGEXES.iter() {
                 if date_regex.date_regex.is_match(field) {
