@@ -170,14 +170,16 @@ pub fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile>{
     supported_files
 }
 
-fn get_hash_and_size(file_path: &PathBuf) -> Result<(String, u64)> {
-    let mut file = File::open(file_path).map_err(|e| LogCheckError::ForCSVOutput(format!("Error opening file, it may have been in use.")))?;
-    let size = file.metadata().map_err(|e| LogCheckError::ForCSVOutput(format!("Error getting size of file.")))?.len();
+fn get_hash_and_size(file_path: &PathBuf) -> Result<(String, u64, String)> {
+    let mut file = File::open(file_path).map_err(|e| LogCheckError::ForCSVOutput(format!("Error opening file because of {e}")))?;
+    let size = file.metadata().map_err(|e| LogCheckError::ForCSVOutput(format!("Error getting file size because of {e}")))?.len();
+    let file_name = file_path.file_name().ok_or("").map_err(|e| LogCheckError::ForCSVOutput(format!("Error getting file name because of {e}")))?.to_string_lossy().to_string();
+
     let mut hasher = Sha256::new();
 
     let mut buffer = [0u8; 4096];
     loop {
-        let bytes_read = file.read(&mut buffer).map_err(|e| LogCheckError::ForCSVOutput(format!("Error reading file during hashing operation.")))?;
+        let bytes_read = file.read(&mut buffer).map_err(|e| LogCheckError::ForCSVOutput(format!("Error reading file during hashing operation because of {e}")))?;
         if bytes_read == 0 {
             break;
         }
@@ -187,7 +189,7 @@ fn get_hash_and_size(file_path: &PathBuf) -> Result<(String, u64)> {
     let result = hasher.finalize();
     let hash_hex = format!("{:x}", result);
 
-    Ok((hash_hex, size))
+    Ok((hash_hex, size, file_name))
 }
 
 pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile>{
@@ -201,7 +203,7 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile>{
         time_format: None,
     };
     //get hash and size
-    let (hash, size) = match get_hash_and_size(&log_file.file_path) {
+    let (hash, size, file_name) = match get_hash_and_size(&log_file.file_path) {
         Ok(result) => result,
         Err(e) => {
             base_processed_file.error = Some(format!("Failed to get hash and size: {}", e));
@@ -210,11 +212,9 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile>{
     };
     base_processed_file.sha256hash = Some(hash);
     base_processed_file.size = Some(size);
+    base_processed_file.filename = Some(file_name);
 
-    let file_name = log_file.file_path.file_name().expect("Error getting file name");// change this to happen inside the get hash and size
-    base_processed_file.filename = Some(file_name.to_string_lossy().to_string());
-
-    // let (time_header, time_format) = find_timestamp_field(log_file)?;
+    // get the timestamp field
     let (time_header, time_format) = match find_timestamp_field(log_file) {
         Ok(result) => result,
         Err(e) => {
@@ -222,10 +222,6 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile>{
             return Ok(base_processed_file);
         }
     };
-    println!(
-        "Match found Column '{}' matches the '{}' format in {}",
-        time_header, time_format, log_file.file_path.to_string_lossy().to_string()
-    ); // Move this back inside the find timestamp function
 
     base_processed_file.time_header = Some(time_header);
     base_processed_file.time_format = Some(time_format);
@@ -246,6 +242,10 @@ pub fn find_timestamp_field(log_file: &LogFile) -> Result<(String, String)> { //
         for (i, field) in record.iter().enumerate() {
             for date_regex in DATE_REGEXES.iter() {
                 if date_regex.date_regex.is_match(field) {
+                    println!(
+                        "Found match for '{}' time format in the '{}' column of {}",
+                        date_regex.date_format, headers.get(i).unwrap().to_string(), log_file.file_path.to_string_lossy().to_string()
+                    );
                     return Ok((headers.get(i).unwrap().to_string(), date_regex.date_format.clone()));//I know the clone is lazy I am just tired
                 }
             }
@@ -254,6 +254,3 @@ pub fn find_timestamp_field(log_file: &LogFile) -> Result<(String, String)> { //
     println!("Could not find a supported timestamp in {}", log_file.file_path.to_string_lossy().to_string());
     Err(LogCheckError::ForCSVOutput("Could not find a supported timestamp format.".into()))
 }
-// pub fn process_csv_file(log_file: &LogFile) -> ProcessedLogFile{
-    
-// }
