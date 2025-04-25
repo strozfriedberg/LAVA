@@ -41,9 +41,9 @@ pub struct LogFile {
     pub log_type: LogType,
     pub file_path: PathBuf,
 }
+ 
 
-
-#[derive(PartialEq, Debug, Serialize)]
+#[derive(PartialEq, Debug, Serialize, Default)]
 pub struct ProcessedLogFile {
     pub sha256hash: Option<String>,
     pub filename: Option<String>,
@@ -235,15 +235,8 @@ fn get_metadata_and_hash(file_path: &PathBuf) -> Result<(String, u64, String, St
 }
 
 pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile>{
-    let mut base_processed_file = ProcessedLogFile {
-        file_path: None,
-        sha256hash: None,
-        filename: None,
-        size: None,
-        error: None,
-        time_header: None,
-        time_format: None,
-    };
+    let mut base_processed_file = ProcessedLogFile::default();
+
     //get hash and metadata. Does not matter what kind of file it is for this function
     let (hash, size, file_name, file_path ) = match get_metadata_and_hash(&log_file.file_path) {
         Ok(result) => result,
