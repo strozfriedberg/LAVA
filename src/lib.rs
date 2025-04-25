@@ -9,14 +9,15 @@ use sha2::{Sha256, Digest};
 use std::error::Error;
 use std::collections::HashSet;
 use rayon::{prelude::*, result};
-use csv::Writer;
 use serde::Serialize;
 use regex::Regex;
 use once_cell::sync::Lazy;
 // use polars::prelude::*;
-use csv::ReaderBuilder;
+use csv::{ReaderBuilder, StringRecord, Writer};
 use thiserror::Error;
 use chrono::{Utc, DateTime, NaiveDateTime, Duration, ParseResult};
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
 
 type GenericResult<T> = std::result::Result<T, Box<dyn Error>>;
@@ -65,8 +66,9 @@ pub struct ProcessedLogFile {
 
 #[derive(PartialEq, Debug)]
 pub struct LogFileRecord {
-    pub hash_of_entire_record: String,
+    pub hash_of_entire_record: u64,
     pub timestamp:NaiveDateTime,
+    pub index: usize,
 }
 
 #[derive(PartialEq, Debug)]
@@ -78,15 +80,32 @@ pub struct TimeGap {
 
 #[derive(PartialEq, Debug, Default)]
 pub struct LogFileStatisticsAndAlerts {
+    pub order: Option<TimeDirection>,
     pub min_timestamp: Option<NaiveDateTime>,
     pub max_timestamp: Option<NaiveDateTime>,
+    pub last_timestamp: Option<NaiveDateTime>,
     pub largest_time_gap: Option<TimeGap>, // Eventually maybe make this store the top few?
-    pub duplicate_checker_set: HashSet<String>,
+    pub duplicate_checker_set: HashSet<u64>,
 }
 
-// impl LogFileStatisticsAndAlerts {
-//     // pub fn process_record(&mut self, )
-// }
+impl LogFileStatisticsAndAlerts {
+    fn new_with_order(order: Option<TimeDirection>) -> Self {
+        Self {
+            order,
+            ..Default::default()
+        }
+    }
+    pub fn process_record(&mut self, record : LogFileRecord) -> GenericResult<()>{
+        //Check for duplicates
+        let is_duplicate = !self.duplicate_checker_set.insert(record.hash_of_entire_record);
+        if is_duplicate {
+            println!("Found duplicate record at index {}", record.index);
+        }
+
+        //Update earliest and latest timestamp
+        Ok(())
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct StructuredTimeColumnHit { // Maybe add a date format pretty. and then also the date format that gets used by chrono
@@ -355,20 +374,29 @@ pub fn set_time_direction_by_scanning_file(log_file: &LogFile, timestamp_hit: &m
     Err("Could not determine order, all timestamps may have been equal.".into())
 }
 
+fn hash_csv_record(record: &StringRecord) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    record.iter().for_each(|field| field.hash(&mut hasher));
+    hasher.finish()
+}
 
 pub fn stream_csv_file(log_file: &LogFile, timestamp_hit: StructuredTimeColumnHit) -> GenericResult<LogFileStatisticsAndAlerts>{ // not sure we want to include the whole hashset in this? Maybe only inlcude results
-    let processing_object = LogFileStatisticsAndAlerts::default();
-    // let file = File::open(log_file.file_path)?;
+    let mut processing_object = LogFileStatisticsAndAlerts::new_with_order(timestamp_hit.direction);
+    let file = File::open(&log_file.file_path)?;
+    let mut rdr = ReaderBuilder::new()
+        .has_headers(true)
+        .from_reader(file);
+    for (index, result) in rdr.records().enumerate() { // I think I should just include the index in the timestamp hit 
+        let record = result?;
+        let value = record.get(timestamp_hit.column_index).ok_or_else(|| "Index of date field not found")?;
+        let current_datetime: NaiveDateTime = NaiveDateTime::parse_from_str(value, &timestamp_hit.regex_info.strftime_format)?;
+        let hash_of_record = hash_csv_record(&record);
+        processing_object.process_record(LogFileRecord {
+            hash_of_entire_record: hash_of_record,
+            timestamp: current_datetime,
+            index: index,
+        })?
 
-    // let mut rdr = ReaderBuilder::new()
-    //     .has_headers(true)
-    //     .from_reader(file);
-    // for result in rdr.records() { // I think I should just include the index in the timestamp hit 
-    //     let record = result?;
-    //     if let Some(value) = record.get(column_index) {
-    //         println!("{}", value);
-    //     }
-    // }
+    }
     Ok(processing_object)
-
 }
