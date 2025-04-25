@@ -18,14 +18,16 @@ use thiserror::Error;
 use chrono::{Utc, DateTime, NaiveDateTime, Duration};
 
 
-type Result<T> = std::result::Result<T, LogCheckError>;
+type GenericResult<T> = std::result::Result<T, Box<dyn Error>>;
 
 #[derive(Debug, Clone, Error)]
 pub enum LogCheckError { // I don't think as of now there is actually a reason to have both here?
-    #[error("{0}")]
-    ForCSVOutput(String),
-    #[error("{0}")]
-    UnexpectedError(String)
+    #[error("Metadata Retreival Error: {0}")]
+    MetaDataRetieval(String),
+    #[error("Timestamp Discovery Error: {0}")]
+    TimeDiscovery(String),
+    #[error("Timestamp Order Error: {0}")]
+    TimeDirection(String), 
 }// Should prob actually use this for the different stages of processing, Metadata extraction error, File Error, etc
 
 
@@ -36,7 +38,7 @@ pub enum LogType{
     Json,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum TimeDirection{
     Ascending,
     Descending,
@@ -98,6 +100,7 @@ pub struct StructuredTimeColumnHit { // Maybe add a date format pretty. and then
     pub column_name: String,
     pub column_index: usize,
     pub regex_info: DateRegex,
+    pub direction: Option<TimeDirection>,
 }
 
 #[derive(Debug, Clone)]
@@ -189,11 +192,11 @@ fn generate_log_filename() -> String {
     formatted.to_string()
 }
 
-fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Result<()> { // in the final version, maybe have a full version that has tons of fields, and then a simplified version. Could have command line arg to trigger verbose one
+fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> GenericResult<()> { // in the final version, maybe have a full version that has tons of fields, and then a simplified version. Could have command line arg to trigger verbose one
     //Add something here to create the 
     let output_filename = generate_log_filename();
-    let mut wtr = Writer::from_path(&output_filename).map_err(|e| LogCheckError::UnexpectedError(format!("Error opening the output file. {e}")))?;
-    wtr.write_record(&["Filename", "File Path", "SHA256 Hash", "Size", "Header Used", "Timestamp Format","Error"]).map_err(|e| LogCheckError::UnexpectedError(format!("Error writing header of output file. {e}")))?;
+    let mut wtr = Writer::from_path(&output_filename)?;
+    wtr.write_record(&["Filename", "File Path", "SHA256 Hash", "Size", "Header Used", "Timestamp Format","Error"])?;
     for log_file in processed_log_files {
         wtr.serialize((
             log_file.filename.as_deref().unwrap_or(""),
@@ -203,9 +206,9 @@ fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Result<()> { // 
             log_file.time_header.as_deref().unwrap_or(""),
             log_file.time_format.as_deref().unwrap_or(""),
             log_file.error.as_deref().unwrap_or(""),
-        )).map_err(|e| LogCheckError::UnexpectedError(format!("Error writing line of output file.")))?;
+        ))?;
     }
-    wtr.flush().map_err(|e| LogCheckError::UnexpectedError(format!("Error flushing output file.")))?; //Is this really needed?
+    wtr.flush()?; //Is this really needed?
     println!("Data written to {output_filename}");
     Ok(())
 }
@@ -230,16 +233,16 @@ pub fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile>{
     supported_files
 }
 
-fn get_metadata_and_hash(file_path: &PathBuf) -> Result<(String, u64, String, String)> {
-    let mut file = File::open(file_path).map_err(|e| LogCheckError::ForCSVOutput(format!("Error opening file because of {e}")))?;
-    let size = file.metadata().map_err(|e| LogCheckError::ForCSVOutput(format!("Error getting file size because of {e}")))?.len();
-    let file_name = file_path.file_name().ok_or("").map_err(|e| LogCheckError::ForCSVOutput(format!("Error getting file name because of {e}")))?.to_string_lossy().to_string();
+fn get_metadata_and_hash(file_path: &PathBuf) -> GenericResult<(String, u64, String, String)> {
+    let mut file = File::open(file_path)?;
+    let size = file.metadata()?.len();
+    let file_name = file_path.file_name().ok_or("Error getting filename")?.to_string_lossy().to_string();
 
     let mut hasher = Sha256::new();
 
     let mut buffer = [0u8; 4096];
     loop {
-        let bytes_read = file.read(&mut buffer).map_err(|e| LogCheckError::ForCSVOutput(format!("Error reading file during hashing operation because of {e}")))?;
+        let bytes_read = file.read(&mut buffer)?;
         if bytes_read == 0 {
             break;
         }
@@ -252,14 +255,14 @@ fn get_metadata_and_hash(file_path: &PathBuf) -> Result<(String, u64, String, St
     Ok((hash_hex, size, file_name, file_path.to_string_lossy().to_string()))
 }
 
-pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile>{
+pub fn process_file(log_file: &LogFile) -> GenericResult<ProcessedLogFile>{
     let mut base_processed_file = ProcessedLogFile::default();
 
     //get hash and metadata. Does not matter what kind of file it is for this function
-    let (hash, size, file_name, file_path ) = match get_metadata_and_hash(&log_file.file_path) {
+    let (hash, size, file_name, file_path ) = match get_metadata_and_hash(&log_file.file_path).map_err(|e| LogCheckError::MetaDataRetieval(e.to_string())) {
         Ok(result) => result,
         Err(e) => {
-            base_processed_file.error = Some(format!("Failed to get hash and size: {}", e));
+            base_processed_file.error = Some(e.to_string());
             return Ok(base_processed_file);
         }
     };
@@ -270,10 +273,10 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile>{
 
 
     // get the timestamp field. Will only do this if it is structured (json or csv)
-    let timestamp_hit = match find_timestamp_field(log_file) {
+    let mut timestamp_hit = match find_timestamp_field(log_file).map_err(|e| LogCheckError::TimeDiscovery(e.to_string())) {
         Ok(result) => result,
         Err(e) => {
-            base_processed_file.error = Some(format!("Failed to process file: {}", e));
+            base_processed_file.error = Some(e.to_string());
             return Ok(base_processed_file);
         }
     };
@@ -281,21 +284,28 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile>{
     base_processed_file.time_header = Some(timestamp_hit.column_name.clone());
     base_processed_file.time_format = Some(timestamp_hit.regex_info.pretty_format.clone());
 
+    match set_time_direction_by_scanning_file(log_file, &mut timestamp_hit).map_err(|e| LogCheckError::TimeDirection(e.to_string())) {
+        Ok(_) => {},
+        Err(e) => {
+            base_processed_file.error = Some(e.to_string());
+            return Ok(base_processed_file);
+        }
+    };
     let _ = stream_csv_file(log_file, timestamp_hit);
 
     Ok(base_processed_file)
 }
 
 
-pub fn find_timestamp_field(log_file: &LogFile) -> Result<StructuredTimeColumnHit> { //This is lazy here
+pub fn find_timestamp_field(log_file: &LogFile) -> GenericResult<StructuredTimeColumnHit> { //This is lazy here
     if log_file.log_type == LogType::Csv {
-        let file = File::open(&log_file.file_path).map_err(|e| LogCheckError::ForCSVOutput("Error reading file to find timestamp.".into()))?;
+        let file = File::open(&log_file.file_path)?;
         let mut reader = ReaderBuilder::new()
             .has_headers(true) // Set to false if there's no header
             .from_reader(file);
 
-        let headers: csv::StringRecord = reader.headers().map_err(|e| LogCheckError::ForCSVOutput("Error reading file headers.".into()))?.clone(); // this returns a &StringRecord
-        let record: csv::StringRecord = reader.records().next().unwrap().map_err(|e| LogCheckError::ForCSVOutput(format!("Error reading first line of file. {e}")))?; // This is returning a result, that is why I had to use the question mark below before the iter()
+        let headers: csv::StringRecord = reader.headers()?.clone(); // this returns a &StringRecord
+        let record: csv::StringRecord = reader.records().next().unwrap()?; // This is returning a result, that is why I had to use the question mark below before the iter()
         for (i, field) in record.iter().enumerate() {
             for date_regex in DATE_REGEXES.iter() {
                 if date_regex.regex.is_match(field) {
@@ -307,6 +317,7 @@ pub fn find_timestamp_field(log_file: &LogFile) -> Result<StructuredTimeColumnHi
                         StructuredTimeColumnHit {
                             column_name: headers.get(i).unwrap().to_string(),
                             column_index: i,
+                            direction: None,
                             regex_info: date_regex.clone(),
                         }
                     )
@@ -315,10 +326,26 @@ pub fn find_timestamp_field(log_file: &LogFile) -> Result<StructuredTimeColumnHi
         }
     }
     println!("Could not find a supported timestamp in {}", log_file.file_path.to_string_lossy().to_string());
-    Err(LogCheckError::ForCSVOutput("Could not find a supported timestamp format.".into()))
+    Err("Could not find a supported timestamp format.".into())
 }
 
-pub fn stream_csv_file(log_file: &LogFile, timestamp_hit: StructuredTimeColumnHit) -> Result<LogFileStatisticsAndAlerts>{ // not sure we want to include the whole hashset in this? Maybe only inlcude results
+pub fn set_time_direction_by_scanning_file(log_file: &LogFile, timestamp_hit: &mut StructuredTimeColumnHit) -> GenericResult<()> {
+    // let file = File::open(log_file.file_path)?;
+
+    // let mut rdr = ReaderBuilder::new()
+    //     .has_headers(true)
+    //     .from_reader(file);
+    // for result in rdr.records() { // I think I should just include the index in the timestamp hit 
+    //     let record = result?;
+    //     if let Some(value) = record.get(column_index) {
+    //         println!("{}", value);
+    //     }
+    // }
+    Ok(())
+}
+
+
+pub fn stream_csv_file(log_file: &LogFile, timestamp_hit: StructuredTimeColumnHit) -> GenericResult<LogFileStatisticsAndAlerts>{ // not sure we want to include the whole hashset in this? Maybe only inlcude results
     let processing_object = LogFileStatisticsAndAlerts::default();
     // let file = File::open(log_file.file_path)?;
 
