@@ -94,54 +94,65 @@ pub struct StructuredTimeColumnHit { // Maybe add a date format pretty. and then
 }
 
 #[derive(Debug, Clone)]
-pub struct DateRegex { // Maybe add a date format pretty. and then also the date format that gets used by chrono
-    pub date_format: String,
-    pub date_regex: Regex,
+pub struct DateRegex {
+    pretty_format: String,
+    strftime_format: String,
+    regex: Regex,
 }
 
 pub static DATE_REGEXES: Lazy<Vec<DateRegex>> = Lazy::new(|| {
     vec![
-        DateRegex {
-            date_format: "MM-DD-YYYY".to_string(),
-            date_regex: Regex::new(r"^\d{2}-\d{2}-\d{4}$").unwrap(),
-        },
-        DateRegex {
-            date_format: "YYYY-MM-DD".to_string(),
-            date_regex: Regex::new(r"^\d{4}-\d{2}-\d{2}$").unwrap(),
-        },
-        DateRegex {
-            date_format: "DD-MM-YYYY".to_string(),
-            date_regex: Regex::new(r"^\d{2}-\d{2}-\d{4}$").unwrap(),
-        },
-        DateRegex {
-            date_format: "YYYY/MM/DD".to_string(),
-            date_regex: Regex::new(r"^\d{4}/\d{2}/\d{2}$").unwrap(),
-        },
-        DateRegex {
-            date_format: "MMM DD YYYY".to_string(), // e.g. Mar 22 2022
-            date_regex: Regex::new(r"^[A-Z][a-z]{2} \d{1,2} \d{4}$").unwrap(),
-        },
-        DateRegex {
-            date_format: "MMMM DD, YYYY".to_string(), // e.g. March 22, 2022
-            date_regex: Regex::new(r"^[A-Z][a-z]+ \d{1,2}, \d{4}$").unwrap(),
-        },
-        DateRegex {
-            date_format: "YYYY-MM-DD HH:MM:SS".to_string(), // 24-hour datetime
-            date_regex: Regex::new(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$").unwrap(),
-        },
-        DateRegex {
-            date_format: "YYYY-MM-DDTHH:MM:SSZ".to_string(), // ISO 8601
-            date_regex: Regex::new(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$").unwrap(),
-        },
-        DateRegex {
-            date_format: "M/D/YYYY H:MM AM/PM".to_string(), // 12-hour US time
-            date_regex: Regex::new(r"^\d{1,2}/\d{1,2}/\d{4} \d{1,2}:\d{2} (AM|PM|am|pm)$").unwrap(),
-        },
-        DateRegex {
-            date_format: "YYYY-MM-DDTHH:MM:SS.SSS".to_string(),
-            date_regex: Regex::new(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{1,3}$").unwrap(),
-        },
-    ]
+    DateRegex {
+        pretty_format: "MM-DD-YYYY".to_string(),
+        regex: Regex::new(r"^\d{2}-\d{2}-\d{4}$").unwrap(),
+        strftime_format: "%m-%d-%Y".to_string(),
+    },
+    DateRegex {
+        pretty_format: "YYYY-MM-DD".to_string(),
+        regex: Regex::new(r"^\d{4}-\d{2}-\d{2}$").unwrap(),
+        strftime_format: "%Y-%m-%d".to_string(),
+    },
+    DateRegex {
+        pretty_format: "DD-MM-YYYY".to_string(),
+        regex: Regex::new(r"^\d{2}-\d{2}-\d{4}$").unwrap(),
+        strftime_format: "%d-%m-%Y".to_string(),
+    },
+    DateRegex {
+        pretty_format: "YYYY/MM/DD".to_string(),
+        regex: Regex::new(r"^\d{4}/\d{2}/\d{2}$").unwrap(),
+        strftime_format: "%Y/%m/%d".to_string(),
+    },
+    DateRegex {
+        pretty_format: "MMM DD YYYY".to_string(), // e.g. Mar 22 2022
+        regex: Regex::new(r"^[A-Z][a-z]{2} \d{1,2} \d{4}$").unwrap(),
+        strftime_format: "%b %d %Y".to_string(),
+    },
+    DateRegex {
+        pretty_format: "MMMM DD, YYYY".to_string(), // e.g. March 22, 2022
+        regex: Regex::new(r"^[A-Z][a-z]+ \d{1,2}, \d{4}$").unwrap(),
+        strftime_format: "%B %d, %Y".to_string(),
+    },
+    DateRegex {
+        pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(), // 24-hour datetime
+        regex: Regex::new(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$").unwrap(),
+        strftime_format: "%Y-%m-%d %H:%M:%S".to_string(),
+    },
+    DateRegex {
+        pretty_format: "YYYY-MM-DDTHH:MM:SSZ".to_string(), // ISO 8601
+        regex: Regex::new(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$").unwrap(),
+        strftime_format: "%Y-%m-%dT%H:%M:%SZ".to_string(),
+    },
+    DateRegex {
+        pretty_format: "M/D/YYYY H:MM AM/PM".to_string(), // 12-hour US time
+        regex: Regex::new(r"^\d{1,2}/\d{1,2}/\d{4} \d{1,2}:\d{2} (AM|PM|am|pm)$").unwrap(),
+        strftime_format: "%-m/%-d/%Y %-I:%M %p".to_string(),
+    },
+    DateRegex {
+        pretty_format: "YYYY-MM-DDTHH:MM:SS.SSS".to_string(),
+        regex: Regex::new(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{1,3}$").unwrap(),
+        strftime_format: "%Y-%m-%dT%H:%M:%S%.3f".to_string(),
+    },
+]
 });
 
 pub fn iterate_through_input_dir(input_dir:String){
