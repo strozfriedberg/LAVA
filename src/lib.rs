@@ -22,9 +22,11 @@ use std::cmp::Ordering;
 
 
 type GenericResult<T> = std::result::Result<T, Box<dyn Error>>;
+type Result<T> = std::result::Result<T, LogCheckError>;
+
 
 #[derive(Debug, Clone, Error)]
-pub enum PhaseError { // I don't think as of now there is actually a reason to have both here?
+pub enum PhaseError {
     #[error("Metadata Retreival Error: {0}")]
     MetaDataRetieval(String),
     #[error("Timestamp Discovery Error: {0}")]
@@ -35,12 +37,18 @@ pub enum PhaseError { // I don't think as of now there is actually a reason to h
     FileStreaming(String), 
 }// Should prob actually use this for the different stages of processing, Metadata extraction error, File Error, etc
 
+#[derive(Debug, Error)]
+#[error("{reason}")]
+pub struct LogCheckError {
+    pub reason: String,
+}
 
 
 #[derive(PartialEq, Debug)]
 pub enum LogType{
     Csv,
     Json,
+    Unstructured,
 }
 
 #[derive(PartialEq, Debug, Clone)]
