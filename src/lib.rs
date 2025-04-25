@@ -1,5 +1,6 @@
 use clap::builder::Str;
 use glob::glob;
+use core::time;
 use std::path::PathBuf;
 use std::fmt;
 use std::fs::File;
@@ -15,13 +16,13 @@ use once_cell::sync::Lazy;
 // use polars::prelude::*;
 use csv::ReaderBuilder;
 use thiserror::Error;
-use chrono::{Utc, DateTime, NaiveDateTime, Duration};
+use chrono::{Utc, DateTime, NaiveDateTime, Duration, ParseResult};
 
 
 type GenericResult<T> = std::result::Result<T, Box<dyn Error>>;
 
 #[derive(Debug, Clone, Error)]
-pub enum LogCheckError { // I don't think as of now there is actually a reason to have both here?
+pub enum PhaseError { // I don't think as of now there is actually a reason to have both here?
     #[error("Metadata Retreival Error: {0}")]
     MetaDataRetieval(String),
     #[error("Timestamp Discovery Error: {0}")]
@@ -251,7 +252,7 @@ pub fn process_file(log_file: &LogFile) -> GenericResult<ProcessedLogFile>{
     let mut base_processed_file = ProcessedLogFile::default();
 
     //get hash and metadata. Does not matter what kind of file it is for this function
-    let (hash, size, file_name, file_path ) = match get_metadata_and_hash(&log_file.file_path).map_err(|e| LogCheckError::MetaDataRetieval(e.to_string())) {
+    let (hash, size, file_name, file_path ) = match get_metadata_and_hash(&log_file.file_path).map_err(|e| PhaseError::MetaDataRetieval(e.to_string())) {
         Ok(result) => result,
         Err(e) => {
             base_processed_file.error = Some(e.to_string());
@@ -265,7 +266,7 @@ pub fn process_file(log_file: &LogFile) -> GenericResult<ProcessedLogFile>{
 
 
     // get the timestamp field. Will only do this if it is structured (json or csv)
-    let mut timestamp_hit = match find_timestamp_field(log_file).map_err(|e| LogCheckError::TimeDiscovery(e.to_string())) {
+    let mut timestamp_hit = match find_timestamp_field(log_file).map_err(|e| PhaseError::TimeDiscovery(e.to_string())) {
         Ok(result) => result,
         Err(e) => {
             base_processed_file.error = Some(e.to_string());
@@ -276,13 +277,17 @@ pub fn process_file(log_file: &LogFile) -> GenericResult<ProcessedLogFile>{
     base_processed_file.time_header = Some(timestamp_hit.column_name.clone());
     base_processed_file.time_format = Some(timestamp_hit.regex_info.pretty_format.clone());
 
-    match set_time_direction_by_scanning_file(log_file, &mut timestamp_hit).map_err(|e| LogCheckError::TimeDirection(e.to_string())) {
+    match set_time_direction_by_scanning_file(log_file, &mut timestamp_hit).map_err(|e| PhaseError::TimeDirection(e.to_string())) {
         Ok(_) => {},
         Err(e) => {
             base_processed_file.error = Some(e.to_string());
             return Ok(base_processed_file);
         }
     };
+    println!(
+        "{} appears to be in {:?} order!",
+        log_file.file_path.to_string_lossy().to_string(), timestamp_hit.direction.clone().ok_or_else(|| "Index of date field not found")?
+    );
     let _ = stream_csv_file(log_file, timestamp_hit);
 
     Ok(base_processed_file)
@@ -322,18 +327,32 @@ pub fn find_timestamp_field(log_file: &LogFile) -> GenericResult<StructuredTimeC
 }
 
 pub fn set_time_direction_by_scanning_file(log_file: &LogFile, timestamp_hit: &mut StructuredTimeColumnHit) -> GenericResult<()> {
-    // let file = File::open(log_file.file_path)?;
-
-    // let mut rdr = ReaderBuilder::new()
-    //     .has_headers(true)
-    //     .from_reader(file);
-    // for result in rdr.records() { // I think I should just include the index in the timestamp hit 
-    //     let record = result?;
-    //     if let Some(value) = record.get(column_index) {
-    //         println!("{}", value);
-    //     }
-    // }
-    Ok(())
+    let file = File::open(&log_file.file_path)?;
+    let mut rdr = ReaderBuilder::new()
+        .has_headers(true)
+        .from_reader(file);
+    let mut previous: Option<NaiveDateTime> = None;
+    for result in rdr.records() { // I think I should just include the index in the timestamp hit 
+        let record = result?;
+        let value = record.get(timestamp_hit.column_index).ok_or_else(|| "Index of date field not found")?;
+        let current_datetime: NaiveDateTime = NaiveDateTime::parse_from_str(value, &timestamp_hit.regex_info.strftime_format)?;
+        if let Some(previous_datetime) = previous {
+            if current_datetime > previous_datetime {
+                // println!("Current datetime {} is after previous {}. Order is Ascending!", current_datetime.format("%Y-%m-%d %H:%M:%S").to_string(), previous_datetime.format("%Y-%m-%d %H:%M:%S").to_string());
+                timestamp_hit.direction = Some(TimeDirection::Ascending);
+                return Ok(())
+            } else if current_datetime < previous_datetime {
+                // println!("Current datetime {} is before previous {}. Order is Descending!", current_datetime.format("%Y-%m-%d %H:%M:%S").to_string(), previous_datetime.format("%Y-%m-%d %H:%M:%S").to_string());
+                timestamp_hit.direction = Some(TimeDirection::Descending);
+                return Ok(())
+            } else {
+                // println!("Lines were equal");
+            }
+        } else {
+            previous = Some(current_datetime);
+        }
+    }
+    Err("Could not determine order, all timestamps may have been equal.".into())
 }
 
 
