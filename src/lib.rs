@@ -320,8 +320,15 @@ pub fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile>{
                         file_path:file_path.to_path_buf(),
                     }
                 )
+            }else {
+                supported_files.push(
+                    LogFile{
+                        log_type:LogType::Unstructured,
+                        file_path:file_path.to_path_buf(),
+                    }
+                )
             }
-        }else{
+        }else{// Some unstructured logs might not have file extensions, so might have to work with this
             println!("Error getting file extension for {}", file_path.to_string_lossy().to_string())
         }
     }
