@@ -37,6 +37,12 @@ pub enum LogType{
 }
 
 #[derive(PartialEq, Debug)]
+pub enum TimeDirection{
+    Ascending,
+    Descending,
+}
+
+#[derive(PartialEq, Debug)]
 pub struct LogFile {
     pub log_type: LogType,
     pub file_path: PathBuf,
@@ -89,7 +95,8 @@ pub struct LogFileStatisticsAndAlerts {
 
 #[derive(Debug, Clone)]
 pub struct StructuredTimeColumnHit { // Maybe add a date format pretty. and then also the date format that gets used by chrono
-    pub column: String,
+    pub column_name: String,
+    pub column_index: usize,
     pub regex_info: DateRegex,
 }
 
@@ -271,8 +278,8 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile>{
         }
     };
 
-    base_processed_file.time_header = Some(timestamp_hit.column.clone());
-    base_processed_file.time_format = Some(timestamp_hit.regex_info.date_format.clone());
+    base_processed_file.time_header = Some(timestamp_hit.column_name.clone());
+    base_processed_file.time_format = Some(timestamp_hit.regex_info.pretty_format.clone());
 
     let _ = stream_csv_file(log_file, timestamp_hit);
 
@@ -280,7 +287,7 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile>{
 }
 
 
-pub fn find_timestamp_field(log_file: &LogFile) -> Result<(StructuredTimeColumnHit)> { //This is lazy here
+pub fn find_timestamp_field(log_file: &LogFile) -> Result<StructuredTimeColumnHit> { //This is lazy here
     if log_file.log_type == LogType::Csv {
         let file = File::open(&log_file.file_path).map_err(|e| LogCheckError::ForCSVOutput("Error reading file to find timestamp.".into()))?;
         let mut reader = ReaderBuilder::new()
@@ -291,14 +298,15 @@ pub fn find_timestamp_field(log_file: &LogFile) -> Result<(StructuredTimeColumnH
         let record: csv::StringRecord = reader.records().next().unwrap().map_err(|e| LogCheckError::ForCSVOutput(format!("Error reading first line of file. {e}")))?; // This is returning a result, that is why I had to use the question mark below before the iter()
         for (i, field) in record.iter().enumerate() {
             for date_regex in DATE_REGEXES.iter() {
-                if date_regex.date_regex.is_match(field) {
+                if date_regex.regex.is_match(field) {
                     println!(
                         "Found match for '{}' time format in the '{}' column of {}",
-                        date_regex.date_format, headers.get(i).unwrap().to_string(), log_file.file_path.to_string_lossy().to_string()
+                        date_regex.pretty_format, headers.get(i).unwrap().to_string(), log_file.file_path.to_string_lossy().to_string()
                     );
                     return Ok(
                         StructuredTimeColumnHit {
-                            column: headers.get(i).unwrap().to_string(),
+                            column_name: headers.get(i).unwrap().to_string(),
+                            column_index: i,
                             regex_info: date_regex.clone(),
                         }
                     )
