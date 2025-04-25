@@ -67,7 +67,7 @@ pub struct TimeGap {
     pub end_time: NaiveDateTime,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Default)]
 pub struct LogFileStatisticsAndAlerts {
     pub min_timestamp: Option<NaiveDateTime>,
     pub max_timestamp: Option<NaiveDateTime>,
@@ -75,17 +75,17 @@ pub struct LogFileStatisticsAndAlerts {
     pub duplicate_checker_set: HashSet<String>,
 }
 
-impl LogFileStatisticsAndAlerts {
-    pub fn new() -> Self {
-        Self {
-            min_timestamp: None,
-            max_timestamp: None,
-            largest_time_gap: None,
-            duplicate_checker_set: HashSet::new(),
-        }
-    }
-    // pub fn process_record(&mut self, )
-}
+// impl LogFileStatisticsAndAlerts {
+//     pub fn new() -> Self {
+//         Self {
+//             min_timestamp: None,
+//             max_timestamp: None,
+//             largest_time_gap: None,
+//             duplicate_checker_set: HashSet::new(),
+//         }
+//     }
+//     // pub fn process_record(&mut self, )
+// }
 
 #[derive(Debug, Clone)]
 pub struct StructuredTimeColumnHit { // Maybe add a date format pretty. and then also the date format that gets used by chrono
@@ -300,7 +300,7 @@ pub fn find_timestamp_field(log_file: &LogFile) -> Result<(StructuredTimeColumnH
 }
 
 pub fn stream_csv_file(log_file: &LogFile, timestamp_hit: StructuredTimeColumnHit) -> Result<LogFileStatisticsAndAlerts>{ // not sure we want to include the whole hashset in this? Maybe only inlcude results
-    let processing_object = LogFileStatisticsAndAlerts::new(); //maybe change this to default?? I think that is what is used more when it is making something with all empty values
+    let processing_object = LogFileStatisticsAndAlerts::default();
     // let file = File::open(log_file.file_path)?;
 
     // let mut rdr = ReaderBuilder::new()
