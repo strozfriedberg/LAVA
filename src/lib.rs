@@ -187,9 +187,9 @@ impl LogFileStatisticsAndAlerts {
 }
 
 #[derive(Debug, Clone)]
-pub struct StructuredTimeColumnHit { // Maybe add a date format pretty. and then also the date format that gets used by chrono
-    pub column_name: String,
-    pub column_index: usize,
+pub struct IdentifiedTimeInformation { // Maybe add a date format pretty. and then also the date format that gets used by chrono
+    pub column_name: Option<String>,
+    pub column_index: Option<usize>,
     pub regex_info: DateRegex,
     pub direction: Option<TimeDirection>,
 }
@@ -374,8 +374,8 @@ pub fn process_file(log_file: &LogFile) -> GenericResult<ProcessedLogFile>{
     base_processed_file.file_path = Some(file_path);
 
 
-    // get the timestamp field. Will only do this if it is structured (json or csv)
-    let mut timestamp_hit = match find_timestamp_field(log_file).map_err(|e| PhaseError::TimeDiscovery(e.to_string())) {
+    // get the timestamp field. will do this for all of them, but there will just be some fields that only get filled in for structured datatypes
+    let mut timestamp_hit = match try_to_get_timestamp_hit(log_file).map_err(|e| PhaseError::TimeDiscovery(e.to_string())) {
         Ok(result) => result,
         Err(e) => {
             base_processed_file.error = Some(e.to_string());
@@ -383,7 +383,7 @@ pub fn process_file(log_file: &LogFile) -> GenericResult<ProcessedLogFile>{
         }
     };
 
-    base_processed_file.time_header = Some(timestamp_hit.column_name.clone());
+    base_processed_file.time_header = timestamp_hit.column_name.clone();
     base_processed_file.time_format = Some(timestamp_hit.regex_info.pretty_format.clone());
 
     match set_time_direction_by_scanning_file(log_file, &mut timestamp_hit).map_err(|e| PhaseError::TimeDirection(e.to_string())) {
@@ -447,31 +447,36 @@ fn format_timedelta(tdelta: TimeDelta) -> String {
     format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
 }
 
-pub fn find_timestamp_field(log_file: &LogFile) -> GenericResult<StructuredTimeColumnHit> { //This is lazy here
+pub fn try_to_get_timestamp_hit(log_file: &LogFile) -> GenericResult<IdentifiedTimeInformation> {
     if log_file.log_type == LogType::Csv {
-        let file = File::open(&log_file.file_path)?;
-        let mut reader = ReaderBuilder::new()
-            .has_headers(true) // Set to false if there's no header
-            .from_reader(file);
+        return try_to_get_timestamp_hit_for_csv(log_file)
+    }
+    Err("Have not implemented scanning for directions for this file type yet".into())
+}
 
-        let headers: csv::StringRecord = reader.headers()?.clone(); // this returns a &StringRecord
-        let record: csv::StringRecord = reader.records().next().unwrap()?; // This is returning a result, that is why I had to use the question mark below before the iter()
-        for (i, field) in record.iter().enumerate() {
-            for date_regex in DATE_REGEXES.iter() {
-                if date_regex.regex.is_match(field) {
-                    println!(
-                        "Found match for '{}' time format in the '{}' column of {}",
-                        date_regex.pretty_format, headers.get(i).unwrap().to_string(), log_file.file_path.to_string_lossy().to_string()
-                    );
-                    return Ok(
-                        StructuredTimeColumnHit {
-                            column_name: headers.get(i).unwrap().to_string(),
-                            column_index: i,
-                            direction: None,
-                            regex_info: date_regex.clone(),
-                        }
-                    )
-                }
+pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile) -> GenericResult<IdentifiedTimeInformation> { //This is lazy here
+    let file = File::open(&log_file.file_path)?;
+    let mut reader = ReaderBuilder::new()
+        .has_headers(true) // Set to false if there's no header
+        .from_reader(file);
+
+    let headers: csv::StringRecord = reader.headers()?.clone(); // this returns a &StringRecord
+    let record: csv::StringRecord = reader.records().next().unwrap()?; // This is returning a result, that is why I had to use the question mark below before the iter()
+    for (i, field) in record.iter().enumerate() {
+        for date_regex in DATE_REGEXES.iter() {
+            if date_regex.regex.is_match(field) {
+                println!(
+                    "Found match for '{}' time format in the '{}' column of {}",
+                    date_regex.pretty_format, headers.get(i).unwrap().to_string(), log_file.file_path.to_string_lossy().to_string()
+                );
+                return Ok(
+                    IdentifiedTimeInformation {
+                        column_name: Some(headers.get(i).unwrap().to_string()),
+                        column_index: Some(i),
+                        direction: None,
+                        regex_info: date_regex.clone(),
+                    }
+                )
             }
         }
     }
@@ -479,7 +484,14 @@ pub fn find_timestamp_field(log_file: &LogFile) -> GenericResult<StructuredTimeC
     Err("Could not find a supported timestamp format.".into())
 }
 
-pub fn set_time_direction_by_scanning_file(log_file: &LogFile, timestamp_hit: &mut StructuredTimeColumnHit) -> GenericResult<()> {
+pub fn set_time_direction_by_scanning_file(log_file: &LogFile, timestamp_hit: &mut IdentifiedTimeInformation) -> GenericResult<()> {
+    if log_file.log_type == LogType::Csv {
+        return set_time_direction_by_scanning_csv_file(log_file, timestamp_hit)
+    }
+    Err("Have not implemented scanning for directions for this file type yet".into())
+}
+
+pub fn set_time_direction_by_scanning_csv_file(log_file: &LogFile, timestamp_hit: &mut IdentifiedTimeInformation) -> GenericResult<()> {
     let file = File::open(&log_file.file_path)?;
     let mut rdr = ReaderBuilder::new()
         .has_headers(true)
@@ -487,7 +499,7 @@ pub fn set_time_direction_by_scanning_file(log_file: &LogFile, timestamp_hit: &m
     let mut previous: Option<NaiveDateTime> = None;
     for result in rdr.records() { // I think I should just include the index in the timestamp hit 
         let record = result?;
-        let value = record.get(timestamp_hit.column_index).ok_or_else(|| "Index of date field not found")?;
+        let value = record.get(timestamp_hit.column_index.unwrap()).ok_or_else(|| "Index of date field not found")?; // unwrap is safe here because for CSVs, there will always be a column index
         let current_datetime: NaiveDateTime = NaiveDateTime::parse_from_str(value, &timestamp_hit.regex_info.strftime_format)?;
         if let Some(previous_datetime) = previous {
             if current_datetime > previous_datetime {
@@ -514,7 +526,14 @@ fn hash_csv_record(record: &StringRecord) -> u64 {
     hasher.finish()
 }
 
-pub fn stream_csv_file(log_file: &LogFile, timestamp_hit: StructuredTimeColumnHit) -> GenericResult<LogFileStatisticsAndAlerts>{ // not sure we want to include the whole hashset in this? Maybe only inlcude results
+pub fn stream_file(log_file: &LogFile, timestamp_hit: IdentifiedTimeInformation)-> GenericResult<LogFileStatisticsAndAlerts>{
+    if log_file.log_type == LogType::Csv {
+        return stream_csv_file(log_file, timestamp_hit)
+    }
+    Err("Have not implemented streaming for this file type yet".into())
+}
+
+pub fn stream_csv_file(log_file: &LogFile, timestamp_hit: IdentifiedTimeInformation) -> GenericResult<LogFileStatisticsAndAlerts>{ // not sure we want to include the whole hashset in this? Maybe only inlcude results
     let mut processing_object = LogFileStatisticsAndAlerts::new_with_order(timestamp_hit.direction);
     let file = File::open(&log_file.file_path)?;
     let mut rdr = ReaderBuilder::new()
@@ -522,7 +541,7 @@ pub fn stream_csv_file(log_file: &LogFile, timestamp_hit: StructuredTimeColumnHi
         .from_reader(file);
     for (index, result) in rdr.records().enumerate() { // I think I should just include the index in the timestamp hit 
         let record = result?;
-        let value = record.get(timestamp_hit.column_index).ok_or_else(|| "Index of date field not found")?;
+        let value = record.get(timestamp_hit.column_index.unwrap()).ok_or_else(|| "Index of date field not found")?;
         let current_datetime: NaiveDateTime = NaiveDateTime::parse_from_str(value, &timestamp_hit.regex_info.strftime_format)?;
         let hash_of_record = hash_csv_record(&record);
         processing_object.process_record(LogFileRecord {
