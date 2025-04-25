@@ -30,6 +30,8 @@ pub enum PhaseError { // I don't think as of now there is actually a reason to h
     TimeDiscovery(String),
     #[error("Timestamp Order Error: {0}")]
     TimeDirection(String), 
+    #[error("File Streaming Error: {0}")]
+    FileStreaming(String), 
 }// Should prob actually use this for the different stages of processing, Metadata extraction error, File Error, etc
 
 
@@ -61,6 +63,8 @@ pub struct ProcessedLogFile {
     pub size: Option<u64>,
     pub time_header: Option<String>,
     pub time_format: Option<String>,
+    pub min_timestamp: Option<String>,
+    pub max_timestamp: Option<String>,
     pub error: Option<String>,
 }
 
@@ -83,7 +87,7 @@ pub struct LogFileStatisticsAndAlerts {
     pub order: Option<TimeDirection>,
     pub min_timestamp: Option<NaiveDateTime>,
     pub max_timestamp: Option<NaiveDateTime>,
-    pub last_timestamp: Option<NaiveDateTime>,
+    pub previous_timestamp: Option<NaiveDateTime>,
     pub largest_time_gap: Option<TimeGap>, // Eventually maybe make this store the top few?
     pub duplicate_checker_set: HashSet<u64>,
 }
@@ -103,6 +107,29 @@ impl LogFileStatisticsAndAlerts {
         }
 
         //Update earliest and latest timestamp
+        if let Some(previous_datetime) = self.previous_timestamp { // This is where all logic is done if it isn't the first record
+            if self.order == Some(TimeDirection::Ascending) {
+                if previous_datetime > record.timestamp {
+                    return Err("File was not sorted on the identified timestamp".into())
+                }
+                self.max_timestamp = Some(record.timestamp)
+            }
+            else if self.order == Some(TimeDirection::Descending) {
+                if previous_datetime < record.timestamp {
+                    return Err("File was not sorted on the identified timestamp".into())
+                }
+                self.min_timestamp = Some(record.timestamp)
+            }
+        } else { // This is the first row, inialize either the min or max timestamp
+            if self.order == Some(TimeDirection::Ascending) {
+                self.min_timestamp = Some(record.timestamp)
+            }
+            else if self.order == Some(TimeDirection::Descending) {
+                self.max_timestamp = Some(record.timestamp)
+            }
+        }
+        self.previous_timestamp = Some(record.timestamp);
+
         Ok(())
     }
 }
@@ -208,7 +235,7 @@ fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> GenericResult<()
     //Add something here to create the 
     let output_filename = generate_log_filename();
     let mut wtr = Writer::from_path(&output_filename)?;
-    wtr.write_record(&["Filename", "File Path", "SHA256 Hash", "Size", "Header Used", "Timestamp Format","Error"])?;
+    wtr.write_record(&["Filename", "File Path", "SHA256 Hash", "Size", "Header Used", "Timestamp Format","Earliest Timestamp", "Latest Timestamp", "Error"])?;
     for log_file in processed_log_files {
         wtr.serialize((
             log_file.filename.as_deref().unwrap_or(""),
@@ -217,6 +244,8 @@ fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> GenericResult<()
             log_file.size.unwrap_or(0),
             log_file.time_header.as_deref().unwrap_or(""),
             log_file.time_format.as_deref().unwrap_or(""),
+            log_file.min_timestamp.as_deref().unwrap_or(""),
+            log_file.max_timestamp.as_deref().unwrap_or(""),
             log_file.error.as_deref().unwrap_or(""),
         ))?;
     }
@@ -307,7 +336,29 @@ pub fn process_file(log_file: &LogFile) -> GenericResult<ProcessedLogFile>{
         "{} appears to be in {:?} order!",
         log_file.file_path.to_string_lossy().to_string(), timestamp_hit.direction.clone().ok_or_else(|| "Index of date field not found")?
     );
-    let _ = stream_csv_file(log_file, timestamp_hit);
+
+    let completed_statistics_object = match stream_csv_file(log_file, timestamp_hit).map_err(|e| PhaseError::FileStreaming(e.to_string())) {
+        Ok(result) => result,
+        Err(e) => {
+            base_processed_file.error = Some(e.to_string());
+            return Ok(base_processed_file);
+        }
+    };
+
+    base_processed_file.min_timestamp = Some(
+        completed_statistics_object
+            .min_timestamp
+            .ok_or("No min timestamp found")?
+            .format("%Y-%m-%d %H:%M:%S")
+            .to_string()
+    );
+    base_processed_file.max_timestamp = Some(
+        completed_statistics_object
+            .max_timestamp
+            .ok_or("No max timestamp found")?
+            .format("%Y-%m-%d %H:%M:%S")
+            .to_string()
+    );
 
     Ok(base_processed_file)
 }
