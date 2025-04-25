@@ -84,14 +84,6 @@ pub struct LogFileStatisticsAndAlerts {
 }
 
 // impl LogFileStatisticsAndAlerts {
-//     pub fn new() -> Self {
-//         Self {
-//             min_timestamp: None,
-//             max_timestamp: None,
-//             largest_time_gap: None,
-//             duplicate_checker_set: HashSet::new(),
-//         }
-//     }
 //     // pub fn process_record(&mut self, )
 // }
 
