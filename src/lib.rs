@@ -451,7 +451,7 @@ pub fn try_to_get_timestamp_hit(log_file: &LogFile) -> GenericResult<IdentifiedT
     if log_file.log_type == LogType::Csv {
         return try_to_get_timestamp_hit_for_csv(log_file)
     }
-    Err("Have not implemented scanning for directions for this file type yet".into())
+    Err("Have not implemented scanning for timestam for this file type yet".into())
 }
 
 pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile) -> GenericResult<IdentifiedTimeInformation> { //This is lazy here
