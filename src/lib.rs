@@ -15,9 +15,10 @@ use once_cell::sync::Lazy;
 // use polars::prelude::*;
 use csv::{ReaderBuilder, StringRecord, Writer};
 use thiserror::Error;
-use chrono::{Utc, DateTime, NaiveDateTime, Duration, ParseResult};
+use chrono::{Utc, DateTime, NaiveDateTime, Duration, ParseResult, TimeDelta};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use std::cmp::Ordering;
 
 
 type GenericResult<T> = std::result::Result<T, Box<dyn Error>>;
@@ -65,6 +66,7 @@ pub struct ProcessedLogFile {
     pub time_format: Option<String>,
     pub min_timestamp: Option<String>,
     pub max_timestamp: Option<String>,
+    pub largest_gap: Option<String>,
     pub error: Option<String>,
 }
 
@@ -75,11 +77,40 @@ pub struct LogFileRecord {
     pub index: usize,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub struct TimeGap {
-    pub gap: Duration,
+    pub gap: TimeDelta,
     pub beginning_time: NaiveDateTime,
     pub end_time: NaiveDateTime,
+}
+
+impl Eq for TimeGap {}
+
+impl Ord for TimeGap {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.gap.cmp(&other.gap)
+    }
+}
+
+impl PartialOrd for TimeGap {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl TimeGap {
+    pub fn new(a: NaiveDateTime, b: NaiveDateTime) -> Self {
+        let (beginning_time, end_time) = if a <= b { (a, b) } else { (b, a) };
+
+        let gap = end_time
+            .signed_duration_since(beginning_time);
+
+        Self {
+            gap,
+            beginning_time,
+            end_time,
+        }
+    }
 }
 
 #[derive(PartialEq, Debug, Default)]
@@ -120,6 +151,18 @@ impl LogFileStatisticsAndAlerts {
                 }
                 self.min_timestamp = Some(record.timestamp)
             }
+            let current_time_gap = TimeGap::new(previous_datetime, record.timestamp);
+            if let Some(largest_time_gap) = self.largest_time_gap {
+                if current_time_gap > largest_time_gap {
+                    self.largest_time_gap = Some(TimeGap::new(previous_datetime, record.timestamp));
+                }
+
+            } else{ // This is the second row, intialize the time gap 
+                self.largest_time_gap = Some(TimeGap::new(previous_datetime, record.timestamp));
+
+            }
+
+
         } else { // This is the first row, inialize either the min or max timestamp
             if self.order == Some(TimeDirection::Ascending) {
                 self.min_timestamp = Some(record.timestamp)
@@ -235,7 +278,7 @@ fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> GenericResult<()
     //Add something here to create the 
     let output_filename = generate_log_filename();
     let mut wtr = Writer::from_path(&output_filename)?;
-    wtr.write_record(&["Filename", "File Path", "SHA256 Hash", "Size", "Header Used", "Timestamp Format","Earliest Timestamp", "Latest Timestamp", "Error"])?;
+    wtr.write_record(&["Filename", "File Path", "SHA256 Hash", "Size", "Header Used", "Timestamp Format","Earliest Timestamp", "Latest Timestamp","Largest Time Gap", "Error"])?;
     for log_file in processed_log_files {
         wtr.serialize((
             log_file.filename.as_deref().unwrap_or(""),
@@ -246,6 +289,7 @@ fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> GenericResult<()
             log_file.time_format.as_deref().unwrap_or(""),
             log_file.min_timestamp.as_deref().unwrap_or(""),
             log_file.max_timestamp.as_deref().unwrap_or(""),
+            log_file.largest_gap.as_deref().unwrap_or(""),
             log_file.error.as_deref().unwrap_or(""),
         ))?;
     }
@@ -358,6 +402,16 @@ pub fn process_file(log_file: &LogFile) -> GenericResult<ProcessedLogFile>{
             .ok_or("No max timestamp found")?
             .format("%Y-%m-%d %H:%M:%S")
             .to_string()
+    );
+    base_processed_file.largest_gap = Some(format!("{} to {}",
+    completed_statistics_object
+    .largest_time_gap.ok_or("No largest time gap found")?
+    .beginning_time
+    .format("%Y-%m-%d %H:%M:%S"),
+    completed_statistics_object
+    .largest_time_gap.ok_or("No largest time gap found")?
+    .end_time
+    .format("%Y-%m-%d %H:%M:%S")),
     );
 
     Ok(base_processed_file)
