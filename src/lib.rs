@@ -67,6 +67,7 @@ pub struct ProcessedLogFile {
     pub min_timestamp: Option<String>,
     pub max_timestamp: Option<String>,
     pub largest_gap: Option<String>,
+    pub largest_gap_duration: Option<String>,
     pub error: Option<String>,
 }
 
@@ -278,7 +279,7 @@ fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> GenericResult<()
     //Add something here to create the 
     let output_filename = generate_log_filename();
     let mut wtr = Writer::from_path(&output_filename)?;
-    wtr.write_record(&["Filename", "File Path", "SHA256 Hash", "Size", "Header Used", "Timestamp Format","Earliest Timestamp", "Latest Timestamp","Largest Time Gap", "Error"])?;
+    wtr.write_record(&["Filename", "File Path", "SHA256 Hash", "Size", "Header Used", "Timestamp Format","Earliest Timestamp", "Latest Timestamp","Duration of Largest Time Gap","Largest Time Gap", "Error"])?;
     for log_file in processed_log_files {
         wtr.serialize((
             log_file.filename.as_deref().unwrap_or(""),
@@ -289,6 +290,7 @@ fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> GenericResult<()
             log_file.time_format.as_deref().unwrap_or(""),
             log_file.min_timestamp.as_deref().unwrap_or(""),
             log_file.max_timestamp.as_deref().unwrap_or(""),
+            log_file.largest_gap_duration.as_deref().unwrap_or(""),
             log_file.largest_gap.as_deref().unwrap_or(""),
             log_file.error.as_deref().unwrap_or(""),
         ))?;
@@ -403,20 +405,32 @@ pub fn process_file(log_file: &LogFile) -> GenericResult<ProcessedLogFile>{
             .format("%Y-%m-%d %H:%M:%S")
             .to_string()
     );
+
+    let largest_time_gap =     completed_statistics_object
+    .largest_time_gap.ok_or("No largest time gap found")?;
+
     base_processed_file.largest_gap = Some(format!("{} to {}",
-    completed_statistics_object
-    .largest_time_gap.ok_or("No largest time gap found")?
+    largest_time_gap
     .beginning_time
     .format("%Y-%m-%d %H:%M:%S"),
-    completed_statistics_object
-    .largest_time_gap.ok_or("No largest time gap found")?
+    largest_time_gap
     .end_time
     .format("%Y-%m-%d %H:%M:%S")),
     );
+    base_processed_file.largest_gap_duration = Some(format_timedelta(largest_time_gap.gap));
 
     Ok(base_processed_file)
 }
 
+fn format_timedelta(tdelta: TimeDelta) -> String {
+    let total_seconds = tdelta.num_seconds().abs(); // make it positive for display
+
+    let hours = total_seconds / 3600;
+    let minutes = (total_seconds % 3600) / 60;
+    let seconds = total_seconds % 60;
+
+    format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
+}
 
 pub fn find_timestamp_field(log_file: &LogFile) -> GenericResult<StructuredTimeColumnHit> { //This is lazy here
     if log_file.log_type == LogType::Csv {
