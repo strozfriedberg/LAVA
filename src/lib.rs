@@ -548,7 +548,34 @@ pub fn set_time_direction_by_scanning_file(log_file: &LogFile, timestamp_hit: &m
     if log_file.log_type == LogType::Csv {
         return set_time_direction_by_scanning_csv_file(log_file, timestamp_hit)
     }
+    if log_file.log_type == LogType::Unstructured {
+        return set_time_direction_by_scanning_unstructured_file(log_file, timestamp_hit)
+    }
     Err(LogCheckError::new("Have not implemented scanning for directions for this file type yet."))
+}
+
+
+
+#[derive(PartialEq, Debug, Default)]
+pub struct TimeDirectionChecker {
+    pub previous: Option<NaiveDateTime>,
+}
+
+impl TimeDirectionChecker {
+    fn process_timestamp(&mut self, current_datetime: NaiveDateTime) -> Option<TimeDirection> {
+        if let Some(previous_datetime) = self.previous {
+            if current_datetime > previous_datetime {
+                // println!("Current datetime {} is after previous {}. Order is Ascending!", current_datetime.format("%Y-%m-%d %H:%M:%S").to_string(), previous_datetime.format("%Y-%m-%d %H:%M:%S").to_string());
+                return Some(TimeDirection::Ascending)
+            } else if current_datetime < previous_datetime {
+                // println!("Current datetime {} is before previous {}. Order is Descending!", current_datetime.format("%Y-%m-%d %H:%M:%S").to_string(), previous_datetime.format("%Y-%m-%d %H:%M:%S").to_string());
+                return Some(TimeDirection::Descending)
+            }
+        } else {
+            self.previous = Some(current_datetime);
+        }
+        return None
+    }
 }
 
 pub fn set_time_direction_by_scanning_csv_file(log_file: &LogFile, timestamp_hit: &mut IdentifiedTimeInformation) -> Result<()> {
@@ -556,29 +583,24 @@ pub fn set_time_direction_by_scanning_csv_file(log_file: &LogFile, timestamp_hit
     let mut rdr = ReaderBuilder::new()
         .has_headers(true)
         .from_reader(file);
-    let mut previous: Option<NaiveDateTime> = None;
+    // let mut previous: Option<NaiveDateTime> = None;
+    let mut direction_checker = TimeDirectionChecker::default();
     for result in rdr.records() { // I think I should just include the index in the timestamp hit 
         let record = result.map_err(|e| LogCheckError::new(format!("Unable to read bytes during hashing because of {e}")))?;
         let value = record.get(timestamp_hit.column_index.unwrap()).ok_or_else(|| LogCheckError::new("Index of date field not found"))?; // unwrap is safe here because for CSVs, there will always be a column index
         let current_datetime: NaiveDateTime = NaiveDateTime::parse_from_str(value, &timestamp_hit.regex_info.strftime_format).map_err(|e| LogCheckError::new(format!("Issue parsing timestamp because of {e}")))?;
-        if let Some(previous_datetime) = previous {
-            if current_datetime > previous_datetime {
-                // println!("Current datetime {} is after previous {}. Order is Ascending!", current_datetime.format("%Y-%m-%d %H:%M:%S").to_string(), previous_datetime.format("%Y-%m-%d %H:%M:%S").to_string());
-                timestamp_hit.direction = Some(TimeDirection::Ascending);
-                return Ok(())
-            } else if current_datetime < previous_datetime {
-                // println!("Current datetime {} is before previous {}. Order is Descending!", current_datetime.format("%Y-%m-%d %H:%M:%S").to_string(), previous_datetime.format("%Y-%m-%d %H:%M:%S").to_string());
-                timestamp_hit.direction = Some(TimeDirection::Descending);
-                return Ok(())
-            } else {
-                // println!("Lines were equal");
-            }
-        } else {
-            previous = Some(current_datetime);
+        if let Some(direction) = direction_checker.process_timestamp(current_datetime) {
+            timestamp_hit.direction = Some(direction);
+            return Ok(())
         }
     }
     Err(LogCheckError::new("Could not determine order, all timestamps may have been equal."))
 }
+
+pub fn set_time_direction_by_scanning_unstructured_file(log_file: &LogFile, timestamp_hit: &mut IdentifiedTimeInformation) -> Result<()>{
+ Ok(())
+}
+
 
 fn hash_csv_record(record: &StringRecord) -> u64 {
     let mut hasher = DefaultHasher::new();
