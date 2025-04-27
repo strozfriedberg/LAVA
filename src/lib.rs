@@ -19,9 +19,10 @@ use chrono::{Utc, DateTime, NaiveDateTime, Duration, ParseResult, TimeDelta};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::cmp::Ordering;
+use std::io::{BufRead, BufReader};
 
 
-type GenericResult<T> = std::result::Result<T, Box<dyn Error>>;
+// type Result<T> = std::result::Result<T, Box<dyn Error>>;
 type Result<T> = std::result::Result<T, LogCheckError>;
 
 
@@ -41,6 +42,12 @@ pub enum PhaseError {
 #[error("{reason}")]
 pub struct LogCheckError {
     pub reason: String,
+}
+
+impl LogCheckError {
+    pub fn new(reason: impl Into<String>) -> Self {
+        Self { reason: reason.into() }
+    }
 }
 
 
@@ -139,7 +146,7 @@ impl LogFileStatisticsAndAlerts {
             ..Default::default()
         }
     }
-    pub fn process_record(&mut self, record : LogFileRecord) -> GenericResult<()>{
+    pub fn process_record(&mut self, record : LogFileRecord) -> Result<()>{
         //Check for duplicates
         let is_duplicate = !self.duplicate_checker_set.insert(record.hash_of_entire_record);
         if is_duplicate {
@@ -150,13 +157,13 @@ impl LogFileStatisticsAndAlerts {
         if let Some(previous_datetime) = self.previous_timestamp { // This is where all logic is done if it isn't the first record
             if self.order == Some(TimeDirection::Ascending) {
                 if previous_datetime > record.timestamp {
-                    return Err("File was not sorted on the identified timestamp".into())
+                    return Err(LogCheckError::new("File was not sorted on the identified timestamp"));
                 }
                 self.max_timestamp = Some(record.timestamp)
             }
             else if self.order == Some(TimeDirection::Descending) {
                 if previous_datetime < record.timestamp {
-                    return Err("File was not sorted on the identified timestamp".into())
+                    return Err(LogCheckError::new("File was not sorted on the identified timestamp"));
                 }
                 self.min_timestamp = Some(record.timestamp)
             }
@@ -203,6 +210,11 @@ pub struct DateRegex {
 
 pub static DATE_REGEXES: Lazy<Vec<DateRegex>> = Lazy::new(|| {
     vec![
+    DateRegex {
+        pretty_format: "date= time=".to_string(),
+        regex: Regex::new(r"date=\d{4}-\d{2}-\d{2}\s+time=\d{2}:\d{2}:\d{2}").unwrap(),
+        strftime_format: "date=%Y-%m-%d time=%H:%M:%S".to_string(),
+    },
     DateRegex {
         pretty_format: "MM-DD-YYYY".to_string(),
         regex: Regex::new(r"^\d{2}-\d{2}-\d{4}$").unwrap(),
@@ -274,7 +286,9 @@ pub fn iterate_through_input_dir(input_dir:String){
     .map(|path| process_file(path).expect("Error processing file"))
     .collect();
 
-    let _ = write_to_csv(&results).expect("Failed to open output file");
+    if let Err(e) = write_to_csv(&results) {
+        eprintln!("Failed to write to CSV: {}", e);
+    }
 }
 
 fn generate_log_filename() -> String {
@@ -283,11 +297,11 @@ fn generate_log_filename() -> String {
     formatted.to_string()
 }
 
-fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> GenericResult<()> { // in the final version, maybe have a full version that has tons of fields, and then a simplified version. Could have command line arg to trigger verbose one
+fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Result<()> { // in the final version, maybe have a full version that has tons of fields, and then a simplified version. Could have command line arg to trigger verbose one
     //Add something here to create the 
     let output_filename = generate_log_filename();
-    let mut wtr = Writer::from_path(&output_filename)?;
-    wtr.write_record(&["Filename", "File Path", "SHA256 Hash", "Size", "Header Used", "Timestamp Format","Earliest Timestamp", "Latest Timestamp","Duration of Largest Time Gap","Largest Time Gap", "Error"])?;
+    let mut wtr = Writer::from_path(&output_filename).map_err(|e| LogCheckError::new(format!("Unable to open ouptut file because of {e}")))?;
+    wtr.write_record(&["Filename", "File Path", "SHA256 Hash", "Size", "Header Used", "Timestamp Format","Earliest Timestamp", "Latest Timestamp","Duration of Largest Time Gap","Largest Time Gap", "Error"]).map_err(|e| LogCheckError::new(format!("Unable to write headers because of {e}")))?;
     for log_file in processed_log_files {
         wtr.serialize((
             log_file.filename.as_deref().unwrap_or(""),
@@ -301,9 +315,9 @@ fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> GenericResult<()
             log_file.largest_gap_duration.as_deref().unwrap_or(""),
             log_file.largest_gap.as_deref().unwrap_or(""),
             log_file.error.as_deref().unwrap_or(""),
-        ))?;
+        )).map_err(|e| LogCheckError::new(format!("Issue writing lines of output file because of {e}")))?;
     }
-    wtr.flush()?; //Is this really needed?
+    wtr.flush().map_err(|e| LogCheckError::new(format!("Issue flushing to the ouptut file because of {e}")))?; //Is this really needed?
     println!("Data written to {output_filename}");
     Ok(())
 }
@@ -335,16 +349,16 @@ pub fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile>{
     supported_files
 }
 
-fn get_metadata_and_hash(file_path: &PathBuf) -> GenericResult<(String, u64, String, String)> {
-    let mut file = File::open(file_path)?;
-    let size = file.metadata()?.len();
-    let file_name = file_path.file_name().ok_or("Error getting filename")?.to_string_lossy().to_string();
+fn get_metadata_and_hash(file_path: &PathBuf) -> Result<(String, u64, String, String)> {
+    let mut file = File::open(file_path).map_err(|e| LogCheckError::new(format!("Unable to open file because of {e}")))?;
+    let size = file.metadata().map_err(|e| LogCheckError::new(format!("Unable to get file metadata because of {e}")))?.len();
+    let file_name = file_path.file_name().ok_or("Error getting filename").map_err(|e| LogCheckError::new(format!("Unable to open file because of {e}")))?.to_string_lossy().to_string();
 
     let mut hasher = Sha256::new();
 
     let mut buffer = [0u8; 4096];
     loop {
-        let bytes_read = file.read(&mut buffer)?;
+        let bytes_read = file.read(&mut buffer).map_err(|e| LogCheckError::new(format!("Unable to read bytes during hashing because of {e}")))?;
         if bytes_read == 0 {
             break;
         }
@@ -357,7 +371,7 @@ fn get_metadata_and_hash(file_path: &PathBuf) -> GenericResult<(String, u64, Str
     Ok((hash_hex, size, file_name, file_path.to_string_lossy().to_string()))
 }
 
-pub fn process_file(log_file: &LogFile) -> GenericResult<ProcessedLogFile>{
+pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile>{
     let mut base_processed_file = ProcessedLogFile::default();
 
     //get hash and metadata. Does not matter what kind of file it is for this function
@@ -393,11 +407,15 @@ pub fn process_file(log_file: &LogFile) -> GenericResult<ProcessedLogFile>{
             return Ok(base_processed_file);
         }
     };
+    let direction = timestamp_hit
+    .direction
+    .clone()
+    .ok_or_else(|| LogCheckError::new("Index of date field not found"))?;
     println!(
         "{} appears to be in {:?} order!",
-        log_file.file_path.to_string_lossy().to_string(), timestamp_hit.direction.clone().ok_or_else(|| "Index of date field not found")?
+        log_file.file_path.to_string_lossy(),
+        direction
     );
-
     let completed_statistics_object = match stream_csv_file(log_file, timestamp_hit).map_err(|e| PhaseError::FileStreaming(e.to_string())) {
         Ok(result) => result,
         Err(e) => {
@@ -409,20 +427,20 @@ pub fn process_file(log_file: &LogFile) -> GenericResult<ProcessedLogFile>{
     base_processed_file.min_timestamp = Some(
         completed_statistics_object
             .min_timestamp
-            .ok_or("No min timestamp found")?
+            .ok_or_else(|| LogCheckError::new("No min timestamp found"))?
             .format("%Y-%m-%d %H:%M:%S")
             .to_string()
     );
     base_processed_file.max_timestamp = Some(
         completed_statistics_object
             .max_timestamp
-            .ok_or("No max timestamp found")?
+            .ok_or_else(|| LogCheckError::new("No min timestamp found"))?
             .format("%Y-%m-%d %H:%M:%S")
             .to_string()
     );
 
     let largest_time_gap =     completed_statistics_object
-    .largest_time_gap.ok_or("No largest time gap found")?;
+    .largest_time_gap.ok_or_else(|| LogCheckError::new("No min timestamp found"))?;
 
     base_processed_file.largest_gap = Some(format!("{} to {}",
     largest_time_gap
@@ -447,21 +465,24 @@ fn format_timedelta(tdelta: TimeDelta) -> String {
     format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
 }
 
-pub fn try_to_get_timestamp_hit(log_file: &LogFile) -> GenericResult<IdentifiedTimeInformation> {
+pub fn try_to_get_timestamp_hit(log_file: &LogFile) -> Result<IdentifiedTimeInformation> {
     if log_file.log_type == LogType::Csv {
         return try_to_get_timestamp_hit_for_csv(log_file)
     }
-    Err("Have not implemented scanning for timestam for this file type yet".into())
+    else if log_file.log_type == LogType::Unstructured {
+        return try_to_get_timestamp_hit_for_unstructured(log_file)
+    }
+    Err(LogCheckError::new("Have not implemented scanning for timestam for this file type yet"))
 }
 
-pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile) -> GenericResult<IdentifiedTimeInformation> { //This is lazy here
-    let file = File::open(&log_file.file_path)?;
+pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile) -> Result<IdentifiedTimeInformation> {
+    let file = File::open(&log_file.file_path).map_err(|e| LogCheckError::new(format!("Unable to read csv file because of {e}")))?;
     let mut reader = ReaderBuilder::new()
         .has_headers(true) // Set to false if there's no header
         .from_reader(file);
 
-    let headers: csv::StringRecord = reader.headers()?.clone(); // this returns a &StringRecord
-    let record: csv::StringRecord = reader.records().next().unwrap()?; // This is returning a result, that is why I had to use the question mark below before the iter()
+    let headers: csv::StringRecord = reader.headers().map_err(|e| LogCheckError::new(format!("Unable to get headers because of {e}")))?.clone(); // this returns a &StringRecord
+    let record: csv::StringRecord = reader.records().next().unwrap().map_err(|e| LogCheckError::new(format!("Unable to get first row because of {e}")))?; // This is returning a result, that is why I had to use the question mark below before the iter()
     for (i, field) in record.iter().enumerate() {
         for date_regex in DATE_REGEXES.iter() {
             if date_regex.regex.is_match(field) {
@@ -481,26 +502,56 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile) -> GenericResult<Ide
         }
     }
     println!("Could not find a supported timestamp in {}", log_file.file_path.to_string_lossy().to_string());
-    Err("Could not find a supported timestamp format.".into())
+    Err(LogCheckError::new("Could not find a supported timestamp format."))
 }
 
-pub fn set_time_direction_by_scanning_file(log_file: &LogFile, timestamp_hit: &mut IdentifiedTimeInformation) -> GenericResult<()> {
+
+pub fn try_to_get_timestamp_hit_for_unstructured(log_file: &LogFile) -> Result<IdentifiedTimeInformation> {
+    let file = File::open(&log_file.file_path).map_err(|e| LogCheckError::new(format!("Unable to read log file because of {e}")))?;
+    let reader = BufReader::new(file);
+
+    if let Some(line_result) = reader.lines().next() {
+        let line = line_result.map_err(|e| LogCheckError::new(format!("Unable to read log record because of {e}")))?;
+        for date_regex in DATE_REGEXES.iter() {
+            if date_regex.regex.is_match(&line) {
+                println!(
+                    "Found match for '{}' time format in {}",
+                    date_regex.pretty_format, log_file.file_path.to_string_lossy().to_string()
+                );
+                return Ok(
+                    IdentifiedTimeInformation {
+                        column_name: None,
+                        column_index: None,
+                        direction: None,
+                        regex_info: date_regex.clone(),
+                    }
+                )
+            }
+        }
+        return Err(LogCheckError::new("No regex match found in the log file, try providing your own custom regex"))
+    } else {
+        return Err(LogCheckError::new("No lines in the log file."))
+    }
+}
+
+
+pub fn set_time_direction_by_scanning_file(log_file: &LogFile, timestamp_hit: &mut IdentifiedTimeInformation) -> Result<()> {
     if log_file.log_type == LogType::Csv {
         return set_time_direction_by_scanning_csv_file(log_file, timestamp_hit)
     }
-    Err("Have not implemented scanning for directions for this file type yet".into())
+    Err(LogCheckError::new("Have not implemented scanning for directions for this file type yet."))
 }
 
-pub fn set_time_direction_by_scanning_csv_file(log_file: &LogFile, timestamp_hit: &mut IdentifiedTimeInformation) -> GenericResult<()> {
-    let file = File::open(&log_file.file_path)?;
+pub fn set_time_direction_by_scanning_csv_file(log_file: &LogFile, timestamp_hit: &mut IdentifiedTimeInformation) -> Result<()> {
+    let file = File::open(&log_file.file_path).map_err(|e| LogCheckError::new(format!("Unable to open csv file because of {e}")))?;
     let mut rdr = ReaderBuilder::new()
         .has_headers(true)
         .from_reader(file);
     let mut previous: Option<NaiveDateTime> = None;
     for result in rdr.records() { // I think I should just include the index in the timestamp hit 
-        let record = result?;
-        let value = record.get(timestamp_hit.column_index.unwrap()).ok_or_else(|| "Index of date field not found")?; // unwrap is safe here because for CSVs, there will always be a column index
-        let current_datetime: NaiveDateTime = NaiveDateTime::parse_from_str(value, &timestamp_hit.regex_info.strftime_format)?;
+        let record = result.map_err(|e| LogCheckError::new(format!("Unable to read bytes during hashing because of {e}")))?;
+        let value = record.get(timestamp_hit.column_index.unwrap()).ok_or_else(|| LogCheckError::new("Index of date field not found"))?; // unwrap is safe here because for CSVs, there will always be a column index
+        let current_datetime: NaiveDateTime = NaiveDateTime::parse_from_str(value, &timestamp_hit.regex_info.strftime_format).map_err(|e| LogCheckError::new(format!("Issue parsing timestamp because of {e}")))?;
         if let Some(previous_datetime) = previous {
             if current_datetime > previous_datetime {
                 // println!("Current datetime {} is after previous {}. Order is Ascending!", current_datetime.format("%Y-%m-%d %H:%M:%S").to_string(), previous_datetime.format("%Y-%m-%d %H:%M:%S").to_string());
@@ -517,7 +568,7 @@ pub fn set_time_direction_by_scanning_csv_file(log_file: &LogFile, timestamp_hit
             previous = Some(current_datetime);
         }
     }
-    Err("Could not determine order, all timestamps may have been equal.".into())
+    Err(LogCheckError::new("Could not determine order, all timestamps may have been equal."))
 }
 
 fn hash_csv_record(record: &StringRecord) -> u64 {
@@ -526,23 +577,23 @@ fn hash_csv_record(record: &StringRecord) -> u64 {
     hasher.finish()
 }
 
-pub fn stream_file(log_file: &LogFile, timestamp_hit: IdentifiedTimeInformation)-> GenericResult<LogFileStatisticsAndAlerts>{
+pub fn stream_file(log_file: &LogFile, timestamp_hit: IdentifiedTimeInformation)-> Result<LogFileStatisticsAndAlerts>{
     if log_file.log_type == LogType::Csv {
         return stream_csv_file(log_file, timestamp_hit)
     }
-    Err("Have not implemented streaming for this file type yet".into())
+    Err(LogCheckError::new("Have not implemented streaming for this file type yet"))
 }
 
-pub fn stream_csv_file(log_file: &LogFile, timestamp_hit: IdentifiedTimeInformation) -> GenericResult<LogFileStatisticsAndAlerts>{ // not sure we want to include the whole hashset in this? Maybe only inlcude results
+pub fn stream_csv_file(log_file: &LogFile, timestamp_hit: IdentifiedTimeInformation) -> Result<LogFileStatisticsAndAlerts>{ // not sure we want to include the whole hashset in this? Maybe only inlcude results
     let mut processing_object = LogFileStatisticsAndAlerts::new_with_order(timestamp_hit.direction);
-    let file = File::open(&log_file.file_path)?;
+    let file = File::open(&log_file.file_path).map_err(|e| LogCheckError::new(format!("Unable to open csv file because of {e}")))?;
     let mut rdr = ReaderBuilder::new()
         .has_headers(true)
         .from_reader(file);
     for (index, result) in rdr.records().enumerate() { // I think I should just include the index in the timestamp hit 
-        let record = result?;
-        let value = record.get(timestamp_hit.column_index.unwrap()).ok_or_else(|| "Index of date field not found")?;
-        let current_datetime: NaiveDateTime = NaiveDateTime::parse_from_str(value, &timestamp_hit.regex_info.strftime_format)?;
+        let record = result.map_err(|e| LogCheckError::new(format!("Unable to read csv record because of {e}")))?;
+        let value = record.get(timestamp_hit.column_index.unwrap()).ok_or_else(|| LogCheckError::new("Index of date field not found"))?;
+        let current_datetime: NaiveDateTime = NaiveDateTime::parse_from_str(value, &timestamp_hit.regex_info.strftime_format).map_err(|e| LogCheckError::new(format!("Issue parsing timestamp because of {e}")))?;
         let hash_of_record = hash_csv_record(&record);
         processing_object.process_record(LogFileRecord {
             hash_of_entire_record: hash_of_record,
