@@ -8,9 +8,9 @@ fn categorizes_csvs() {
     paths.push(PathBuf::from("/path/to/file2.csv"));
 
     let result = categorize_files(&paths);
-    let expected: Vec<LogFile> = vec![LogFile{
-        log_type:LogType::Csv,
-        file_path:PathBuf::from("/path/to/file2.csv"),
+    let expected: Vec<LogFile> = vec![LogFile {
+        log_type: LogType::Csv,
+        file_path: PathBuf::from("/path/to/file2.csv"),
     }];
 
     assert_eq!(result, expected);
