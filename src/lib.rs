@@ -208,7 +208,7 @@ pub struct DateRegex {
     regex: Regex,
 }
 
-pub static DATE_REGEXES: Lazy<Vec<DateRegex>> = Lazy::new(|| {
+pub static DATE_REGEXES: Lazy<Vec<DateRegex>> = Lazy::new(|| { //Need to make sure to put the more specific ones at the beinning so they get hits first
     vec![
     DateRegex {
         pretty_format: "date= time=".to_string(),
