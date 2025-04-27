@@ -334,7 +334,16 @@ pub fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile>{
                         file_path:file_path.to_path_buf(),
                     }
                 )
-            }else {
+            }
+            else if extension == "json" {
+                supported_files.push(
+                    LogFile{
+                        log_type:LogType::Json,
+                        file_path:file_path.to_path_buf(),
+                    }
+                )
+            }
+            else {
                 supported_files.push(
                     LogFile{
                         log_type:LogType::Unstructured,
