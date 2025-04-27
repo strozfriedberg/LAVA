@@ -659,7 +659,8 @@ pub fn stream_csv_file(log_file: &LogFile, timestamp_hit: &IdentifiedTimeInforma
     for (index, result) in rdr.records().enumerate() { // I think I should just include the index in the timestamp hit 
         let record = result.map_err(|e| LogCheckError::new(format!("Unable to read csv record because of {e}")))?;
         let value = record.get(timestamp_hit.column_index.unwrap()).ok_or_else(|| LogCheckError::new("Index of date field not found"))?;
-        let current_datetime: NaiveDateTime = NaiveDateTime::parse_from_str(value, &timestamp_hit.regex_info.strftime_format).map_err(|e| LogCheckError::new(format!("Issue parsing timestamp because of {e}")))?;
+        // let current_datetime = timestamp_hit.regex_info.extract_timestamp_from_string(value.to_string())?;
+        let current_datetime: NaiveDateTime = NaiveDateTime::parse_from_str(value, &timestamp_hit.regex_info.strftime_format).map_err(|e| LogCheckError::new(format!("Issue parsing timestamp because of {e}")))?; // reason I am keeping this is because it might be faster to not call the regex on every line?
         let hash_of_record = hash_csv_record(&record);
         processing_object.process_record(LogFileRecord {
             hash_of_entire_record: hash_of_record,
