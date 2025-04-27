@@ -157,13 +157,13 @@ impl LogFileStatisticsAndAlerts {
         if let Some(previous_datetime) = self.previous_timestamp { // This is where all logic is done if it isn't the first record
             if self.order == Some(TimeDirection::Ascending) {
                 if previous_datetime > record.timestamp {
-                    return Err(LogCheckError::new("File was not sorted on the identified timestamp"));
+                    return Err(LogCheckError::new(format!("File was not sorted on the identified timestamp. Out of order record at index {}", record.index)));
                 }
                 self.max_timestamp = Some(record.timestamp)
             }
             else if self.order == Some(TimeDirection::Descending) {
                 if previous_datetime < record.timestamp {
-                    return Err(LogCheckError::new("File was not sorted on the identified timestamp"));
+                    return Err(LogCheckError::new(format!("File was not sorted on the identified timestamp. Out of order record at index {}", record.index)));
                 }
                 self.min_timestamp = Some(record.timestamp)
             }
