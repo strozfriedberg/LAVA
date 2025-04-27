@@ -208,6 +208,21 @@ pub struct DateRegex {
     regex: Regex,
 }
 
+impl DateRegex {
+    fn extract_timestamp_from_string(&self, string_to_extract_from: String) -> Result<NaiveDateTime>{
+        if let Some(captures) = self.regex.captures(&string_to_extract_from) {
+            // Get the matched string (the datetime)
+            if let Some(datetime_str) = captures.get(0) {
+                let datetime_str = datetime_str.as_str();
+                // Now, parse the extracted datetime string into NaiveDateTime using the strftime_format
+                let parsed_datetime = NaiveDateTime::parse_from_str(datetime_str, &self.strftime_format).map_err(|e| LogCheckError::new(format!("Unable to parse timestamp because {e}")))?;
+                return Ok(parsed_datetime);
+            }
+        }
+        Err(LogCheckError::new("Unable to extract and parse timestamp."))
+    }
+}
+
 pub static DATE_REGEXES: Lazy<Vec<DateRegex>> = Lazy::new(|| { //Need to make sure to put the more specific ones at the beinning so they get hits first
     vec![
     DateRegex {
@@ -425,7 +440,7 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile>{
         log_file.file_path.to_string_lossy(),
         direction
     );
-    let completed_statistics_object = match stream_csv_file(log_file, timestamp_hit).map_err(|e| PhaseError::FileStreaming(e.to_string())) {
+    let completed_statistics_object = match stream_file(log_file, &timestamp_hit).map_err(|e| PhaseError::FileStreaming(e.to_string())) {
         Ok(result) => result,
         Err(e) => {
             base_processed_file.error = Some(e.to_string());
@@ -600,9 +615,14 @@ pub fn set_time_direction_by_scanning_csv_file(log_file: &LogFile, timestamp_hit
 pub fn set_time_direction_by_scanning_unstructured_file(log_file: &LogFile, timestamp_hit: &mut IdentifiedTimeInformation) -> Result<()>{
     let file = File::open(&log_file.file_path).map_err(|e| LogCheckError::new(format!("Unable to open the log file because of {e}")))?;
     let reader = BufReader::new(file);
+    let mut direction_checker = TimeDirectionChecker::default();
     for line_result in reader.lines() {
         let line = line_result.map_err(|e| LogCheckError::new(format!("Error reading line because of {}", e)))?;
-
+        let current_datetime = timestamp_hit.regex_info.extract_timestamp_from_string(line)?;
+        if let Some(direction) = direction_checker.process_timestamp(current_datetime) {
+            timestamp_hit.direction = Some(direction);
+            return Ok(())
+        }
     }
  Ok(())
 }
@@ -614,15 +634,24 @@ fn hash_csv_record(record: &StringRecord) -> u64 {
     hasher.finish()
 }
 
-pub fn stream_file(log_file: &LogFile, timestamp_hit: IdentifiedTimeInformation)-> Result<LogFileStatisticsAndAlerts>{
+fn hash_string(input: &String) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    input.hash(&mut hasher); // Hash the string (dereferenced automatically to &str)
+    hasher.finish() // Return the resulting hash
+}
+
+pub fn stream_file(log_file: &LogFile, timestamp_hit: &IdentifiedTimeInformation)-> Result<LogFileStatisticsAndAlerts>{
     if log_file.log_type == LogType::Csv {
         return stream_csv_file(log_file, timestamp_hit)
+    }
+    if log_file.log_type == LogType::Unstructured {
+        return stream_unstructured_file(log_file, timestamp_hit)
     }
     Err(LogCheckError::new("Have not implemented streaming for this file type yet"))
 }
 
-pub fn stream_csv_file(log_file: &LogFile, timestamp_hit: IdentifiedTimeInformation) -> Result<LogFileStatisticsAndAlerts>{ // not sure we want to include the whole hashset in this? Maybe only inlcude results
-    let mut processing_object = LogFileStatisticsAndAlerts::new_with_order(timestamp_hit.direction);
+pub fn stream_csv_file(log_file: &LogFile, timestamp_hit: &IdentifiedTimeInformation) -> Result<LogFileStatisticsAndAlerts>{ // not sure we want to include the whole hashset in this? Maybe only inlcude results
+    let mut processing_object = LogFileStatisticsAndAlerts::new_with_order(timestamp_hit.direction.clone());
     let file = File::open(&log_file.file_path).map_err(|e| LogCheckError::new(format!("Unable to open csv file because of {e}")))?;
     let mut rdr = ReaderBuilder::new()
         .has_headers(true)
@@ -638,6 +667,23 @@ pub fn stream_csv_file(log_file: &LogFile, timestamp_hit: IdentifiedTimeInformat
             index: index,
         })?
 
+    }
+    Ok(processing_object)
+}
+
+pub fn stream_unstructured_file(log_file: &LogFile, timestamp_hit: &IdentifiedTimeInformation) -> Result<LogFileStatisticsAndAlerts>{
+    let mut processing_object = LogFileStatisticsAndAlerts::new_with_order(timestamp_hit.direction.clone());
+    let file = File::open(&log_file.file_path).map_err(|e| LogCheckError::new(format!("Unable to open log file because of {e}")))?;
+    let reader = BufReader::new(file);
+    for (index, line_result) in reader.lines().enumerate() {
+        let line = line_result.map_err(|e| LogCheckError::new(format!("Error reading line because of {}", e)))?;
+        let hash_of_record = hash_string(&line);
+        let current_datetime = timestamp_hit.regex_info.extract_timestamp_from_string(line)?;
+        processing_object.process_record(LogFileRecord {
+            hash_of_entire_record: hash_of_record,
+            timestamp: current_datetime,
+            index: index,
+        })?
     }
     Ok(processing_object)
 }
