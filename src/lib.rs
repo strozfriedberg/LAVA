@@ -151,6 +151,8 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile> {
     base_processed_file.largest_gap_duration = formatted_statistics.largest_gap_duration;
     base_processed_file.min_timestamp = formatted_statistics.min_timestamp;
     base_processed_file.max_timestamp = formatted_statistics.max_timestamp;
+    base_processed_file.min_max_duration = formatted_statistics.min_max_duration;
+    base_processed_file.num_records = formatted_statistics.num_records;
 
     Ok(base_processed_file)
 }

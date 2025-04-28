@@ -99,6 +99,7 @@ impl LogRecordProcessor {
     pub fn get_statistics(&self) -> Result<TimeStatisticsFields> {
         let mut statistics_fields = TimeStatisticsFields::default();
 
+        statistics_fields.num_records = Some(self.num_records.to_string());
         statistics_fields.min_timestamp = Some(
             self
                 .min_timestamp
@@ -113,7 +114,9 @@ impl LogRecordProcessor {
                 .format("%Y-%m-%d %H:%M:%S")
                 .to_string(),
         );
-    
+        let min_max_gap = self.max_timestamp.ok_or_else(|| LogCheckError::new("No max timestamp found"))?.signed_duration_since(self.min_timestamp.ok_or_else(|| LogCheckError::new("No min timestamp found"))?);
+        statistics_fields.min_max_duration = Some(format_timedelta(min_max_gap));
+
         let largest_time_gap = self
             .largest_time_gap
             .ok_or_else(|| LogCheckError::new("No largest time gap found"))?;

@@ -47,10 +47,12 @@ pub fn write_output_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Resul
         "Size",
         "Header Used",
         "Timestamp Format",
+        "Number of Records",
         "Earliest Timestamp",
         "Latest Timestamp",
-        "Duration of Largest Time Gap",
+        "Duration of Entire Log File",
         "Largest Time Gap",
+        "Duration of Largest Time Gap",
         "Error",
     ])
     .map_err(|e| LogCheckError::new(format!("Unable to write headers because of {e}")))?;
@@ -62,10 +64,12 @@ pub fn write_output_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Resul
             log_file.size.unwrap_or(0),
             log_file.time_header.as_deref().unwrap_or(""),
             log_file.time_format.as_deref().unwrap_or(""),
+            log_file.num_records.as_deref().unwrap_or(""),
             log_file.min_timestamp.as_deref().unwrap_or(""),
             log_file.max_timestamp.as_deref().unwrap_or(""),
-            log_file.largest_gap_duration.as_deref().unwrap_or(""),
+            log_file.min_max_duration.as_deref().unwrap_or(""),
             log_file.largest_gap.as_deref().unwrap_or(""),
+            log_file.largest_gap_duration.as_deref().unwrap_or(""),
             log_file.error.as_deref().unwrap_or(""),
         ))
         .map_err(|e| {

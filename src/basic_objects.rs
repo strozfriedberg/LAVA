@@ -33,8 +33,10 @@ pub struct ProcessedLogFile {
     pub time_format: Option<String>,
     pub min_timestamp: Option<String>,
     pub max_timestamp: Option<String>,
+    pub min_max_duration: Option<String>,
     pub largest_gap: Option<String>,
     pub largest_gap_duration: Option<String>,
+    pub num_records: Option<String>,
     pub error: Option<String>,
 }
 
