@@ -9,13 +9,14 @@ use std::hash::{Hash, Hasher};
 use std::io::Read;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
-mod errors;
+pub mod errors;
 use errors::*;
-mod csv_log;
+mod csv_handlers;
+use csv_handlers::*;
 mod date_regex;
 mod helpers;
 use date_regex::*;
-mod basic_objects;
+pub mod basic_objects;
 use basic_objects::*;
 mod timestamp_tools;
 use timestamp_tools::*;
@@ -251,7 +252,7 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile> {
 
 pub fn try_to_get_timestamp_hit(log_file: &LogFile) -> Result<IdentifiedTimeInformation> {
     if log_file.log_type == LogType::Csv {
-        return csv_log::try_to_get_timestamp_hit_for_csv(log_file);
+        return try_to_get_timestamp_hit_for_csv(log_file);
     } else if log_file.log_type == LogType::Unstructured {
         return try_to_get_timestamp_hit_for_unstructured(log_file);
     }
@@ -308,39 +309,6 @@ pub fn set_time_direction_by_scanning_file(
     ))
 }
 
-pub fn set_time_direction_by_scanning_csv_file(
-    log_file: &LogFile,
-    timestamp_hit: &mut IdentifiedTimeInformation,
-) -> Result<()> {
-    let file = File::open(&log_file.file_path)
-        .map_err(|e| LogCheckError::new(format!("Unable to open csv file because of {e}")))?;
-    let mut rdr = ReaderBuilder::new().has_headers(true).from_reader(file);
-    // let mut previous: Option<NaiveDateTime> = None;
-    let mut direction_checker = TimeDirectionChecker::default();
-    for result in rdr.records() {
-        // I think I should just include the index in the timestamp hit
-        let record = result.map_err(|e| {
-            LogCheckError::new(format!(
-                "Unable to read bytes during hashing because of {e}"
-            ))
-        })?;
-        let value = record
-            .get(timestamp_hit.column_index.unwrap())
-            .ok_or_else(|| LogCheckError::new("Index of date field not found"))?; // unwrap is safe here because for CSVs, there will always be a column index
-        let current_datetime: NaiveDateTime =
-            NaiveDateTime::parse_from_str(value, &timestamp_hit.regex_info.strftime_format)
-                .map_err(|e| {
-                    LogCheckError::new(format!("Issue parsing timestamp because of {e}"))
-                })?;
-        if let Some(direction) = direction_checker.process_timestamp(current_datetime) {
-            timestamp_hit.direction = Some(direction);
-            return Ok(());
-        }
-    }
-    Err(LogCheckError::new(
-        "Could not determine order, all timestamps may have been equal.",
-    ))
-}
 
 pub fn set_time_direction_by_scanning_unstructured_file(
     log_file: &LogFile,

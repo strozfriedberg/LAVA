@@ -1,8 +1,10 @@
 use crate::basic_objects::*;
 use crate::date_regex::*;
 use crate::errors::*;
+use crate::timestamp_tools::*;
 use csv::ReaderBuilder;
 use std::fs::File;
+use chrono::NaiveDateTime;
 
 pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile) -> Result<IdentifiedTimeInformation> {
     let file = File::open(&log_file.file_path)
@@ -44,5 +46,40 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile) -> Result<Identified
     );
     Err(LogCheckError::new(
         "Could not find a supported timestamp format.",
+    ))
+}
+
+
+pub fn set_time_direction_by_scanning_csv_file(
+    log_file: &LogFile,
+    timestamp_hit: &mut IdentifiedTimeInformation,
+) -> Result<()> {
+    let file = File::open(&log_file.file_path)
+        .map_err(|e| LogCheckError::new(format!("Unable to open csv file because of {e}")))?;
+    let mut rdr = ReaderBuilder::new().has_headers(true).from_reader(file);
+    // let mut previous: Option<NaiveDateTime> = None;
+    let mut direction_checker = TimeDirectionChecker::default();
+    for result in rdr.records() {
+        // I think I should just include the index in the timestamp hit
+        let record = result.map_err(|e| {
+            LogCheckError::new(format!(
+                "Unable to read bytes during hashing because of {e}"
+            ))
+        })?;
+        let value = record
+            .get(timestamp_hit.column_index.unwrap())
+            .ok_or_else(|| LogCheckError::new("Index of date field not found"))?; // unwrap is safe here because for CSVs, there will always be a column index
+        let current_datetime: NaiveDateTime =
+            NaiveDateTime::parse_from_str(value, &timestamp_hit.regex_info.strftime_format)
+                .map_err(|e| {
+                    LogCheckError::new(format!("Issue parsing timestamp because of {e}"))
+                })?;
+        if let Some(direction) = direction_checker.process_timestamp(current_datetime) {
+            timestamp_hit.direction = Some(direction);
+            return Ok(());
+        }
+    }
+    Err(LogCheckError::new(
+        "Could not determine order, all timestamps may have been equal.",
     ))
 }
