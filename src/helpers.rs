@@ -1,5 +1,4 @@
-use chrono::{Utc, TimeDelta};
-
+use chrono::{TimeDelta, Utc};
 
 pub fn generate_log_filename() -> String {
     let now = Utc::now();

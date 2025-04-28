@@ -1,5 +1,7 @@
 use thiserror::Error;
 
+pub type Result<T> = std::result::Result<T, LogCheckError>;
+
 #[derive(Debug, Clone, Error)]
 pub enum PhaseError {
     #[error("Metadata Retreival Error: {0}")]

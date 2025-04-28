@@ -1,0 +1,104 @@
+use crate::errors::*;
+use chrono::NaiveDateTime;
+use once_cell::sync::Lazy;
+use regex::Regex;
+
+#[derive(Debug, Clone)]
+pub struct DateRegex {
+    pub pretty_format: String,
+    pub strftime_format: String,
+    pub regex: Regex,
+}
+
+impl DateRegex {
+    pub fn get_timestamp_object_from_string_contianing_date(
+        &self,
+        string_to_extract_from: String,
+    ) -> Result<NaiveDateTime> {
+        if let Some(captures) = self.regex.captures(&string_to_extract_from) {
+            // Get the matched string (the datetime)
+            if let Some(datetime_str) = captures.get(0) {
+                let datetime_str = datetime_str.as_str();
+                // Now, parse the extracted datetime string into NaiveDateTime using the strftime_format
+                let parsed_datetime =
+                    NaiveDateTime::parse_from_str(datetime_str, &self.strftime_format).map_err(
+                        |e| LogCheckError::new(format!("Unable to parse timestamp because {e}")),
+                    )?;
+                return Ok(parsed_datetime);
+            }
+        }
+        Err(LogCheckError::new("Unable to extract and parse timestamp."))
+    }
+
+    pub fn get_timestamp_object_from_string_that_is_exact_date(
+        &self,
+        string_that_is_date: String,
+    ) -> Result<NaiveDateTime> {
+        let parsed_datetime =
+            NaiveDateTime::parse_from_str(&string_that_is_date, &self.strftime_format).map_err(
+                |e| LogCheckError::new(format!("Issue parsing timestamp because of {e}")),
+            )?;
+        Ok(parsed_datetime)
+    }
+}
+
+pub static DATE_REGEXES: Lazy<Vec<DateRegex>> = Lazy::new(|| {
+    //Need to make sure to put the more specific ones at the beinning so they get hits first
+    vec![
+        DateRegex {
+            pretty_format: "date= time=".to_string(),
+            regex: Regex::new(r"(date=\d{4}-\d{2}-\d{2}\s+time=\d{2}:\d{2}:\d{2})").unwrap(),
+            strftime_format: "date=%Y-%m-%d time=%H:%M:%S".to_string(),
+        },
+        DateRegex {
+            pretty_format: "YYYY-MM-DDTHH:MM:SS.SSS".to_string(),
+            regex: Regex::new(r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{1,3})").unwrap(),
+            strftime_format: "%Y-%m-%dT%H:%M:%S%.3f".to_string(),
+        },
+        DateRegex {
+            pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(), // 24-hour datetime
+            regex: Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").unwrap(),
+            strftime_format: "%Y-%m-%d %H:%M:%S".to_string(),
+        },
+        DateRegex {
+            pretty_format: "YYYY-MM-DDTHH:MM:SSZ".to_string(), // ISO 8601
+            regex: Regex::new(r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)").unwrap(),
+            strftime_format: "%Y-%m-%dT%H:%M:%SZ".to_string(),
+        },
+        DateRegex {
+            pretty_format: "M/D/YYYY H:MM AM/PM".to_string(), // 12-hour US time
+            regex: Regex::new(r"(\d{1,2}/\d{1,2}/\d{4} \d{1,2}:\d{2} (AM|PM|am|pm))").unwrap(),
+            strftime_format: "%-m/%-d/%Y %-I:%M %p".to_string(),
+        },
+        DateRegex {
+            pretty_format: "MM-DD-YYYY".to_string(),
+            regex: Regex::new(r"(\d{2}-\d{2}-\d{4})").unwrap(),
+            strftime_format: "%m-%d-%Y".to_string(),
+        },
+        DateRegex {
+            pretty_format: "YYYY-MM-DD".to_string(),
+            regex: Regex::new(r"(\d{4}-\d{2}-\d{2})").unwrap(),
+            strftime_format: "%Y-%m-%d".to_string(),
+        },
+        DateRegex {
+            pretty_format: "DD-MM-YYYY".to_string(),
+            regex: Regex::new(r"(\d{2}-\d{2}-\d{4})").unwrap(),
+            strftime_format: "%d-%m-%Y".to_string(),
+        },
+        DateRegex {
+            pretty_format: "YYYY/MM/DD".to_string(),
+            regex: Regex::new(r"(\d{4}/\d{2}/\d{2})").unwrap(),
+            strftime_format: "%Y/%m/%d".to_string(),
+        },
+        DateRegex {
+            pretty_format: "MMM DD YYYY".to_string(), // e.g. Mar 22 2022
+            regex: Regex::new(r"([A-Z][a-z]{2} \d{1,2} \d{4})").unwrap(),
+            strftime_format: "%b %d %Y".to_string(),
+        },
+        DateRegex {
+            pretty_format: "MMMM DD, YYYY".to_string(), // e.g. March 22, 2022
+            regex: Regex::new(r"([A-Z][a-z]+ \d{1,2}, \d{4})").unwrap(),
+            strftime_format: "%B %d, %Y".to_string(),
+        },
+    ]
+});
