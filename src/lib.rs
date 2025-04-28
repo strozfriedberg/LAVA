@@ -106,7 +106,7 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile> {
     base_processed_file.time_header = timestamp_hit.column_name.clone();
     base_processed_file.time_format = Some(timestamp_hit.regex_info.pretty_format.clone());
 
-    // Get the direction of time in the file 
+    // Get the direction of time in the file
     match set_time_direction_by_scanning_file(log_file, &mut timestamp_hit)
         .map_err(|e| PhaseError::TimeDirection(e.to_string()))
     {
@@ -126,7 +126,7 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile> {
         direction
     );
 
-    // Stream the file to find statistics on time and other stuff 
+    // Stream the file to find statistics on time and other stuff
     let completed_statistics_object = match stream_file(log_file, &timestamp_hit)
         .map_err(|e| PhaseError::FileStreaming(e.to_string()))
     {

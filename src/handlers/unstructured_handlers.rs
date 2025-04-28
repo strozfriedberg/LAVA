@@ -65,8 +65,7 @@ pub fn stream_unstructured_file(
     log_file: &LogFile,
     timestamp_hit: &IdentifiedTimeInformation,
 ) -> Result<LogRecordProcessor> {
-    let mut processing_object =
-        LogRecordProcessor::new_with_order(timestamp_hit.direction.clone());
+    let mut processing_object = LogRecordProcessor::new_with_order(timestamp_hit.direction.clone());
     let file = File::open(&log_file.file_path)
         .map_err(|e| LogCheckError::new(format!("Unable to open log file because of {e}")))?;
     let reader = BufReader::new(file);

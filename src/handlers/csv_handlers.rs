@@ -89,8 +89,7 @@ pub fn stream_csv_file(
     timestamp_hit: &IdentifiedTimeInformation,
 ) -> Result<LogRecordProcessor> {
     // not sure we want to include the whole hashset in this? Maybe only inlcude results
-    let mut processing_object =
-        LogRecordProcessor::new_with_order(timestamp_hit.direction.clone());
+    let mut processing_object = LogRecordProcessor::new_with_order(timestamp_hit.direction.clone());
     let file = File::open(&log_file.file_path)
         .map_err(|e| LogCheckError::new(format!("Unable to open csv file because of {e}")))?;
     let mut rdr = ReaderBuilder::new().has_headers(true).from_reader(file);
