@@ -20,6 +20,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::io::{BufRead, BufReader};
 use thiserror::Error;
+mod helpers;
 
 // type Result<T> = std::result::Result<T, Box<dyn Error>>;
 type Result<T> = std::result::Result<T, LogCheckError>;
@@ -304,6 +305,7 @@ pub static DATE_REGEXES: Lazy<Vec<DateRegex>> = Lazy::new(|| {
     ]
 });
 
+
 pub fn iterate_through_input_dir(input_dir: String) {
     let mut paths: Vec<PathBuf> = Vec::new();
 
@@ -326,16 +328,10 @@ pub fn iterate_through_input_dir(input_dir: String) {
     }
 }
 
-fn generate_log_filename() -> String {
-    let now = Utc::now();
-    let formatted = now.format("%Y-%m-%d_%H-%M-%S_LogCheck_Output.csv");
-    formatted.to_string()
-}
-
 fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Result<()> {
     // in the final version, maybe have a full version that has tons of fields, and then a simplified version. Could have command line arg to trigger verbose one
     //Add something here to create the
-    let output_filename = generate_log_filename();
+    let output_filename = helpers::generate_log_filename();
     let mut wtr = Writer::from_path(&output_filename)
         .map_err(|e| LogCheckError::new(format!("Unable to open ouptut file because of {e}")))?;
     wtr.write_record(&[
@@ -533,19 +529,9 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile> {
         largest_time_gap.beginning_time.format("%Y-%m-%d %H:%M:%S"),
         largest_time_gap.end_time.format("%Y-%m-%d %H:%M:%S")
     ));
-    base_processed_file.largest_gap_duration = Some(format_timedelta(largest_time_gap.gap));
+    base_processed_file.largest_gap_duration = Some(helpers::format_timedelta(largest_time_gap.gap));
 
     Ok(base_processed_file)
-}
-
-fn format_timedelta(tdelta: TimeDelta) -> String {
-    let total_seconds = tdelta.num_seconds().abs(); // make it positive for display
-
-    let hours = total_seconds / 3600;
-    let minutes = (total_seconds % 3600) / 60;
-    let seconds = total_seconds % 60;
-
-    format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
 }
 
 pub fn try_to_get_timestamp_hit(log_file: &LogFile) -> Result<IdentifiedTimeInformation> {
