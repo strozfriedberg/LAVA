@@ -45,6 +45,12 @@ pub struct LogFileRecord {
     pub index: usize,
 }
 
+#[derive(PartialEq, Debug)]
+pub struct FlaggedLogFileRecord {
+    pub record: String,
+    pub index: usize,
+}
+
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub struct TimeGap {
     pub gap: TimeDelta,
