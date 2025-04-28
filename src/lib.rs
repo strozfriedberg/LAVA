@@ -212,7 +212,7 @@ pub struct DateRegex {
 }
 
 impl DateRegex {
-    fn extract_timestamp_from_string(
+    fn get_timestamp_object_from_string_contianing_date(
         &self,
         string_to_extract_from: String,
     ) -> Result<NaiveDateTime> {
@@ -229,6 +229,17 @@ impl DateRegex {
             }
         }
         Err(LogCheckError::new("Unable to extract and parse timestamp."))
+    }
+
+    fn get_timestamp_object_from_string_that_is_exact_date(
+        &self,
+        string_that_is_date: String,
+    ) -> Result<NaiveDateTime> {
+        let parsed_datetime = NaiveDateTime::parse_from_str(&string_that_is_date, &self.strftime_format)
+        .map_err(|e| {
+            LogCheckError::new(format!("Issue parsing timestamp because of {e}"))
+        })?;
+        Ok(parsed_datetime)
     }
 }
 
@@ -708,7 +719,7 @@ pub fn set_time_direction_by_scanning_unstructured_file(
             .map_err(|e| LogCheckError::new(format!("Error reading line because of {}", e)))?;
         let current_datetime = timestamp_hit
             .regex_info
-            .extract_timestamp_from_string(line)?;
+            .get_timestamp_object_from_string_contianing_date(line)?;
         if let Some(direction) = direction_checker.process_timestamp(current_datetime) {
             timestamp_hit.direction = Some(direction);
             return Ok(());
@@ -761,12 +772,7 @@ pub fn stream_csv_file(
         let value = record
             .get(timestamp_hit.column_index.unwrap())
             .ok_or_else(|| LogCheckError::new("Index of date field not found"))?;
-        // let current_datetime = timestamp_hit.regex_info.extract_timestamp_from_string(value.to_string())?;
-        let current_datetime: NaiveDateTime =
-            NaiveDateTime::parse_from_str(value, &timestamp_hit.regex_info.strftime_format)
-                .map_err(|e| {
-                    LogCheckError::new(format!("Issue parsing timestamp because of {e}"))
-                })?; // reason I am keeping this is because it might be faster to not call the regex on every line?
+        let current_datetime: NaiveDateTime = timestamp_hit.regex_info.get_timestamp_object_from_string_that_is_exact_date(value.to_string())?;
         let hash_of_record = hash_csv_record(&record);
         processing_object.process_record(LogFileRecord {
             hash_of_entire_record: hash_of_record,
@@ -792,7 +798,7 @@ pub fn stream_unstructured_file(
         let hash_of_record = hash_string(&line);
         let current_datetime = timestamp_hit
             .regex_info
-            .extract_timestamp_from_string(line)?;
+            .get_timestamp_object_from_string_contianing_date(line)?;
         processing_object.process_record(LogFileRecord {
             hash_of_entire_record: hash_of_record,
             timestamp: current_datetime,
