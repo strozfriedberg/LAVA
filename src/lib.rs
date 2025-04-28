@@ -19,37 +19,11 @@ use std::cmp::Ordering;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::io::{BufRead, BufReader};
-use thiserror::Error;
+mod errors;
 mod helpers;
 
-// type Result<T> = std::result::Result<T, Box<dyn Error>>;
-type Result<T> = std::result::Result<T, LogCheckError>;
 
-#[derive(Debug, Clone, Error)]
-pub enum PhaseError {
-    #[error("Metadata Retreival Error: {0}")]
-    MetaDataRetieval(String),
-    #[error("Timestamp Discovery Error: {0}")]
-    TimeDiscovery(String),
-    #[error("Timestamp Order Error: {0}")]
-    TimeDirection(String),
-    #[error("File Streaming Error: {0}")]
-    FileStreaming(String),
-} // Should prob actually use this for the different stages of processing, Metadata extraction error, File Error, etc
-
-#[derive(Debug, Error)]
-#[error("{reason}")]
-pub struct LogCheckError {
-    pub reason: String,
-}
-
-impl LogCheckError {
-    pub fn new(reason: impl Into<String>) -> Self {
-        Self {
-            reason: reason.into(),
-        }
-    }
-}
+type Result<T> = std::result::Result<T, errors::LogCheckError>;
 
 #[derive(PartialEq, Debug)]
 pub enum LogType {
@@ -158,7 +132,7 @@ impl LogFileStatisticsAndAlerts {
             // This is where all logic is done if it isn't the first record
             if self.order == Some(TimeDirection::Ascending) {
                 if previous_datetime > record.timestamp {
-                    return Err(LogCheckError::new(format!(
+                    return Err(errors::LogCheckError::new(format!(
                         "File was not sorted on the identified timestamp. Out of order record at index {}",
                         record.index
                     )));
@@ -166,7 +140,7 @@ impl LogFileStatisticsAndAlerts {
                 self.max_timestamp = Some(record.timestamp)
             } else if self.order == Some(TimeDirection::Descending) {
                 if previous_datetime < record.timestamp {
-                    return Err(LogCheckError::new(format!(
+                    return Err(errors::LogCheckError::new(format!(
                         "File was not sorted on the identified timestamp. Out of order record at index {}",
                         record.index
                     )));
@@ -224,12 +198,12 @@ impl DateRegex {
                 // Now, parse the extracted datetime string into NaiveDateTime using the strftime_format
                 let parsed_datetime =
                     NaiveDateTime::parse_from_str(datetime_str, &self.strftime_format).map_err(
-                        |e| LogCheckError::new(format!("Unable to parse timestamp because {e}")),
+                        |e| errors::LogCheckError::new(format!("Unable to parse timestamp because {e}")),
                     )?;
                 return Ok(parsed_datetime);
             }
         }
-        Err(LogCheckError::new("Unable to extract and parse timestamp."))
+        Err(errors::LogCheckError::new("Unable to extract and parse timestamp."))
     }
 
     fn get_timestamp_object_from_string_that_is_exact_date(
@@ -238,7 +212,7 @@ impl DateRegex {
     ) -> Result<NaiveDateTime> {
         let parsed_datetime = NaiveDateTime::parse_from_str(&string_that_is_date, &self.strftime_format)
         .map_err(|e| {
-            LogCheckError::new(format!("Issue parsing timestamp because of {e}"))
+            errors::LogCheckError::new(format!("Issue parsing timestamp because of {e}"))
         })?;
         Ok(parsed_datetime)
     }
@@ -333,7 +307,7 @@ fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Result<()> {
     //Add something here to create the
     let output_filename = helpers::generate_log_filename();
     let mut wtr = Writer::from_path(&output_filename)
-        .map_err(|e| LogCheckError::new(format!("Unable to open ouptut file because of {e}")))?;
+        .map_err(|e| errors::LogCheckError::new(format!("Unable to open ouptut file because of {e}")))?;
     wtr.write_record(&[
         "Filename",
         "File Path",
@@ -347,7 +321,7 @@ fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Result<()> {
         "Largest Time Gap",
         "Error",
     ])
-    .map_err(|e| LogCheckError::new(format!("Unable to write headers because of {e}")))?;
+    .map_err(|e| errors::LogCheckError::new(format!("Unable to write headers because of {e}")))?;
     for log_file in processed_log_files {
         wtr.serialize((
             log_file.filename.as_deref().unwrap_or(""),
@@ -363,11 +337,11 @@ fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Result<()> {
             log_file.error.as_deref().unwrap_or(""),
         ))
         .map_err(|e| {
-            LogCheckError::new(format!("Issue writing lines of output file because of {e}"))
+            errors::LogCheckError::new(format!("Issue writing lines of output file because of {e}"))
         })?;
     }
     wtr.flush().map_err(|e| {
-        LogCheckError::new(format!("Issue flushing to the ouptut file because of {e}"))
+        errors::LogCheckError::new(format!("Issue flushing to the ouptut file because of {e}"))
     })?; //Is this really needed?
     println!("Data written to {output_filename}");
     Ok(())
@@ -407,15 +381,15 @@ pub fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile> {
 
 fn get_metadata_and_hash(file_path: &PathBuf) -> Result<(String, u64, String, String)> {
     let mut file = File::open(file_path)
-        .map_err(|e| LogCheckError::new(format!("Unable to open file because of {e}")))?;
+        .map_err(|e| errors::LogCheckError::new(format!("Unable to open file because of {e}")))?;
     let size = file
         .metadata()
-        .map_err(|e| LogCheckError::new(format!("Unable to get file metadata because of {e}")))?
+        .map_err(|e| errors::LogCheckError::new(format!("Unable to get file metadata because of {e}")))?
         .len();
     let file_name = file_path
         .file_name()
         .ok_or("Error getting filename")
-        .map_err(|e| LogCheckError::new(format!("Unable to open file because of {e}")))?
+        .map_err(|e| errors::LogCheckError::new(format!("Unable to open file because of {e}")))?
         .to_string_lossy()
         .to_string();
 
@@ -424,7 +398,7 @@ fn get_metadata_and_hash(file_path: &PathBuf) -> Result<(String, u64, String, St
     let mut buffer = [0u8; 4096];
     loop {
         let bytes_read = file.read(&mut buffer).map_err(|e| {
-            LogCheckError::new(format!(
+            errors::LogCheckError::new(format!(
                 "Unable to read bytes during hashing because of {e}"
             ))
         })?;
@@ -450,7 +424,7 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile> {
 
     //get hash and metadata. Does not matter what kind of file it is for this function
     let (hash, size, file_name, file_path) = match get_metadata_and_hash(&log_file.file_path)
-        .map_err(|e| PhaseError::MetaDataRetieval(e.to_string()))
+        .map_err(|e| errors::PhaseError::MetaDataRetieval(e.to_string()))
     {
         Ok(result) => result,
         Err(e) => {
@@ -465,7 +439,7 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile> {
 
     // get the timestamp field. will do this for all of them, but there will just be some fields that only get filled in for structured datatypes
     let mut timestamp_hit = match try_to_get_timestamp_hit(log_file)
-        .map_err(|e| PhaseError::TimeDiscovery(e.to_string()))
+        .map_err(|e| errors::PhaseError::TimeDiscovery(e.to_string()))
     {
         Ok(result) => result,
         Err(e) => {
@@ -478,7 +452,7 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile> {
     base_processed_file.time_format = Some(timestamp_hit.regex_info.pretty_format.clone());
 
     match set_time_direction_by_scanning_file(log_file, &mut timestamp_hit)
-        .map_err(|e| PhaseError::TimeDirection(e.to_string()))
+        .map_err(|e| errors::PhaseError::TimeDirection(e.to_string()))
     {
         Ok(_) => {}
         Err(e) => {
@@ -489,14 +463,14 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile> {
     let direction = timestamp_hit
         .direction
         .clone()
-        .ok_or_else(|| LogCheckError::new("Index of date field not found"))?;
+        .ok_or_else(|| errors::LogCheckError::new("Index of date field not found"))?;
     println!(
         "{} appears to be in {:?} order!",
         log_file.file_path.to_string_lossy(),
         direction
     );
     let completed_statistics_object = match stream_file(log_file, &timestamp_hit)
-        .map_err(|e| PhaseError::FileStreaming(e.to_string()))
+        .map_err(|e| errors::PhaseError::FileStreaming(e.to_string()))
     {
         Ok(result) => result,
         Err(e) => {
@@ -508,21 +482,21 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile> {
     base_processed_file.min_timestamp = Some(
         completed_statistics_object
             .min_timestamp
-            .ok_or_else(|| LogCheckError::new("No min timestamp found"))?
+            .ok_or_else(|| errors::LogCheckError::new("No min timestamp found"))?
             .format("%Y-%m-%d %H:%M:%S")
             .to_string(),
     );
     base_processed_file.max_timestamp = Some(
         completed_statistics_object
             .max_timestamp
-            .ok_or_else(|| LogCheckError::new("No min timestamp found"))?
+            .ok_or_else(|| errors::LogCheckError::new("No min timestamp found"))?
             .format("%Y-%m-%d %H:%M:%S")
             .to_string(),
     );
 
     let largest_time_gap = completed_statistics_object
         .largest_time_gap
-        .ok_or_else(|| LogCheckError::new("No min timestamp found"))?;
+        .ok_or_else(|| errors::LogCheckError::new("No min timestamp found"))?;
 
     base_processed_file.largest_gap = Some(format!(
         "{} to {}",
@@ -540,27 +514,27 @@ pub fn try_to_get_timestamp_hit(log_file: &LogFile) -> Result<IdentifiedTimeInfo
     } else if log_file.log_type == LogType::Unstructured {
         return try_to_get_timestamp_hit_for_unstructured(log_file);
     }
-    Err(LogCheckError::new(
+    Err(errors::LogCheckError::new(
         "Have not implemented scanning for timestam for this file type yet",
     ))
 }
 
 pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile) -> Result<IdentifiedTimeInformation> {
     let file = File::open(&log_file.file_path)
-        .map_err(|e| LogCheckError::new(format!("Unable to read csv file because of {e}")))?;
+        .map_err(|e| errors::LogCheckError::new(format!("Unable to read csv file because of {e}")))?;
     let mut reader = ReaderBuilder::new()
         .has_headers(true) // Set to false if there's no header
         .from_reader(file);
 
     let headers: csv::StringRecord = reader
         .headers()
-        .map_err(|e| LogCheckError::new(format!("Unable to get headers because of {e}")))?
+        .map_err(|e| errors::LogCheckError::new(format!("Unable to get headers because of {e}")))?
         .clone(); // this returns a &StringRecord
     let record: csv::StringRecord = reader
         .records()
         .next()
         .unwrap()
-        .map_err(|e| LogCheckError::new(format!("Unable to get first row because of {e}")))?; // This is returning a result, that is why I had to use the question mark below before the iter()
+        .map_err(|e| errors::LogCheckError::new(format!("Unable to get first row because of {e}")))?; // This is returning a result, that is why I had to use the question mark below before the iter()
     for (i, field) in record.iter().enumerate() {
         for date_regex in DATE_REGEXES.iter() {
             if date_regex.regex.is_match(field) {
@@ -583,7 +557,7 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile) -> Result<Identified
         "Could not find a supported timestamp in {}",
         log_file.file_path.to_string_lossy().to_string()
     );
-    Err(LogCheckError::new(
+    Err(errors::LogCheckError::new(
         "Could not find a supported timestamp format.",
     ))
 }
@@ -592,12 +566,12 @@ pub fn try_to_get_timestamp_hit_for_unstructured(
     log_file: &LogFile,
 ) -> Result<IdentifiedTimeInformation> {
     let file = File::open(&log_file.file_path)
-        .map_err(|e| LogCheckError::new(format!("Unable to read log file because of {e}")))?;
+        .map_err(|e| errors::LogCheckError::new(format!("Unable to read log file because of {e}")))?;
     let reader = BufReader::new(file);
 
     if let Some(line_result) = reader.lines().next() {
         let line = line_result
-            .map_err(|e| LogCheckError::new(format!("Unable to read log record because of {e}")))?;
+            .map_err(|e| errors::LogCheckError::new(format!("Unable to read log record because of {e}")))?;
         for date_regex in DATE_REGEXES.iter() {
             if date_regex.regex.is_match(&line) {
                 println!(
@@ -613,11 +587,11 @@ pub fn try_to_get_timestamp_hit_for_unstructured(
                 });
             }
         }
-        return Err(LogCheckError::new(
+        return Err(errors::LogCheckError::new(
             "No regex match found in the log file, try providing your own custom regex",
         ));
     } else {
-        return Err(LogCheckError::new("No lines in the log file."));
+        return Err(errors::LogCheckError::new("No lines in the log file."));
     }
 }
 
@@ -631,7 +605,7 @@ pub fn set_time_direction_by_scanning_file(
     if log_file.log_type == LogType::Unstructured {
         return set_time_direction_by_scanning_unstructured_file(log_file, timestamp_hit);
     }
-    Err(LogCheckError::new(
+    Err(errors::LogCheckError::new(
         "Have not implemented scanning for directions for this file type yet.",
     ))
 }
@@ -663,31 +637,31 @@ pub fn set_time_direction_by_scanning_csv_file(
     timestamp_hit: &mut IdentifiedTimeInformation,
 ) -> Result<()> {
     let file = File::open(&log_file.file_path)
-        .map_err(|e| LogCheckError::new(format!("Unable to open csv file because of {e}")))?;
+        .map_err(|e| errors::LogCheckError::new(format!("Unable to open csv file because of {e}")))?;
     let mut rdr = ReaderBuilder::new().has_headers(true).from_reader(file);
     // let mut previous: Option<NaiveDateTime> = None;
     let mut direction_checker = TimeDirectionChecker::default();
     for result in rdr.records() {
         // I think I should just include the index in the timestamp hit
         let record = result.map_err(|e| {
-            LogCheckError::new(format!(
+            errors::LogCheckError::new(format!(
                 "Unable to read bytes during hashing because of {e}"
             ))
         })?;
         let value = record
             .get(timestamp_hit.column_index.unwrap())
-            .ok_or_else(|| LogCheckError::new("Index of date field not found"))?; // unwrap is safe here because for CSVs, there will always be a column index
+            .ok_or_else(|| errors::LogCheckError::new("Index of date field not found"))?; // unwrap is safe here because for CSVs, there will always be a column index
         let current_datetime: NaiveDateTime =
             NaiveDateTime::parse_from_str(value, &timestamp_hit.regex_info.strftime_format)
                 .map_err(|e| {
-                    LogCheckError::new(format!("Issue parsing timestamp because of {e}"))
+                    errors::LogCheckError::new(format!("Issue parsing timestamp because of {e}"))
                 })?;
         if let Some(direction) = direction_checker.process_timestamp(current_datetime) {
             timestamp_hit.direction = Some(direction);
             return Ok(());
         }
     }
-    Err(LogCheckError::new(
+    Err(errors::LogCheckError::new(
         "Could not determine order, all timestamps may have been equal.",
     ))
 }
@@ -697,12 +671,12 @@ pub fn set_time_direction_by_scanning_unstructured_file(
     timestamp_hit: &mut IdentifiedTimeInformation,
 ) -> Result<()> {
     let file = File::open(&log_file.file_path)
-        .map_err(|e| LogCheckError::new(format!("Unable to open the log file because of {e}")))?;
+        .map_err(|e| errors::LogCheckError::new(format!("Unable to open the log file because of {e}")))?;
     let reader = BufReader::new(file);
     let mut direction_checker = TimeDirectionChecker::default();
     for line_result in reader.lines() {
         let line = line_result
-            .map_err(|e| LogCheckError::new(format!("Error reading line because of {}", e)))?;
+            .map_err(|e| errors::LogCheckError::new(format!("Error reading line because of {}", e)))?;
         let current_datetime = timestamp_hit
             .regex_info
             .get_timestamp_object_from_string_contianing_date(line)?;
@@ -736,7 +710,7 @@ pub fn stream_file(
     if log_file.log_type == LogType::Unstructured {
         return stream_unstructured_file(log_file, timestamp_hit);
     }
-    Err(LogCheckError::new(
+    Err(errors::LogCheckError::new(
         "Have not implemented streaming for this file type yet",
     ))
 }
@@ -749,15 +723,15 @@ pub fn stream_csv_file(
     let mut processing_object =
         LogFileStatisticsAndAlerts::new_with_order(timestamp_hit.direction.clone());
     let file = File::open(&log_file.file_path)
-        .map_err(|e| LogCheckError::new(format!("Unable to open csv file because of {e}")))?;
+        .map_err(|e| errors::LogCheckError::new(format!("Unable to open csv file because of {e}")))?;
     let mut rdr = ReaderBuilder::new().has_headers(true).from_reader(file);
     for (index, result) in rdr.records().enumerate() {
         // I think I should just include the index in the timestamp hit
         let record = result
-            .map_err(|e| LogCheckError::new(format!("Unable to read csv record because of {e}")))?;
+            .map_err(|e| errors::LogCheckError::new(format!("Unable to read csv record because of {e}")))?;
         let value = record
             .get(timestamp_hit.column_index.unwrap())
-            .ok_or_else(|| LogCheckError::new("Index of date field not found"))?;
+            .ok_or_else(|| errors::LogCheckError::new("Index of date field not found"))?;
         let current_datetime: NaiveDateTime = timestamp_hit.regex_info.get_timestamp_object_from_string_that_is_exact_date(value.to_string())?;
         let hash_of_record = hash_csv_record(&record);
         processing_object.process_record(LogFileRecord {
@@ -776,11 +750,11 @@ pub fn stream_unstructured_file(
     let mut processing_object =
         LogFileStatisticsAndAlerts::new_with_order(timestamp_hit.direction.clone());
     let file = File::open(&log_file.file_path)
-        .map_err(|e| LogCheckError::new(format!("Unable to open log file because of {e}")))?;
+        .map_err(|e| errors::LogCheckError::new(format!("Unable to open log file because of {e}")))?;
     let reader = BufReader::new(file);
     for (index, line_result) in reader.lines().enumerate() {
         let line = line_result
-            .map_err(|e| LogCheckError::new(format!("Error reading line because of {}", e)))?;
+            .map_err(|e| errors::LogCheckError::new(format!("Error reading line because of {}", e)))?;
         let hash_of_record = hash_string(&line);
         let current_datetime = timestamp_hit
             .regex_info
