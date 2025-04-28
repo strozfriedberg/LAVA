@@ -45,6 +45,16 @@ pub struct LogFileRecord {
     pub index: usize,
 }
 
+#[derive(PartialEq, Debug, Default)]
+pub struct TimeStatisticsFields {
+    pub num_records: Option<String>,
+    pub min_timestamp: Option<String>,
+    pub max_timestamp: Option<String>,
+    pub min_max_duration: Option<String>,
+    pub largest_gap: Option<String>,
+    pub largest_gap_duration: Option<String>,
+}
+
 #[derive(PartialEq, Debug)]
 pub struct FlaggedLogFileRecord {
     pub record: String,

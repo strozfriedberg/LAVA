@@ -12,7 +12,9 @@ pub enum PhaseError {
     TimeDirection(String),
     #[error("File Streaming Error: {0}")]
     FileStreaming(String),
-} // Should prob actually use this for the different stages of processing, Metadata extraction error, File Error, etc
+    #[error("Formatting Error: {0}")]
+    Formatting(String),
+}
 
 #[derive(Debug, Error)]
 #[error("{reason}")]

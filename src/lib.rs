@@ -116,15 +116,15 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile> {
             return Ok(base_processed_file);
         }
     };
-    let direction = timestamp_hit
-        .direction
-        .clone()
-        .ok_or_else(|| LogCheckError::new("Index of date field not found"))?;
-    println!(
-        "{} appears to be in {:?} order!",
-        log_file.file_path.to_string_lossy(),
-        direction
-    );
+    // let direction = timestamp_hit
+    //     .direction
+    //     .clone()
+    //     .ok_or_else(|| LogCheckError::new("Index of date field not found"))?;
+    // println!(
+    //     "{} appears to be in {:?} order!",
+    //     log_file.file_path.to_string_lossy(),
+    //     direction
+    // );
 
     // Stream the file to find statistics on time and other stuff
     let completed_statistics_object = match stream_file(log_file, &timestamp_hit)
@@ -137,32 +137,20 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile> {
         }
     };
 
-    base_processed_file.min_timestamp = Some(
-        completed_statistics_object
-            .min_timestamp
-            .ok_or_else(|| LogCheckError::new("No min timestamp found"))?
-            .format("%Y-%m-%d %H:%M:%S")
-            .to_string(),
-    );
-    base_processed_file.max_timestamp = Some(
-        completed_statistics_object
-            .max_timestamp
-            .ok_or_else(|| LogCheckError::new("No min timestamp found"))?
-            .format("%Y-%m-%d %H:%M:%S")
-            .to_string(),
-    );
-
-    let largest_time_gap = completed_statistics_object
-        .largest_time_gap
-        .ok_or_else(|| LogCheckError::new("No min timestamp found"))?;
-
-    base_processed_file.largest_gap = Some(format!(
-        "{} to {}",
-        largest_time_gap.beginning_time.format("%Y-%m-%d %H:%M:%S"),
-        largest_time_gap.end_time.format("%Y-%m-%d %H:%M:%S")
-    ));
-    base_processed_file.largest_gap_duration =
-        Some(helpers::format_timedelta(largest_time_gap.gap));
+    // Get the formatted stats from the stats object
+    let formatted_statistics = match completed_statistics_object.get_statistics()
+        .map_err(|e| PhaseError::Formatting(e.to_string()))
+    {
+        Ok(result) => result,
+        Err(e) => {
+            base_processed_file.error = Some(e.to_string());
+            return Ok(base_processed_file);
+        }
+    };
+    base_processed_file.largest_gap = formatted_statistics.largest_gap;
+    base_processed_file.largest_gap_duration = formatted_statistics.largest_gap_duration;
+    base_processed_file.min_timestamp = formatted_statistics.min_timestamp;
+    base_processed_file.max_timestamp = formatted_statistics.max_timestamp;
 
     Ok(base_processed_file)
 }
@@ -214,7 +202,7 @@ pub fn try_to_get_timestamp_hit(log_file: &LogFile) -> Result<IdentifiedTimeInfo
         return try_to_get_timestamp_hit_for_unstructured(log_file);
     }
     Err(LogCheckError::new(
-        "Have not implemented scanning for timestam for this file type yet",
+        "Have not implemented scanning for timestamp for this file type yet",
     ))
 }
 

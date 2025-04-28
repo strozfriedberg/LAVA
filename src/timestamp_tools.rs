@@ -1,5 +1,6 @@
 use crate::basic_objects::*;
 use crate::errors::*;
+use crate::helpers::*;
 use chrono::NaiveDateTime;
 use std::collections::HashSet;
 
@@ -28,6 +29,7 @@ impl TimeDirectionChecker {
 #[derive(PartialEq, Debug, Default)]
 pub struct LogRecordProcessor {
     pub order: Option<TimeDirection>,
+    pub num_records: usize,
     pub min_timestamp: Option<NaiveDateTime>,
     pub max_timestamp: Option<NaiveDateTime>,
     pub previous_timestamp: Option<NaiveDateTime>,
@@ -44,12 +46,12 @@ impl LogRecordProcessor {
     }
     pub fn process_record(&mut self, record: LogFileRecord) -> Result<()> {
         //Check for duplicates
-        let is_duplicate = !self
-            .duplicate_checker_set
-            .insert(record.hash_of_entire_record);
-        if is_duplicate {
-            println!("Found duplicate record at index {}", record.index);
-        }
+        // let is_duplicate = !self
+        //     .duplicate_checker_set
+        //     .insert(record.hash_of_entire_record);
+        // // if is_duplicate {
+        // //     println!("Found duplicate record at index {}", record.index); // Need to make 
+        // // }
 
         //Update earliest and latest timestamp
         if let Some(previous_datetime) = self.previous_timestamp {
@@ -88,8 +90,41 @@ impl LogRecordProcessor {
                 self.max_timestamp = Some(record.timestamp)
             }
         }
+        self.num_records = self.num_records + 1;
         self.previous_timestamp = Some(record.timestamp);
 
         Ok(())
+    }
+
+    pub fn get_statistics(&self) -> Result<TimeStatisticsFields> {
+        let mut statistics_fields = TimeStatisticsFields::default();
+
+        statistics_fields.min_timestamp = Some(
+            self
+                .min_timestamp
+                .ok_or_else(|| LogCheckError::new("No min timestamp found"))?
+                .format("%Y-%m-%d %H:%M:%S")
+                .to_string(),
+        );
+        statistics_fields.max_timestamp = Some(
+            self
+                .max_timestamp
+                .ok_or_else(|| LogCheckError::new("No max timestamp found"))?
+                .format("%Y-%m-%d %H:%M:%S")
+                .to_string(),
+        );
+    
+        let largest_time_gap = self
+            .largest_time_gap
+            .ok_or_else(|| LogCheckError::new("No largest time gap found"))?;
+    
+        statistics_fields.largest_gap = Some(format!(
+            "{} to {}",
+            largest_time_gap.beginning_time.format("%Y-%m-%d %H:%M:%S"),
+            largest_time_gap.end_time.format("%Y-%m-%d %H:%M:%S")
+        ));
+        statistics_fields.largest_gap_duration =
+            Some(format_timedelta(largest_time_gap.gap));
+        Ok(statistics_fields)
     }
 }
