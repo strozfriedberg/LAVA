@@ -1,4 +1,3 @@
-use csv::Writer;
 use glob::glob;
 use rayon::prelude::*;
 use sha2::{Digest, Sha256};
@@ -15,6 +14,7 @@ use handlers::csv_handlers::*;
 use handlers::unstructured_handlers::*;
 mod date_regex;
 mod helpers;
+use helpers::*;
 pub mod basic_objects;
 use basic_objects::*;
 mod timestamp_tools;
@@ -72,92 +72,6 @@ pub fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile> {
         }
     }
     supported_files
-}
-
-fn write_output_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Result<()> {
-    // in the final version, maybe have a full version that has tons of fields, and then a simplified version. Could have command line arg to trigger verbose one
-    //Add something here to create the
-    let output_filename = helpers::generate_log_filename();
-    let mut wtr = Writer::from_path(&output_filename)
-        .map_err(|e| LogCheckError::new(format!("Unable to open ouptut file because of {e}")))?;
-    wtr.write_record(&[
-        "Filename",
-        "File Path",
-        "SHA256 Hash",
-        "Size",
-        "Header Used",
-        "Timestamp Format",
-        "Earliest Timestamp",
-        "Latest Timestamp",
-        "Duration of Largest Time Gap",
-        "Largest Time Gap",
-        "Error",
-    ])
-    .map_err(|e| LogCheckError::new(format!("Unable to write headers because of {e}")))?;
-    for log_file in processed_log_files {
-        wtr.serialize((
-            log_file.filename.as_deref().unwrap_or(""),
-            log_file.file_path.as_deref().unwrap_or(""),
-            log_file.sha256hash.as_deref().unwrap_or(""),
-            log_file.size.unwrap_or(0),
-            log_file.time_header.as_deref().unwrap_or(""),
-            log_file.time_format.as_deref().unwrap_or(""),
-            log_file.min_timestamp.as_deref().unwrap_or(""),
-            log_file.max_timestamp.as_deref().unwrap_or(""),
-            log_file.largest_gap_duration.as_deref().unwrap_or(""),
-            log_file.largest_gap.as_deref().unwrap_or(""),
-            log_file.error.as_deref().unwrap_or(""),
-        ))
-        .map_err(|e| {
-            LogCheckError::new(format!("Issue writing lines of output file because of {e}"))
-        })?;
-    }
-    wtr.flush().map_err(|e| {
-        LogCheckError::new(format!("Issue flushing to the ouptut file because of {e}"))
-    })?; //Is this really needed?
-    println!("Data written to {output_filename}");
-    Ok(())
-}
-
-
-fn get_metadata_and_hash(file_path: &PathBuf) -> Result<(String, u64, String, String)> {
-    let mut file = File::open(file_path)
-        .map_err(|e| LogCheckError::new(format!("Unable to open file because of {e}")))?;
-    let size = file
-        .metadata()
-        .map_err(|e| LogCheckError::new(format!("Unable to get file metadata because of {e}")))?
-        .len();
-    let file_name = file_path
-        .file_name()
-        .ok_or("Error getting filename")
-        .map_err(|e| LogCheckError::new(format!("Unable to open file because of {e}")))?
-        .to_string_lossy()
-        .to_string();
-
-    let mut hasher = Sha256::new();
-
-    let mut buffer = [0u8; 4096];
-    loop {
-        let bytes_read = file.read(&mut buffer).map_err(|e| {
-            LogCheckError::new(format!(
-                "Unable to read bytes during hashing because of {e}"
-            ))
-        })?;
-        if bytes_read == 0 {
-            break;
-        }
-        hasher.update(&buffer[..bytes_read]);
-    }
-
-    let result = hasher.finalize();
-    let hash_hex = format!("{:x}", result);
-
-    Ok((
-        hash_hex,
-        size,
-        file_name,
-        file_path.to_string_lossy().to_string(),
-    ))
 }
 
 pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile> {
@@ -248,6 +162,46 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile> {
         Some(helpers::format_timedelta(largest_time_gap.gap));
 
     Ok(base_processed_file)
+}
+
+fn get_metadata_and_hash(file_path: &PathBuf) -> Result<(String, u64, String, String)> {
+    let mut file = File::open(file_path)
+        .map_err(|e| LogCheckError::new(format!("Unable to open file because of {e}")))?;
+    let size = file
+        .metadata()
+        .map_err(|e| LogCheckError::new(format!("Unable to get file metadata because of {e}")))?
+        .len();
+    let file_name = file_path
+        .file_name()
+        .ok_or("Error getting filename")
+        .map_err(|e| LogCheckError::new(format!("Unable to open file because of {e}")))?
+        .to_string_lossy()
+        .to_string();
+
+    let mut hasher = Sha256::new();
+
+    let mut buffer = [0u8; 4096];
+    loop {
+        let bytes_read = file.read(&mut buffer).map_err(|e| {
+            LogCheckError::new(format!(
+                "Unable to read bytes during hashing because of {e}"
+            ))
+        })?;
+        if bytes_read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..bytes_read]);
+    }
+
+    let result = hasher.finalize();
+    let hash_hex = format!("{:x}", result);
+
+    Ok((
+        hash_hex,
+        size,
+        file_name,
+        file_path.to_string_lossy().to_string(),
+    ))
 }
 
 pub fn try_to_get_timestamp_hit(log_file: &LogFile) -> Result<IdentifiedTimeInformation> {
