@@ -25,7 +25,12 @@ pub fn process_all_files(input_dir: String) {
 
     for entry in glob(input_dir.as_str()).expect("Failed to read glob pattern") {
         match entry {
-            Ok(path) => paths.push(path),
+            Ok(path) => {
+                let metadata = std::fs::metadata(&path).map_err(|e| LogCheckError::new(format!("Failed to read metadata of file becase of {e}"))).unwrap();
+                if metadata.is_file() {
+                    paths.push(path);
+                }
+            },
             Err(e) => println!("{:?}", e),
         }
     }
