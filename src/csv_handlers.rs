@@ -2,6 +2,7 @@ use crate::basic_objects::*;
 use crate::date_regex::*;
 use crate::errors::*;
 use crate::timestamp_tools::*;
+use crate::helpers::*;
 use csv::ReaderBuilder;
 use std::fs::File;
 use chrono::NaiveDateTime;
@@ -82,4 +83,35 @@ pub fn set_time_direction_by_scanning_csv_file(
     Err(LogCheckError::new(
         "Could not determine order, all timestamps may have been equal.",
     ))
+}
+
+
+pub fn stream_csv_file(
+    log_file: &LogFile,
+    timestamp_hit: &IdentifiedTimeInformation,
+) -> Result<LogFileStatisticsAndAlerts> {
+    // not sure we want to include the whole hashset in this? Maybe only inlcude results
+    let mut processing_object =
+        LogFileStatisticsAndAlerts::new_with_order(timestamp_hit.direction.clone());
+    let file = File::open(&log_file.file_path)
+        .map_err(|e| LogCheckError::new(format!("Unable to open csv file because of {e}")))?;
+    let mut rdr = ReaderBuilder::new().has_headers(true).from_reader(file);
+    for (index, result) in rdr.records().enumerate() {
+        // I think I should just include the index in the timestamp hit
+        let record = result
+            .map_err(|e| LogCheckError::new(format!("Unable to read csv record because of {e}")))?;
+        let value = record
+            .get(timestamp_hit.column_index.unwrap())
+            .ok_or_else(|| LogCheckError::new("Index of date field not found"))?;
+        let current_datetime: NaiveDateTime = timestamp_hit
+            .regex_info
+            .get_timestamp_object_from_string_that_is_exact_date(value.to_string())?;
+        let hash_of_record = hash_csv_record(&record);
+        processing_object.process_record(LogFileRecord {
+            hash_of_entire_record: hash_of_record,
+            timestamp: current_datetime,
+            index: index,
+        })?
+    }
+    Ok(processing_object)
 }
