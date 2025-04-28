@@ -1,5 +1,5 @@
 use clap::{Command, arg};
-use log_checker::iterate_through_input_dir;
+use log_checker::process_all_files;
 
 fn main() {
     let matches = Command::new("LogCheck")
@@ -13,5 +13,5 @@ fn main() {
         matches.get_one::<String>("input").expect("required")
     );
 
-    iterate_through_input_dir(input_dir)
+    process_all_files(input_dir)
 }

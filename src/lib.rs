@@ -1,29 +1,26 @@
-use chrono::NaiveDateTime;
-use csv::{ReaderBuilder, StringRecord, Writer};
+use csv::Writer;
 use glob::glob;
 use rayon::prelude::*;
 use sha2::{Digest, Sha256};
-use std::collections::hash_map::DefaultHasher;
 use std::fs::File;
-use std::hash::{Hash, Hasher};
 use std::io::Read;
-use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 pub mod errors;
 use errors::*;
-mod csv_handlers;
-use csv_handlers::*;
+pub mod handlers {
+    pub mod csv_handlers;
+    pub mod unstructured_handlers;
+}
+use handlers::csv_handlers::*;
+use handlers::unstructured_handlers::*;
 mod date_regex;
 mod helpers;
-use date_regex::*;
 pub mod basic_objects;
 use basic_objects::*;
 mod timestamp_tools;
 use timestamp_tools::*;
-mod unstructured_handlers;
-use unstructured_handlers::*;
 
-pub fn iterate_through_input_dir(input_dir: String) {
+pub fn process_all_files(input_dir: String) {
     let mut paths: Vec<PathBuf> = Vec::new();
 
     for entry in glob(input_dir.as_str()).expect("Failed to read glob pattern") {
@@ -40,12 +37,44 @@ pub fn iterate_through_input_dir(input_dir: String) {
         .map(|path| process_file(path).expect("Error processing file"))
         .collect();
 
-    if let Err(e) = write_to_csv(&results) {
+    if let Err(e) = write_output_to_csv(&results) {
         eprintln!("Failed to write to CSV: {}", e);
     }
 }
 
-fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Result<()> {
+pub fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile> {
+    let mut supported_files: Vec<LogFile> = Vec::new();
+
+    for file_path in file_paths {
+        if let Some(extension) = file_path.extension() {
+            if extension == "csv" {
+                supported_files.push(LogFile {
+                    log_type: LogType::Csv,
+                    file_path: file_path.to_path_buf(),
+                })
+            } else if extension == "json" {
+                supported_files.push(LogFile {
+                    log_type: LogType::Json,
+                    file_path: file_path.to_path_buf(),
+                })
+            } else {
+                supported_files.push(LogFile {
+                    log_type: LogType::Unstructured,
+                    file_path: file_path.to_path_buf(),
+                })
+            }
+        } else {
+            // Some unstructured logs might not have file extensions, so might have to work with this
+            println!(
+                "Error getting file extension for {}",
+                file_path.to_string_lossy().to_string()
+            )
+        }
+    }
+    supported_files
+}
+
+fn write_output_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Result<()> {
     // in the final version, maybe have a full version that has tons of fields, and then a simplified version. Could have command line arg to trigger verbose one
     //Add something here to create the
     let output_filename = helpers::generate_log_filename();
@@ -90,37 +119,6 @@ fn write_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Result<()> {
     Ok(())
 }
 
-pub fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile> {
-    let mut supported_files: Vec<LogFile> = Vec::new();
-
-    for file_path in file_paths {
-        if let Some(extension) = file_path.extension() {
-            if extension == "csv" {
-                supported_files.push(LogFile {
-                    log_type: LogType::Csv,
-                    file_path: file_path.to_path_buf(),
-                })
-            } else if extension == "json" {
-                supported_files.push(LogFile {
-                    log_type: LogType::Json,
-                    file_path: file_path.to_path_buf(),
-                })
-            } else {
-                supported_files.push(LogFile {
-                    log_type: LogType::Unstructured,
-                    file_path: file_path.to_path_buf(),
-                })
-            }
-        } else {
-            // Some unstructured logs might not have file extensions, so might have to work with this
-            println!(
-                "Error getting file extension for {}",
-                file_path.to_string_lossy().to_string()
-            )
-        }
-    }
-    supported_files
-}
 
 fn get_metadata_and_hash(file_path: &PathBuf) -> Result<(String, u64, String, String)> {
     let mut file = File::open(file_path)
@@ -278,11 +276,10 @@ pub fn set_time_direction_by_scanning_file(
     ))
 }
 
-
 pub fn stream_file(
     log_file: &LogFile,
     timestamp_hit: &IdentifiedTimeInformation,
-) -> Result<LogFileStatisticsAndAlerts> {
+) -> Result<LogRecordProcessor> {
     if log_file.log_type == LogType::Csv {
         return stream_csv_file(log_file, timestamp_hit);
     }

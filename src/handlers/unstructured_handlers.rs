@@ -1,10 +1,10 @@
-use std::fs::File;
-use std::io::{BufRead, BufReader};
+use crate::basic_objects::*;
 use crate::date_regex::*;
 use crate::errors::*;
-use crate::basic_objects::*;
-use crate::timestamp_tools::*;
 use crate::helpers::*;
+use crate::timestamp_tools::*;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 
 pub fn try_to_get_timestamp_hit_for_unstructured(
     log_file: &LogFile,
@@ -39,7 +39,6 @@ pub fn try_to_get_timestamp_hit_for_unstructured(
     }
 }
 
-
 pub fn set_time_direction_by_scanning_unstructured_file(
     log_file: &LogFile,
     timestamp_hit: &mut IdentifiedTimeInformation,
@@ -65,9 +64,9 @@ pub fn set_time_direction_by_scanning_unstructured_file(
 pub fn stream_unstructured_file(
     log_file: &LogFile,
     timestamp_hit: &IdentifiedTimeInformation,
-) -> Result<LogFileStatisticsAndAlerts> {
+) -> Result<LogRecordProcessor> {
     let mut processing_object =
-        LogFileStatisticsAndAlerts::new_with_order(timestamp_hit.direction.clone());
+        LogRecordProcessor::new_with_order(timestamp_hit.direction.clone());
     let file = File::open(&log_file.file_path)
         .map_err(|e| LogCheckError::new(format!("Unable to open log file because of {e}")))?;
     let reader = BufReader::new(file);

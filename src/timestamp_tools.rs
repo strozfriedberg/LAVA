@@ -26,7 +26,7 @@ impl TimeDirectionChecker {
 }
 
 #[derive(PartialEq, Debug, Default)]
-pub struct LogFileStatisticsAndAlerts {
+pub struct LogRecordProcessor {
     pub order: Option<TimeDirection>,
     pub min_timestamp: Option<NaiveDateTime>,
     pub max_timestamp: Option<NaiveDateTime>,
@@ -35,7 +35,7 @@ pub struct LogFileStatisticsAndAlerts {
     pub duplicate_checker_set: HashSet<u64>,
 }
 
-impl LogFileStatisticsAndAlerts {
+impl LogRecordProcessor {
     pub fn new_with_order(order: Option<TimeDirection>) -> Self {
         Self {
             order,

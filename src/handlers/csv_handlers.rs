@@ -1,11 +1,11 @@
 use crate::basic_objects::*;
 use crate::date_regex::*;
 use crate::errors::*;
-use crate::timestamp_tools::*;
 use crate::helpers::*;
+use crate::timestamp_tools::*;
+use chrono::NaiveDateTime;
 use csv::ReaderBuilder;
 use std::fs::File;
-use chrono::NaiveDateTime;
 
 pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile) -> Result<IdentifiedTimeInformation> {
     let file = File::open(&log_file.file_path)
@@ -50,7 +50,6 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile) -> Result<Identified
     ))
 }
 
-
 pub fn set_time_direction_by_scanning_csv_file(
     log_file: &LogFile,
     timestamp_hit: &mut IdentifiedTimeInformation,
@@ -85,14 +84,13 @@ pub fn set_time_direction_by_scanning_csv_file(
     ))
 }
 
-
 pub fn stream_csv_file(
     log_file: &LogFile,
     timestamp_hit: &IdentifiedTimeInformation,
-) -> Result<LogFileStatisticsAndAlerts> {
+) -> Result<LogRecordProcessor> {
     // not sure we want to include the whole hashset in this? Maybe only inlcude results
     let mut processing_object =
-        LogFileStatisticsAndAlerts::new_with_order(timestamp_hit.direction.clone());
+        LogRecordProcessor::new_with_order(timestamp_hit.direction.clone());
     let file = File::open(&log_file.file_path)
         .map_err(|e| LogCheckError::new(format!("Unable to open csv file because of {e}")))?;
     let mut rdr = ReaderBuilder::new().has_headers(true).from_reader(file);
