@@ -14,7 +14,7 @@ impl DateRegex {
     pub fn get_timestamp_object_from_string_contianing_date(
         &self,
         string_to_extract_from: String,
-    ) -> Result<NaiveDateTime> {
+    ) -> Result<Option<NaiveDateTime>> {
         if let Some(captures) = self.regex.captures(&string_to_extract_from) {
             // Get the matched string (the datetime)
             if let Some(datetime_str) = captures.get(0) {
@@ -24,10 +24,10 @@ impl DateRegex {
                     NaiveDateTime::parse_from_str(datetime_str, &self.strftime_format).map_err(
                         |e| LogCheckError::new(format!("Unable to parse timestamp because {e}")),
                     )?;
-                return Ok(parsed_datetime);
+                return Ok(Some(parsed_datetime));
             }
         }
-        Err(LogCheckError::new("Unable to extract and parse timestamp."))
+        return Ok(None) // regex did not capture any portion of the string
     }
 
     pub fn get_timestamp_object_from_string_that_is_exact_date(
@@ -45,6 +45,11 @@ impl DateRegex {
 pub static DATE_REGEXES: Lazy<Vec<DateRegex>> = Lazy::new(|| {
     //Need to make sure to put the more specific ones at the beinning so they get hits first
     vec![
+        DateRegex {
+            pretty_format: "Mon D, YYYY h:MM:SS AM/PM".to_string(), // Custom human-readable format
+            regex: Regex::new(r"([A-Za-z]{3} \d{1,2}, \d{4} \d{1,2}:\d{2}:\d{2} [AP]M)").unwrap(),
+            strftime_format: "%b %e, %Y %l:%M:%S %p".to_string(),
+        },        
         DateRegex {
             pretty_format: "date= time=".to_string(),
             regex: Regex::new(r"(date=\d{4}-\d{2}-\d{2}\s+time=\d{2}:\d{2}:\d{2})").unwrap(),

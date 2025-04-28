@@ -13,9 +13,9 @@ pub fn try_to_get_timestamp_hit_for_unstructured(
         .map_err(|e| LogCheckError::new(format!("Unable to read log file because of {e}")))?;
     let reader = BufReader::new(file);
 
-    if let Some(line_result) = reader.lines().next() {
+    for line_result in reader.lines() {
         let line = line_result
-            .map_err(|e| LogCheckError::new(format!("Unable to read log record because of {e}")))?;
+            .map_err(|e| LogCheckError::new(format!("Error reading line because of {}", e)))?;
         for date_regex in DATE_REGEXES.iter() {
             if date_regex.regex.is_match(&line) {
                 println!(
@@ -31,12 +31,10 @@ pub fn try_to_get_timestamp_hit_for_unstructured(
                 });
             }
         }
-        return Err(LogCheckError::new(
-            "No regex match found in the log file, try providing your own custom regex",
-        ));
-    } else {
-        return Err(LogCheckError::new("No lines in the log file."));
     }
+    return Err(LogCheckError::new(
+        "No regex match found in the log file, try providing your own custom regex",
+    ));
 }
 
 pub fn set_time_direction_by_scanning_unstructured_file(
@@ -50,13 +48,14 @@ pub fn set_time_direction_by_scanning_unstructured_file(
     for line_result in reader.lines() {
         let line = line_result
             .map_err(|e| LogCheckError::new(format!("Error reading line because of {}", e)))?;
-        let current_datetime = timestamp_hit
-            .regex_info
-            .get_timestamp_object_from_string_contianing_date(line)?;
-        if let Some(direction) = direction_checker.process_timestamp(current_datetime) {
-            timestamp_hit.direction = Some(direction);
-            return Ok(());
-        }
+        if let Some(current_datetime) = timestamp_hit
+        .regex_info
+        .get_timestamp_object_from_string_contianing_date(line)? {
+            if let Some(direction) = direction_checker.process_timestamp(current_datetime) {
+                timestamp_hit.direction = Some(direction);
+                return Ok(());
+            }
+        };
     }
     Ok(())
 }
@@ -73,14 +72,18 @@ pub fn stream_unstructured_file(
         let line = line_result
             .map_err(|e| LogCheckError::new(format!("Error reading line because of {}", e)))?;
         let hash_of_record = hash_string(&line);
-        let current_datetime = timestamp_hit
-            .regex_info
-            .get_timestamp_object_from_string_contianing_date(line)?;
-        processing_object.process_record(LogFileRecord {
-            hash_of_entire_record: hash_of_record,
-            timestamp: current_datetime,
-            index: index,
-        })?
+        if let Some(current_datetime) = timestamp_hit
+        .regex_info
+        .get_timestamp_object_from_string_contianing_date(line)? {
+            processing_object.process_record(LogFileRecord {
+                hash_of_entire_record: hash_of_record,
+                timestamp: current_datetime,
+                index: index,
+            })?
+        }
+        // let current_datetime = timestamp_hit
+        //     .regex_info
+        //     .get_timestamp_object_from_string_contianing_date(line)?;
     }
     Ok(processing_object)
 }
