@@ -41,4 +41,3 @@ impl DateRegex {
         Ok(parsed_datetime)
     }
 }
-

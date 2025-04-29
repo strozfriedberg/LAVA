@@ -143,7 +143,8 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile> {
     };
 
     // Get the formatted stats from the stats object
-    let formatted_statistics = match completed_statistics_object.get_statistics()
+    let formatted_statistics = match completed_statistics_object
+        .get_statistics()
         .map_err(|e| PhaseError::Formatting(e.to_string()))
     {
         Ok(result) => result,

@@ -50,7 +50,7 @@ impl LogRecordProcessor {
         //     .duplicate_checker_set
         //     .insert(record.hash_of_entire_record);
         // // if is_duplicate {
-        // //     println!("Found duplicate record at index {}", record.index); // Need to make 
+        // //     println!("Found duplicate record at index {}", record.index); // Need to make
         // // }
 
         //Update earliest and latest timestamp
@@ -101,33 +101,36 @@ impl LogRecordProcessor {
 
         statistics_fields.num_records = Some(self.num_records.to_string());
         statistics_fields.min_timestamp = Some(
-            self
-                .min_timestamp
+            self.min_timestamp
                 .ok_or_else(|| LogCheckError::new("No min timestamp found"))?
                 .format("%Y-%m-%d %H:%M:%S")
                 .to_string(),
         );
         statistics_fields.max_timestamp = Some(
-            self
-                .max_timestamp
+            self.max_timestamp
                 .ok_or_else(|| LogCheckError::new("No max timestamp found"))?
                 .format("%Y-%m-%d %H:%M:%S")
                 .to_string(),
         );
-        let min_max_gap = self.max_timestamp.ok_or_else(|| LogCheckError::new("No max timestamp found"))?.signed_duration_since(self.min_timestamp.ok_or_else(|| LogCheckError::new("No min timestamp found"))?);
+        let min_max_gap = self
+            .max_timestamp
+            .ok_or_else(|| LogCheckError::new("No max timestamp found"))?
+            .signed_duration_since(
+                self.min_timestamp
+                    .ok_or_else(|| LogCheckError::new("No min timestamp found"))?,
+            );
         statistics_fields.min_max_duration = Some(format_timedelta(min_max_gap));
 
         let largest_time_gap = self
             .largest_time_gap
             .ok_or_else(|| LogCheckError::new("No largest time gap found"))?;
-    
+
         statistics_fields.largest_gap = Some(format!(
             "{} to {}",
             largest_time_gap.beginning_time.format("%Y-%m-%d %H:%M:%S"),
             largest_time_gap.end_time.format("%Y-%m-%d %H:%M:%S")
         ));
-        statistics_fields.largest_gap_duration =
-            Some(format_timedelta(largest_time_gap.gap));
+        statistics_fields.largest_gap_duration = Some(format_timedelta(largest_time_gap.gap));
         Ok(statistics_fields)
     }
 }
