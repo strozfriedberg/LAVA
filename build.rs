@@ -50,19 +50,29 @@ fn main() {
     let mut test_code = String::new();
     test_code.push_str("#[cfg(test)]\n");
     test_code.push_str("mod generated_tests {\n");
-    test_code.push_str("    use regex::Regex;\n\n");
+    test_code.push_str("    use regex::Regex;\n");
+    test_code.push_str("    use chrono::{NaiveDate, NaiveTime, NaiveDateTime};\n");
+    test_code.push_str("    use crate::date_regex::DateRegex;\n\n");
+    
+    
     
     for (i, item) in parsed.iter().enumerate() {
+        test_code.push_str("#[test]\n");
         test_code.push_str(&format!(
-            "#[test]\n\
-             fn test_regex_{}() {{\n\
-             \tlet re = Regex::new(r#\"{}\"#).unwrap();\n\
-             \tassert!(re.is_match(\"{}\"));\n\
-             }}\n\n",
-            i,
-            item.regex,
-            item.test_input
+             "fn test_regex_{}() {{\n",i,
         ));
+        test_code.push_str(&format!(
+            "   let re = DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"({})\").unwrap(),\n        }};\n",
+            item.pretty_format,
+            item.strftime_format,
+            item.regex
+        ));
+        test_code.push_str("    let date = NaiveDate::from_ymd_opt(2023, 1, 1).unwrap();\n");
+        test_code.push_str("    let time = NaiveTime::from_hms_milli_opt(1, 0, 0, 0).unwrap();\n");
+        test_code.push_str("    let expected_timestamp = NaiveDateTime::new(date, time);\n");
+        test_code.push_str(&format!("    let actual_timestamp = re.get_timestamp_object_from_string_contianing_date(\"{}\".to_string()).unwrap().expect(\"Failed to get timestamp\");\n", item.test_input));
+        test_code.push_str("    assert_eq!(expected_timestamp, actual_timestamp);\n");
+        test_code.push_str("}\n");
     }
     
     test_code.push_str("}\n");
