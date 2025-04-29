@@ -20,6 +20,9 @@ use basic_objects::*;
 mod timestamp_tools;
 use timestamp_tools::*;
 
+#[cfg(test)]
+include!(concat!(env!("OUT_DIR"), "/generated_tests.rs"));
+
 pub fn process_all_files(input_dir: String) {
     let mut paths: Vec<PathBuf> = Vec::new();
 

@@ -31,7 +31,7 @@ fn main() {
     generated_code.push_str("pub static PREBUILT_DATE_REGEXES: Lazy<Vec<DateRegex>> = Lazy::new(|| {\n");
     generated_code.push_str("    vec![\n");
 
-    for entry in parsed {
+    for entry in &parsed {
         // Write each item in the vec
         generated_code.push_str(&format!(
             "        DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"({})\").unwrap(),\n        }},\n",
@@ -45,6 +45,29 @@ fn main() {
 
     fs::write(&dest_path, generated_code).expect("Failed to write generated_regexes.rs");
 
+    let test_out_path = Path::new(&std::env::var("OUT_DIR").unwrap()).join("generated_tests.rs");
+
+    let mut test_code = String::new();
+    test_code.push_str("#[cfg(test)]\n");
+    test_code.push_str("mod generated_tests {\n");
+    test_code.push_str("    use regex::Regex;\n\n");
+    
+    for (i, item) in parsed.iter().enumerate() {
+        test_code.push_str(&format!(
+            "#[test]\n\
+             fn test_regex_{}() {{\n\
+             \tlet re = Regex::new(r#\"{}\"#).unwrap();\n\
+             \tassert!(re.is_match(\"{}\"));\n\
+             }}\n\n",
+            i,
+            item.regex,
+            item.test_input
+        ));
+    }
+    
+    test_code.push_str("}\n");
+    
+    fs::write(&test_out_path, test_code).expect("Failed to write generated_tests.rs");
     println!("cargo:rerun-if-changed=regexes.yml");
     println!("cargo:rerun-if-changed=build.rs");
 }
