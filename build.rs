@@ -34,7 +34,7 @@ fn main() {
     for entry in parsed {
         // Write each item in the vec
         generated_code.push_str(&format!(
-            "        DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r#\"{}\"#).unwrap(),\n        }},\n",
+            "        DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"({})\").unwrap(),\n        }},\n",
             entry.pretty_format,
             entry.strftime_format,
             entry.regex
