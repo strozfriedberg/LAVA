@@ -5,6 +5,7 @@ use crate::helpers::*;
 use crate::timestamp_tools::*;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+include!(concat!(env!("OUT_DIR"), "/generated_regexes.rs"));
 
 pub fn try_to_get_timestamp_hit_for_unstructured(
     log_file: &LogFile,
@@ -49,8 +50,9 @@ pub fn set_time_direction_by_scanning_unstructured_file(
         let line = line_result
             .map_err(|e| LogCheckError::new(format!("Error reading line because of {}", e)))?;
         if let Some(current_datetime) = timestamp_hit
-        .regex_info
-        .get_timestamp_object_from_string_contianing_date(line)? {
+            .regex_info
+            .get_timestamp_object_from_string_contianing_date(line)?
+        {
             if let Some(direction) = direction_checker.process_timestamp(current_datetime) {
                 timestamp_hit.direction = Some(direction);
                 return Ok(());
@@ -73,8 +75,9 @@ pub fn stream_unstructured_file(
             .map_err(|e| LogCheckError::new(format!("Error reading line because of {}", e)))?;
         let hash_of_record = hash_string(&line);
         if let Some(current_datetime) = timestamp_hit
-        .regex_info
-        .get_timestamp_object_from_string_contianing_date(line)? {
+            .regex_info
+            .get_timestamp_object_from_string_contianing_date(line)?
+        {
             processing_object.process_record(LogFileRecord {
                 hash_of_entire_record: hash_of_record,
                 timestamp: current_datetime,

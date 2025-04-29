@@ -6,6 +6,7 @@ use crate::timestamp_tools::*;
 use chrono::NaiveDateTime;
 use csv::ReaderBuilder;
 use std::fs::File;
+include!(concat!(env!("OUT_DIR"), "/generated_regexes.rs"));
 
 pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile) -> Result<IdentifiedTimeInformation> {
     let file = File::open(&log_file.file_path)

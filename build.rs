@@ -1,8 +1,8 @@
+use serde::Deserialize;
 use std::env;
+use std::fmt;
 use std::fs;
 use std::path::Path;
-use std::fmt;
-use serde::Deserialize;
 
 #[derive(Deserialize)]
 struct RawDateRegex {
