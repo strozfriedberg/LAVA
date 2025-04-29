@@ -24,7 +24,7 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile) -> Result<Identified
         .unwrap()
         .map_err(|e| LogCheckError::new(format!("Unable to get first row because of {e}")))?; // This is returning a result, that is why I had to use the question mark below before the iter()
     for (i, field) in record.iter().enumerate() {
-        for date_regex in DATE_REGEXES.iter() {
+        for date_regex in PREBUILT_DATE_REGEXES.iter() {
             if date_regex.regex.is_match(field) {
                 println!(
                     "Found match for '{}' time format in the '{}' column of {}",

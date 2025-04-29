@@ -28,7 +28,7 @@ fn main() {
     generated_code.push_str("use once_cell::sync::Lazy;\n");
     generated_code.push_str("use regex::Regex;\n");
     generated_code.push_str("use crate::date_regex::DateRegex;\n\n");
-    generated_code.push_str("pub static DATE_REGEXES: Lazy<Vec<DateRegex>> = Lazy::new(|| {\n");
+    generated_code.push_str("pub static PREBUILT_DATE_REGEXES: Lazy<Vec<DateRegex>> = Lazy::new(|| {\n");
     generated_code.push_str("    vec![\n");
 
     for entry in parsed {
