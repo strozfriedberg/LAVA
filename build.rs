@@ -27,7 +27,7 @@ fn main() {
     let mut generated_code = String::new();
     generated_code.push_str("use once_cell::sync::Lazy;\n");
     generated_code.push_str("use regex::Regex;\n");
-    generated_code.push_str("use crate::date_regex::*;\n\n");
+    generated_code.push_str("use crate::date_regex::DateRegex;\n\n");
     generated_code.push_str("pub static DATE_REGEXES: Lazy<Vec<DateRegex>> = Lazy::new(|| {\n");
     generated_code.push_str("    vec![\n");
 
