@@ -5,10 +5,11 @@ use std::cmp::Ordering;
 use std::path::PathBuf;
 
 
-#[derive(PartialEq, Debug)]
+#[derive(Debug)]
 pub struct CommandLineArgs {
     pub input_dir: PathBuf,
     pub output_dir: PathBuf,
+    pub provided_regexes: Option<Vec<DateRegex>>,
 }
 
 #[derive(PartialEq, Debug)]
