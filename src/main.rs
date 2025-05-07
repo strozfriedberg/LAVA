@@ -8,8 +8,8 @@ fn main() {
         .version("1.0")
         .about("Tool to check the validity and completeness of a given log set.")
         .arg(arg!(-i --input <VALUE> "Input directory of log files to process.").required(true))
-        .arg(arg!(-o --output <VALUE> "Output directory. Default [LogCheck_Output].").default_value("LogCheck_Output"))
-        .arg(arg!(-r --regexes <VALUE> "YML file with regexs to use. See Input_Regexes.yml for an example.").required(false))
+        .arg(arg!(-o --output <VALUE> "Output directory.").default_value("LogCheck_Output"))
+        .arg(arg!(-r --regexes <VALUE> "YML file with custom timestamp parsing to use. See Input_Regexes.yml for an example.").required(false))
         .get_matches();
 
     let command_line_args = get_full_command_line_args(&matches).unwrap(); // I think unwrap is fine here because I want to crash the program if I get an error here

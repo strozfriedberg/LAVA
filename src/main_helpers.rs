@@ -4,7 +4,6 @@ use log_checker::errors::*;
 use std::path::PathBuf;
 use std::path::Path;
 use std::fs;
-use std::str::FromStr;
 use log_checker::date_regex::DateRegex;
 use log_checker::date_regex::RawDateRegex;
 
