@@ -15,7 +15,7 @@ fn main() {
     
     println!("Input directory: {:?}", command_line_args.input_dir);
     println!("Output directory: {:?}", command_line_args.output_dir);
-    // process_all_files(input_dir)
+    process_all_files(command_line_args)
 }
 
 

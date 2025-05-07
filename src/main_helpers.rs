@@ -5,12 +5,12 @@ use log_checker::errors::*;
 use std::fs;
 
 
-pub fn get_full_command_line_args(matches: &ArgMatches) -> Result<CommandLineArgs> {
+pub fn get_full_command_line_args(matches: &ArgMatches) -> Result<CommandLineArgs> { // might want to perfrom lots of sanitation here
     let input_dir = PathBuf::from(matches.get_one::<String>("input").ok_or_else(|| LogCheckError::new("No input parameter found."))?.clone());
     let output_dir = PathBuf::from(matches.get_one::<String>("output").ok_or_else(|| LogCheckError::new("No output parameter found."))?.clone());
 
     setup_output_dir(&output_dir)?;
-    
+
     Ok(CommandLineArgs {
         input_dir: input_dir,
         output_dir: output_dir,

@@ -23,10 +23,10 @@ use timestamp_tools::*;
 #[cfg(test)]
 include!(concat!(env!("OUT_DIR"), "/generated_tests.rs"));
 
-pub fn process_all_files(input_dir: String) {
+pub fn process_all_files(command_line_args: CommandLineArgs) {
     let mut paths: Vec<PathBuf> = Vec::new();
-
-    for entry in glob(input_dir.as_str()).expect("Failed to read glob pattern") {
+    let pattern = format!("{}/**/*", command_line_args.input_dir.to_string_lossy());
+    for entry in glob(&pattern).expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => {
                 let metadata = std::fs::metadata(&path).map_err(|e| LogCheckError::new(format!("Failed to read metadata of file becase of {e}"))).unwrap();
