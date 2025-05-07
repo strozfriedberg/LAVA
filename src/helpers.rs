@@ -1,10 +1,16 @@
 use crate::basic_objects::*;
+use crate::date_regex::DateRegex;
+use crate::date_regex::RawDateRegex;
 use crate::errors::*;
 use chrono::{TimeDelta, Utc};
 use csv::StringRecord;
 use csv::Writer;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use std::path::PathBuf;
+use std::path::Path;
+use std::fs;
+
 
 pub fn generate_log_filename() -> String {
     let now = Utc::now();
@@ -81,4 +87,14 @@ pub fn write_output_to_csv(processed_log_files: &Vec<ProcessedLogFile>, command_
     })?; //Is this really needed?
     println!("Data written to {}", output_filepath.to_string_lossy());
     Ok(())
+}
+
+pub fn get_user_supplied_regexes_from_command_line(regex_file_path: &PathBuf) -> Result<Vec<DateRegex>>{
+    let yaml_path = Path::new(regex_file_path);
+    let content = fs::read_to_string(yaml_path).map_err(|e| LogCheckError::new(format!("Failed to read YAML file because of {e}")))?;
+    let parsed: Vec<RawDateRegex> = serde_yaml::from_str(&content).map_err(|e| LogCheckError::new(format!("Failed to parse YAML file because of {e}")))?;
+    let converted: Vec<DateRegex> = parsed.into_iter()
+                                    .map(DateRegex::new_from_raw_date_regex)
+                                    .collect();
+    Ok(converted)
 }
