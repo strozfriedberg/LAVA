@@ -19,6 +19,7 @@ pub mod basic_objects;
 use basic_objects::*;
 mod timestamp_tools;
 use timestamp_tools::*;
+include!(concat!(env!("OUT_DIR"), "/generated_regexes.rs"));
 
 #[cfg(test)]
 include!(concat!(env!("OUT_DIR"), "/generated_tests.rs"));
@@ -42,7 +43,7 @@ pub fn process_all_files(command_line_args: CommandLineArgs) {
 
     let results: Vec<ProcessedLogFile> = supported_files
         .par_iter()
-        .map(|path| process_file(path).expect("Error processing file"))
+        .map(|path| process_file(path, &command_line_args.provided_regexes).expect("Error processing file"))
         .collect();
 
     if let Err(e) = write_output_to_csv(&results, &command_line_args) {
@@ -82,8 +83,16 @@ pub fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile> {
     supported_files
 }
 
-pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile> {
+pub fn process_file(log_file: &LogFile, regexes_to_use: &Option<Vec<DateRegex>>) -> Result<ProcessedLogFile> {
     let mut base_processed_file = ProcessedLogFile::default();
+
+    //Decide which regexes to use
+    let regexes_to_actually_use = if let Some(regexes) = regexes_to_use {
+        regexes.clone()
+    } else {
+        PREBUILT_DATE_REGEXES.clone()
+    };
+
 
     //get hash and metadata. Does not matter what kind of file it is for this function
     let (hash, size, file_name, file_path) = match get_metadata_and_hash(&log_file.file_path)
@@ -101,7 +110,7 @@ pub fn process_file(log_file: &LogFile) -> Result<ProcessedLogFile> {
     base_processed_file.file_path = Some(file_path);
 
     // get the timestamp field. will do this for all of them, but there will just be some fields that only get filled in for structured datatypes
-    let mut timestamp_hit = match try_to_get_timestamp_hit(log_file)
+    let mut timestamp_hit = match try_to_get_timestamp_hit(log_file, &regexes_to_actually_use)
         .map_err(|e| PhaseError::TimeDiscovery(e.to_string()))
     {
         Ok(result) => result,
@@ -206,11 +215,11 @@ fn get_metadata_and_hash(file_path: &PathBuf) -> Result<(String, u64, String, St
     ))
 }
 
-pub fn try_to_get_timestamp_hit(log_file: &LogFile) -> Result<IdentifiedTimeInformation> {
+pub fn try_to_get_timestamp_hit(log_file: &LogFile, regexes_to_use: &Vec<DateRegex>) -> Result<IdentifiedTimeInformation> {
     if log_file.log_type == LogType::Csv {
-        return try_to_get_timestamp_hit_for_csv(log_file);
+        return try_to_get_timestamp_hit_for_csv(log_file, regexes_to_use);
     } else if log_file.log_type == LogType::Unstructured {
-        return try_to_get_timestamp_hit_for_unstructured(log_file);
+        return try_to_get_timestamp_hit_for_unstructured(log_file, regexes_to_use);
     }
     Err(LogCheckError::new(
         "Have not implemented scanning for timestamp for this file type yet",

@@ -5,9 +5,10 @@ use crate::timestamp_tools::*;
 use chrono::NaiveDateTime;
 use csv::ReaderBuilder;
 use std::fs::File;
-include!(concat!(env!("OUT_DIR"), "/generated_regexes.rs"));
+use crate::date_regex::*;
 
-pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile) -> Result<IdentifiedTimeInformation> {
+
+pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, regexes_to_use: &Vec<DateRegex>) -> Result<IdentifiedTimeInformation> {
     let file = File::open(&log_file.file_path)
         .map_err(|e| LogCheckError::new(format!("Unable to read csv file because of {e}")))?;
     let mut reader = ReaderBuilder::new()
@@ -24,7 +25,7 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile) -> Result<Identified
         .unwrap()
         .map_err(|e| LogCheckError::new(format!("Unable to get first row because of {e}")))?; // This is returning a result, that is why I had to use the question mark below before the iter()
     for (i, field) in record.iter().enumerate() {
-        for date_regex in PREBUILT_DATE_REGEXES.iter() {
+        for date_regex in regexes_to_use.iter() {
             if date_regex.regex.is_match(field) {
                 println!(
                     "Found match for '{}' time format in the '{}' column of {}",

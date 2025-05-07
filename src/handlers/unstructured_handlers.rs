@@ -2,12 +2,14 @@ use crate::basic_objects::*;
 use crate::errors::*;
 use crate::helpers::*;
 use crate::timestamp_tools::*;
+use crate::date_regex::*;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-include!(concat!(env!("OUT_DIR"), "/generated_regexes.rs"));
+
 
 pub fn try_to_get_timestamp_hit_for_unstructured(
     log_file: &LogFile,
+    regexes_to_use: &Vec<DateRegex>,
 ) -> Result<IdentifiedTimeInformation> {
     let file = File::open(&log_file.file_path)
         .map_err(|e| LogCheckError::new(format!("Unable to read log file because of {e}")))?;
@@ -16,7 +18,7 @@ pub fn try_to_get_timestamp_hit_for_unstructured(
     for line_result in reader.lines() {
         let line = line_result
             .map_err(|e| LogCheckError::new(format!("Error reading line because of {}", e)))?;
-        for date_regex in PREBUILT_DATE_REGEXES.iter() {
+        for date_regex in regexes_to_use.iter() {
             if date_regex.regex.is_match(&line) {
                 println!(
                     "Found match for '{}' time format in {}",
