@@ -1,4 +1,4 @@
-use clap::{arg, ArgMatches, Command};
+use clap::{arg,Command};
 use log_checker::process_all_files;
 mod main_helpers;
 use main_helpers::get_full_command_line_args;
