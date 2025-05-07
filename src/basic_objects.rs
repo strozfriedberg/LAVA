@@ -4,6 +4,13 @@ use serde::Serialize;
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
+
+#[derive(PartialEq, Debug)]
+pub struct CommandLineArgs {
+    pub input_dir: PathBuf,
+    pub output_dir: PathBuf,
+}
+
 #[derive(PartialEq, Debug)]
 pub enum LogType {
     Csv,
