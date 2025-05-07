@@ -34,11 +34,11 @@ pub fn hash_string(input: &String) -> u64 {
     hasher.finish() // Return the resulting hash
 }
 
-pub fn write_output_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Result<()> {
+pub fn write_output_to_csv(processed_log_files: &Vec<ProcessedLogFile>, command_line_args: &CommandLineArgs) -> Result<()> {
     // in the final version, maybe have a full version that has tons of fields, and then a simplified version. Could have command line arg to trigger verbose one
     //Add something here to create the
-    let output_filename = generate_log_filename();
-    let mut wtr = Writer::from_path(&output_filename)
+    let output_filepath = command_line_args.output_dir.join(generate_log_filename());
+    let mut wtr = Writer::from_path(&output_filepath)
         .map_err(|e| LogCheckError::new(format!("Unable to open ouptut file because of {e}")))?;
     wtr.write_record(&[
         "Filename",
@@ -79,6 +79,6 @@ pub fn write_output_to_csv(processed_log_files: &Vec<ProcessedLogFile>) -> Resul
     wtr.flush().map_err(|e| {
         LogCheckError::new(format!("Issue flushing to the ouptut file because of {e}"))
     })?; //Is this really needed?
-    println!("Data written to {output_filename}");
+    println!("Data written to {}", output_filepath.to_string_lossy());
     Ok(())
 }

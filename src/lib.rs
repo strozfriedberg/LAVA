@@ -45,7 +45,7 @@ pub fn process_all_files(command_line_args: CommandLineArgs) {
         .map(|path| process_file(path).expect("Error processing file"))
         .collect();
 
-    if let Err(e) = write_output_to_csv(&results) {
+    if let Err(e) = write_output_to_csv(&results, &command_line_args) {
         eprintln!("Failed to write to CSV: {}", e);
     }
 }
