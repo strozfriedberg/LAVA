@@ -13,13 +13,14 @@ pub fn get_index_of_header(
     file: &File,
     regexes_to_use: &Vec<DateRegex>,
 ) -> Result<usize> {
+    return Ok(1);
     let reader = BufReader::new(file);
     for (index, line_result) in reader.lines().enumerate() {
         let line = line_result
             .map_err(|e| LogCheckError::new(format!("Error reading line because of {}", e)))?;
         for date_regex in regexes_to_use.iter() {
             if date_regex.regex.is_match(&line) {
-                return Ok(index - 1);
+                return Ok(index-1); // Had to make it minus two because a difference of what things start indexing at 0
             }
         }
     }
@@ -45,12 +46,14 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, regexes_to_use: &Vec
         .map_err(|e| LogCheckError::new(format!("Unable to read csv file because of {e}")))?;
 
     let header_row = get_index_of_header(&file, regexes_to_use)?;
-    let mut reader = get_reader_from_certain_header_index(1, &file)?;
+    println!("Using index {} as header",header_row);
+    let mut reader = get_reader_from_certain_header_index(header_row, &file)?;
 
     let headers: csv::StringRecord = reader
         .headers()
         .map_err(|e| LogCheckError::new(format!("Unable to get headers because of {e}")))?
         .clone(); // this returns a &StringRecord
+    println!("headers: {:?}",headers);
     let record: csv::StringRecord = reader
         .records()
         .next()
