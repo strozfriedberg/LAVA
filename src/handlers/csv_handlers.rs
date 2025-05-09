@@ -48,14 +48,13 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, regexes_to_use: &Vec
 
 
     let header_row = get_index_of_header(log_file, regexes_to_use)?;
-    println!("Using index {} as header",header_row);
+
     let mut reader = get_reader_from_certain_header_index(header_row, log_file)?;
 
     let headers: csv::StringRecord = reader
         .headers()
         .map_err(|e| LogCheckError::new(format!("Unable to get headers because of {e}")))?
         .clone(); // this returns a &StringRecord
-    println!("headers: {:?}",headers);
 
     let record: csv::StringRecord = reader
         .records()
@@ -65,12 +64,18 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, regexes_to_use: &Vec
     for (i, field) in record.iter().enumerate() {
         for date_regex in regexes_to_use.iter() {
             if date_regex.regex.is_match(field) {
-                println!(
-                    "Found match for '{}' time format in the '{}' column of {}",
-                    date_regex.pretty_format,
-                    headers.get(i).unwrap().to_string(),
-                    log_file.file_path.to_string_lossy().to_string()
-                );
+                if let Some(captures) = date_regex.regex.captures(field) {
+                    if let Some(matched) = captures.get(1) {
+                        println!(
+                            "Found match for '{}' on '{}' time format in the '{}' column of {}",
+                            date_regex.pretty_format,
+                            matched.as_str(),
+                            headers.get(i).unwrap().to_string(),
+                            log_file.file_path.to_string_lossy().to_string()
+                        );
+                    }
+                }
+
                 return Ok(IdentifiedTimeInformation {
                     header_row: Some(header_row),
                     column_name: Some(headers.get(i).unwrap().to_string()),
@@ -110,7 +115,7 @@ pub fn set_time_direction_by_scanning_csv_file(
         let current_datetime: NaiveDateTime =
             NaiveDateTime::parse_from_str(value, &timestamp_hit.regex_info.strftime_format)
                 .map_err(|e| {
-                    LogCheckError::new(format!("Issue parsing timestamp because of {e}"))
+                    LogCheckError::new(format!("Issue parsing timestamp because of {}",value))
                 })?;
         if let Some(direction) = direction_checker.process_timestamp(current_datetime) {
             timestamp_hit.direction = Some(direction);
