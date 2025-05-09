@@ -9,8 +9,26 @@ use std::fs::File;
 use crate::date_regex::*;
 use std::io::{BufRead, BufReader};
 
+pub fn get_index_of_header(
+    file: &File,
+    regexes_to_use: &Vec<DateRegex>,
+) -> Result<usize> {
+    let reader = BufReader::new(file);
+    for (index, line_result) in reader.lines().enumerate() {
+        let line = line_result
+            .map_err(|e| LogCheckError::new(format!("Error reading line because of {}", e)))?;
+        for date_regex in regexes_to_use.iter() {
+            if date_regex.regex.is_match(&line) {
+                return Ok(index - 1);
+            }
+        }
+    }
+    Err(LogCheckError::new(
+        "Could not find a supported timestamp format.",
+    ))
+}
 
-pub fn get_reader_from_certain_header_index(header_index: u16, file: File) -> Result<Reader<BufReader<File>>>{
+pub fn get_reader_from_certain_header_index(header_index: usize, file: &File) -> Result<Reader<BufReader<&File>>>{
     let mut buf_reader = BufReader::new(file);
     for _ in 0..header_index {
         let mut dummy = String::new();
@@ -26,7 +44,8 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, regexes_to_use: &Vec
     let file = File::open(&log_file.file_path)
         .map_err(|e| LogCheckError::new(format!("Unable to read csv file because of {e}")))?;
 
-    let mut reader = get_reader_from_certain_header_index(1, file)?;
+    let header_row = get_index_of_header(&file, regexes_to_use)?;
+    let mut reader = get_reader_from_certain_header_index(1, &file)?;
 
     let headers: csv::StringRecord = reader
         .headers()
@@ -47,7 +66,7 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, regexes_to_use: &Vec
                     log_file.file_path.to_string_lossy().to_string()
                 );
                 return Ok(IdentifiedTimeInformation {
-                    header_row: None,
+                    header_row: Some(header_row),
                     column_name: Some(headers.get(i).unwrap().to_string()),
                     column_index: Some(i),
                     direction: None,
@@ -71,8 +90,8 @@ pub fn set_time_direction_by_scanning_csv_file(
 ) -> Result<()> {
     let file = File::open(&log_file.file_path)
         .map_err(|e| LogCheckError::new(format!("Unable to open csv file because of {e}")))?;
-    let mut rdr = get_reader_from_certain_header_index(1, file)?;
-    // let mut previous: Option<NaiveDateTime> = None;
+    let header_row = timestamp_hit.header_row.ok_or_else(|| LogCheckError::new("No header row found."))?;
+    let mut rdr = get_reader_from_certain_header_index(header_row, &file)?;
     let mut direction_checker = TimeDirectionChecker::default();
     for result in rdr.records() {
         // I think I should just include the index in the timestamp hit
@@ -107,7 +126,8 @@ pub fn stream_csv_file(
     let mut processing_object = LogRecordProcessor::new_with_order(timestamp_hit.direction.clone());
     let file = File::open(&log_file.file_path)
         .map_err(|e| LogCheckError::new(format!("Unable to open csv file because of {e}")))?;
-    let mut rdr = get_reader_from_certain_header_index(1, file)?;
+    let header_row = timestamp_hit.header_row.ok_or_else(|| LogCheckError::new("No header row found."))?;
+    let mut rdr = get_reader_from_certain_header_index(header_row, &file)?;
     for (index, result) in rdr.records().enumerate() {
         // I think I should just include the index in the timestamp hit
         let record = result
