@@ -10,17 +10,18 @@ use crate::date_regex::*;
 use std::io::{BufRead, BufReader};
 
 pub fn get_index_of_header(
-    file: &File,
+    log_file: &LogFile,
     regexes_to_use: &Vec<DateRegex>,
 ) -> Result<usize> {
-    return Ok(1);
+    let file = File::open(&log_file.file_path)
+    .map_err(|e| LogCheckError::new(format!("Unable to read csv file because of {e}")))?;
     let reader = BufReader::new(file);
     for (index, line_result) in reader.lines().enumerate() {
         let line = line_result
             .map_err(|e| LogCheckError::new(format!("Error reading line because of {}", e)))?;
         for date_regex in regexes_to_use.iter() {
             if date_regex.regex.is_match(&line) {
-                return Ok(index-1); // Had to make it minus two because a difference of what things start indexing at 0
+                return Ok(index-1);
             }
         }
     }
@@ -29,7 +30,9 @@ pub fn get_index_of_header(
     ))
 }
 
-pub fn get_reader_from_certain_header_index(header_index: usize, file: &File) -> Result<Reader<BufReader<&File>>>{
+pub fn get_reader_from_certain_header_index(header_index: usize, log_file: &LogFile) -> Result<Reader<BufReader<File>>>{
+    let file = File::open(&log_file.file_path)
+    .map_err(|e| LogCheckError::new(format!("Unable to read csv file because of {e}")))?;
     let mut buf_reader = BufReader::new(file);
     for _ in 0..header_index {
         let mut dummy = String::new();
@@ -42,18 +45,18 @@ pub fn get_reader_from_certain_header_index(header_index: usize, file: &File) ->
 }
 
 pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, regexes_to_use: &Vec<DateRegex>) -> Result<IdentifiedTimeInformation> {
-    let file = File::open(&log_file.file_path)
-        .map_err(|e| LogCheckError::new(format!("Unable to read csv file because of {e}")))?;
 
-    let header_row = get_index_of_header(&file, regexes_to_use)?;
+
+    let header_row = get_index_of_header(log_file, regexes_to_use)?;
     println!("Using index {} as header",header_row);
-    let mut reader = get_reader_from_certain_header_index(header_row, &file)?;
+    let mut reader = get_reader_from_certain_header_index(header_row, log_file)?;
 
     let headers: csv::StringRecord = reader
         .headers()
         .map_err(|e| LogCheckError::new(format!("Unable to get headers because of {e}")))?
         .clone(); // this returns a &StringRecord
     println!("headers: {:?}",headers);
+
     let record: csv::StringRecord = reader
         .records()
         .next()
@@ -91,10 +94,8 @@ pub fn set_time_direction_by_scanning_csv_file(
     log_file: &LogFile,
     timestamp_hit: &mut IdentifiedTimeInformation,
 ) -> Result<()> {
-    let file = File::open(&log_file.file_path)
-        .map_err(|e| LogCheckError::new(format!("Unable to open csv file because of {e}")))?;
     let header_row = timestamp_hit.header_row.ok_or_else(|| LogCheckError::new("No header row found."))?;
-    let mut rdr = get_reader_from_certain_header_index(header_row, &file)?;
+    let mut rdr = get_reader_from_certain_header_index(header_row, log_file)?;
     let mut direction_checker = TimeDirectionChecker::default();
     for result in rdr.records() {
         // I think I should just include the index in the timestamp hit
@@ -127,10 +128,9 @@ pub fn stream_csv_file(
 ) -> Result<LogRecordProcessor> {
     // not sure we want to include the whole hashset in this? Maybe only inlcude results
     let mut processing_object = LogRecordProcessor::new_with_order(timestamp_hit.direction.clone());
-    let file = File::open(&log_file.file_path)
-        .map_err(|e| LogCheckError::new(format!("Unable to open csv file because of {e}")))?;
+
     let header_row = timestamp_hit.header_row.ok_or_else(|| LogCheckError::new("No header row found."))?;
-    let mut rdr = get_reader_from_certain_header_index(header_row, &file)?;
+    let mut rdr = get_reader_from_certain_header_index(header_row, log_file)?;
     for (index, result) in rdr.records().enumerate() {
         // I think I should just include the index in the timestamp hit
         let record = result
