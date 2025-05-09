@@ -26,6 +26,7 @@ pub fn try_to_get_timestamp_hit_for_unstructured(
                     log_file.file_path.to_string_lossy().to_string()
                 );
                 return Ok(IdentifiedTimeInformation {
+                    header_row: None,
                     column_name: None,
                     column_index: None,
                     direction: None,

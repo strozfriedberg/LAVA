@@ -4,16 +4,24 @@ use crate::helpers::*;
 use crate::timestamp_tools::*;
 use chrono::NaiveDateTime;
 use csv::ReaderBuilder;
+use csv::Reader;
 use std::fs::File;
 use crate::date_regex::*;
 
 
+pub fn get_reader_from_certain_header_index(header_index: u16, file: File) -> Result<Reader<File>>{
+
+    let reader = ReaderBuilder::new()
+    .has_headers(true) // Set to false if there's no header
+    .from_reader(file);
+    Ok(reader)
+}
+
 pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, regexes_to_use: &Vec<DateRegex>) -> Result<IdentifiedTimeInformation> {
     let file = File::open(&log_file.file_path)
         .map_err(|e| LogCheckError::new(format!("Unable to read csv file because of {e}")))?;
-    let mut reader = ReaderBuilder::new()
-        .has_headers(true) // Set to false if there's no header
-        .from_reader(file);
+
+    let mut reader = get_reader_from_certain_header_index(0, file)?;
 
     let headers: csv::StringRecord = reader
         .headers()
@@ -34,6 +42,7 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, regexes_to_use: &Vec
                     log_file.file_path.to_string_lossy().to_string()
                 );
                 return Ok(IdentifiedTimeInformation {
+                    header_row: None,
                     column_name: Some(headers.get(i).unwrap().to_string()),
                     column_index: Some(i),
                     direction: None,
@@ -57,7 +66,7 @@ pub fn set_time_direction_by_scanning_csv_file(
 ) -> Result<()> {
     let file = File::open(&log_file.file_path)
         .map_err(|e| LogCheckError::new(format!("Unable to open csv file because of {e}")))?;
-    let mut rdr = ReaderBuilder::new().has_headers(true).from_reader(file);
+    let mut rdr = get_reader_from_certain_header_index(0, file)?;
     // let mut previous: Option<NaiveDateTime> = None;
     let mut direction_checker = TimeDirectionChecker::default();
     for result in rdr.records() {
@@ -93,7 +102,7 @@ pub fn stream_csv_file(
     let mut processing_object = LogRecordProcessor::new_with_order(timestamp_hit.direction.clone());
     let file = File::open(&log_file.file_path)
         .map_err(|e| LogCheckError::new(format!("Unable to open csv file because of {e}")))?;
-    let mut rdr = ReaderBuilder::new().has_headers(true).from_reader(file);
+    let mut rdr = get_reader_from_certain_header_index(0, file)?;
     for (index, result) in rdr.records().enumerate() {
         // I think I should just include the index in the timestamp hit
         let record = result
