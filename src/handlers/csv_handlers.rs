@@ -20,7 +20,7 @@ pub fn get_index_of_header(
     get_index_of_header_functionality(reader, regexes_to_use)
 }
 
-pub fn get_index_of_header_functionality(reader: BufReader<File>, regexes_to_use: &Vec<DateRegex>,) -> Result<usize>{
+pub fn get_index_of_header_functionality<R: BufRead>(reader: R, regexes_to_use: &Vec<DateRegex>,) -> Result<usize>{
     for (index, line_result) in reader.lines().enumerate() {
         let line = line_result
             .map_err(|e| LogCheckError::new(format!("Error reading line because of {}", e)))?;
