@@ -7,13 +7,18 @@ use csv::ReaderBuilder;
 use csv::Reader;
 use std::fs::File;
 use crate::date_regex::*;
+use std::io::{BufRead, BufReader};
 
 
-pub fn get_reader_from_certain_header_index(header_index: u16, file: File) -> Result<Reader<File>>{
-
+pub fn get_reader_from_certain_header_index(header_index: u16, file: File) -> Result<Reader<BufReader<File>>>{
+    let mut buf_reader = BufReader::new(file);
+    for _ in 0..header_index {
+        let mut dummy = String::new();
+        buf_reader.read_line(&mut dummy).map_err(|e| LogCheckError::new(format!("Unable to read file because of {e}")))?;
+    }
     let reader = ReaderBuilder::new()
     .has_headers(true) // Set to false if there's no header
-    .from_reader(file);
+    .from_reader(buf_reader);
     Ok(reader)
 }
 
@@ -21,7 +26,7 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, regexes_to_use: &Vec
     let file = File::open(&log_file.file_path)
         .map_err(|e| LogCheckError::new(format!("Unable to read csv file because of {e}")))?;
 
-    let mut reader = get_reader_from_certain_header_index(0, file)?;
+    let mut reader = get_reader_from_certain_header_index(1, file)?;
 
     let headers: csv::StringRecord = reader
         .headers()
@@ -66,7 +71,7 @@ pub fn set_time_direction_by_scanning_csv_file(
 ) -> Result<()> {
     let file = File::open(&log_file.file_path)
         .map_err(|e| LogCheckError::new(format!("Unable to open csv file because of {e}")))?;
-    let mut rdr = get_reader_from_certain_header_index(0, file)?;
+    let mut rdr = get_reader_from_certain_header_index(1, file)?;
     // let mut previous: Option<NaiveDateTime> = None;
     let mut direction_checker = TimeDirectionChecker::default();
     for result in rdr.records() {
@@ -102,7 +107,7 @@ pub fn stream_csv_file(
     let mut processing_object = LogRecordProcessor::new_with_order(timestamp_hit.direction.clone());
     let file = File::open(&log_file.file_path)
         .map_err(|e| LogCheckError::new(format!("Unable to open csv file because of {e}")))?;
-    let mut rdr = get_reader_from_certain_header_index(0, file)?;
+    let mut rdr = get_reader_from_certain_header_index(1, file)?;
     for (index, result) in rdr.records().enumerate() {
         // I think I should just include the index in the timestamp hit
         let record = result
