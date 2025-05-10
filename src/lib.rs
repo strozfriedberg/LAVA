@@ -119,7 +119,7 @@ pub fn process_file(log_file: &LogFile, regexes_to_use: &Option<Vec<DateRegex>>)
             return Ok(base_processed_file);
         }
     };
-
+    base_processed_file.header_index_used = timestamp_hit.header_row.clone().map(|n| n.to_string());
     base_processed_file.time_header = timestamp_hit.column_name.clone();
     base_processed_file.time_format = Some(timestamp_hit.regex_info.pretty_format.clone());
 

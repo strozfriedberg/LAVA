@@ -84,7 +84,7 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, regexes_to_use: &Vec
                 }
 
                 return Ok(IdentifiedTimeInformation {
-                    header_row: Some(header_row),
+                    header_row: Some(header_row as u64),
                     column_name: Some(headers.get(i).unwrap().to_string()),
                     column_index: Some(i),
                     direction: None,
@@ -107,7 +107,7 @@ pub fn set_time_direction_by_scanning_csv_file(
     timestamp_hit: &mut IdentifiedTimeInformation,
 ) -> Result<()> {
     let header_row = timestamp_hit.header_row.ok_or_else(|| LogCheckError::new("No header row found."))?;
-    let mut rdr = get_reader_from_certain_header_index(header_row, log_file)?;
+    let mut rdr = get_reader_from_certain_header_index(header_row as usize, log_file)?;
     let mut direction_checker = TimeDirectionChecker::default();
     for result in rdr.records() {
         // I think I should just include the index in the timestamp hit
@@ -122,7 +122,7 @@ pub fn set_time_direction_by_scanning_csv_file(
         let current_datetime: NaiveDateTime =
             NaiveDateTime::parse_from_str(value, &timestamp_hit.regex_info.strftime_format)
                 .map_err(|e| {
-                    LogCheckError::new(format!("Issue parsing timestamp because of {}",value))
+                    LogCheckError::new(format!("Issue parsing timestamp from {}, because of {}",value, e))
                 })?;
         if let Some(direction) = direction_checker.process_timestamp(current_datetime) {
             timestamp_hit.direction = Some(direction);
@@ -142,7 +142,7 @@ pub fn stream_csv_file(
     let mut processing_object = LogRecordProcessor::new_with_order(timestamp_hit.direction.clone());
 
     let header_row = timestamp_hit.header_row.ok_or_else(|| LogCheckError::new("No header row found."))?;
-    let mut rdr = get_reader_from_certain_header_index(header_row, log_file)?;
+    let mut rdr = get_reader_from_certain_header_index(header_row as usize, log_file)?;
     for (index, result) in rdr.records().enumerate() {
         // I think I should just include the index in the timestamp hit
         let record = result
