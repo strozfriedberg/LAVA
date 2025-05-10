@@ -68,10 +68,7 @@ fn test_get_index_of_header_no_timestamp() {
 
     let result = get_index_of_header_functionality(reader, &PREBUILT_DATE_REGEXES);
 
-    assert!(result.is_err());
-    if let Err(e) = result {
-        assert_eq!(e.to_string(), "Could not find a supported timestamp format.");
-    }
+    assert_eq!(result.unwrap(), 1);
 }
 
 #[test]
@@ -88,8 +85,20 @@ fn test_get_index_of_header_timestamp_but_not_consistent() {
 
     let result = get_index_of_header_functionality(reader, &PREBUILT_DATE_REGEXES);
 
-    assert!(result.is_err());
-    if let Err(e) = result {
-        assert_eq!(e.to_string(), "Could not find a supported timestamp format.");
-    }
+    assert_eq!(result.unwrap(), 1);
+}
+
+#[test]
+fn test_get_index_of_header_less_than_5_rows() {
+    let data = "\
+        id,name,irrelevant_date\n\
+        1,John,\n\
+        4,James,2025-06-01 13:00:00\n";
+
+    let cursor = Cursor::new(data);
+    let reader = BufReader::new(cursor);
+
+    let result = get_index_of_header_functionality(reader, &PREBUILT_DATE_REGEXES);
+
+    assert_eq!(result.unwrap(), 0);
 }

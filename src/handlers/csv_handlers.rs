@@ -21,18 +21,21 @@ pub fn get_index_of_header(
 }
 
 pub fn get_index_of_header_functionality<R: BufRead>(reader: R, regexes_to_use: &Vec<DateRegex>,) -> Result<usize>{
-    for (index, line_result) in reader.lines().enumerate() {
+    let mut comma_counts: Vec<(usize, usize)> = Vec::new();
+
+    for (index, line_result) in reader.lines().enumerate().take(7) {
         let line = line_result
-            .map_err(|e| LogCheckError::new(format!("Error reading line because of {}", e)))?;
-        for date_regex in regexes_to_use.iter() {
-            if date_regex.regex.is_match(&line) {
-                return Ok(index-1);
-            }
+            .map_err(|e| LogCheckError::new(format!("Error reading line {}: {}", index, e)))?;
+        let count = line.matches(',').count();
+        comma_counts.push((index, count));
+    }
+    let (_, expected_comma_count) = comma_counts.last().ok_or_else(|| LogCheckError::new("Vector of comma counts was empty."))?;
+    for (index, comma_count) in comma_counts.iter().rev(){
+        if comma_count < expected_comma_count {
+            return Ok(index+1)
         }
     }
-    Err(LogCheckError::new(
-        "Could not find a supported timestamp format.",
-    ))
+    Ok(0)
 }
 
 pub fn get_reader_from_certain_header_index(header_index: usize, log_file: &LogFile) -> Result<Reader<BufReader<File>>>{
