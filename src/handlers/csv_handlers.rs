@@ -28,6 +28,7 @@ pub fn get_index_of_header_functionality<R: BufRead>(reader: R) -> Result<usize>
         let count = line.matches(',').count();
         comma_counts.push((index, count));
     }
+    // println!("Comma counts {:?}", comma_counts);
     let (_, expected_comma_count) = comma_counts.last().ok_or_else(|| LogCheckError::new("Vector of comma counts was empty."))?;
     for (index, comma_count) in comma_counts.iter().rev(){
         if comma_count < expected_comma_count {
@@ -55,7 +56,7 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, regexes_to_use: &Vec
 
 
     let header_row = get_index_of_header(log_file)?;
-
+    // println!("Using header index {}", header_row);
     let mut reader = get_reader_from_certain_header_index(header_row, log_file)?;
 
     let headers: csv::StringRecord = reader
@@ -98,7 +99,7 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, regexes_to_use: &Vec
         log_file.file_path.to_string_lossy().to_string()
     );
     Err(LogCheckError::new(
-        "Could not find a supported timestamp format.",
+        format!("Could not find a supported timestamp format in row {}.", header_row+1),
     ))
 }
 
