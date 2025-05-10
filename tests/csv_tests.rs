@@ -14,7 +14,7 @@ fn test_get_index_of_header_on_row_0() {
     let cursor = Cursor::new(data);
     let reader = BufReader::new(cursor);
 
-    let result = get_index_of_header_functionality(reader, &PREBUILT_DATE_REGEXES);
+    let result = get_index_of_header_functionality(reader);
 
     assert_eq!(result.unwrap(), 0);
 }
@@ -31,7 +31,7 @@ fn test_get_index_of_header_on_row_1() {
     let cursor = Cursor::new(data);
     let reader = BufReader::new(cursor);
 
-    let result = get_index_of_header_functionality(reader, &PREBUILT_DATE_REGEXES);
+    let result = get_index_of_header_functionality(reader);
 
     assert_eq!(result.unwrap(), 1);
 }
@@ -49,7 +49,7 @@ fn test_get_index_of_header_on_row_2() {
     let cursor = Cursor::new(data);
     let reader = BufReader::new(cursor);
 
-    let result = get_index_of_header_functionality(reader, &PREBUILT_DATE_REGEXES);
+    let result = get_index_of_header_functionality(reader);
 
     assert_eq!(result.unwrap(), 2);
 }
@@ -66,7 +66,7 @@ fn test_get_index_of_header_no_timestamp() {
     let cursor = Cursor::new(data);
     let reader = BufReader::new(cursor);
 
-    let result = get_index_of_header_functionality(reader, &PREBUILT_DATE_REGEXES);
+    let result = get_index_of_header_functionality(reader);
 
     assert_eq!(result.unwrap(), 1);
 }
@@ -83,7 +83,7 @@ fn test_get_index_of_header_timestamp_but_not_consistent() {
     let cursor = Cursor::new(data);
     let reader = BufReader::new(cursor);
 
-    let result = get_index_of_header_functionality(reader, &PREBUILT_DATE_REGEXES);
+    let result = get_index_of_header_functionality(reader);
 
     assert_eq!(result.unwrap(), 1);
 }
@@ -98,7 +98,7 @@ fn test_get_index_of_header_less_than_5_rows() {
     let cursor = Cursor::new(data);
     let reader = BufReader::new(cursor);
 
-    let result = get_index_of_header_functionality(reader, &PREBUILT_DATE_REGEXES);
+    let result = get_index_of_header_functionality(reader);
 
     assert_eq!(result.unwrap(), 0);
 }

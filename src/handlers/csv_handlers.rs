@@ -11,16 +11,15 @@ use std::io::{BufRead, BufReader};
 
 pub fn get_index_of_header(
     log_file: &LogFile,
-    regexes_to_use: &Vec<DateRegex>,
 ) -> Result<usize> {
     let file = File::open(&log_file.file_path)
     .map_err(|e| LogCheckError::new(format!("Unable to read csv file because of {e}")))?;
     let reader = BufReader::new(file);
     
-    get_index_of_header_functionality(reader, regexes_to_use)
+    get_index_of_header_functionality(reader)
 }
 
-pub fn get_index_of_header_functionality<R: BufRead>(reader: R, regexes_to_use: &Vec<DateRegex>,) -> Result<usize>{
+pub fn get_index_of_header_functionality<R: BufRead>(reader: R) -> Result<usize>{
     let mut comma_counts: Vec<(usize, usize)> = Vec::new();
 
     for (index, line_result) in reader.lines().enumerate().take(7) {
@@ -55,7 +54,7 @@ pub fn get_reader_from_certain_header_index(header_index: usize, log_file: &LogF
 pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, regexes_to_use: &Vec<DateRegex>) -> Result<IdentifiedTimeInformation> {
 
 
-    let header_row = get_index_of_header(log_file, regexes_to_use)?;
+    let header_row = get_index_of_header(log_file)?;
 
     let mut reader = get_reader_from_certain_header_index(header_row, log_file)?;
 
