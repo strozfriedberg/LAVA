@@ -1,6 +1,9 @@
 use crate::date_regex::*;
+use crate::helpers::*;
 use chrono::{NaiveDateTime, TimeDelta};
+use csv::StringRecord;
 use serde::Serialize;
+use core::time;
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
@@ -52,8 +55,22 @@ pub struct ProcessedLogFile {
 #[derive(PartialEq, Debug)]
 pub struct LogFileRecord {
     pub hash_of_entire_record: u64,
+    pub record_with_index: StringRecord,
     pub timestamp: NaiveDateTime,
     pub index: usize,
+}
+
+impl LogFileRecord {
+    pub fn new(index: usize, timestamp: NaiveDateTime, record: StringRecord) -> Self {
+        let mut record_to_output = StringRecord::from(vec![index.to_string()]);
+        record_to_output.extend(record.iter());
+        Self {
+            hash_of_entire_record: hash_csv_record(&record),
+            timestamp: timestamp,
+            index: index,
+            record_with_index: record_to_output
+        }
+    }
 }
 
 #[derive(PartialEq, Debug, Default)]

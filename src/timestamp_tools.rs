@@ -46,20 +46,30 @@ impl LogRecordProcessor {
     }
     pub fn process_record(&mut self, record: LogFileRecord) -> Result<()> {
         //Check for duplicates
-        // let is_duplicate = !self
-        //     .duplicate_checker_set
-        //     .insert(record.hash_of_entire_record);
-        // // if is_duplicate {
-        // //     println!("Found duplicate record at index {}", record.index); // Need to make
-        // // }
-
+        self.process_record_for_dupes_and_redactions(&record, true)?;
         //Update earliest and latest timestamp
-        self.process_timestamp(record)?;
+        self.process_timestamp(&record)?;
 
         Ok(())
     }
 
-    pub fn process_timestamp(&mut self, record: LogFileRecord) -> Result<()> {
+    pub fn process_record_for_dupes_and_redactions(&mut self, record: &LogFileRecord, write_hits_to_file: bool) -> Result<()>{
+        let is_duplicate = !self
+            .duplicate_checker_set
+            .insert(record.hash_of_entire_record);
+        if is_duplicate {
+            println!("Found duplicate record at index {}", record.index);
+            if write_hits_to_file {
+                let _ = self.write_hit_to_file(record)?;
+            }
+        }
+        Ok(())
+
+    }
+    pub fn write_hit_to_file(&mut self, record: &LogFileRecord) -> Result<()> {
+        Ok(())
+    }
+    pub fn process_timestamp(&mut self, record: &LogFileRecord) -> Result<()> {
         if let Some(previous_datetime) = self.previous_timestamp {
             // This is where all logic is done if it isn't the first record
             if self.order == Some(TimeDirection::Ascending) {
