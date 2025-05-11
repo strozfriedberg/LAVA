@@ -21,11 +21,13 @@ pub fn get_full_command_line_args(matches: &ArgMatches) -> Result<CommandLineArg
     })
     .transpose()?;
 
+    let timestamp_field = matches.get_one::<String>("tf").cloned();
+
     Ok(CommandLineArgs {
         input_dir: input_dir,
         output_dir: output_dir,
         provided_regexes: regexes,
-
+        timestamp_field: timestamp_field,
     })
 }
 

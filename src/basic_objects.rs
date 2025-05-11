@@ -10,6 +10,7 @@ pub struct CommandLineArgs {
     pub input_dir: PathBuf,
     pub output_dir: PathBuf,
     pub provided_regexes: Option<Vec<DateRegex>>,
+    pub timestamp_field: Option<String>,
 }
 
 #[derive(PartialEq, Debug)]
