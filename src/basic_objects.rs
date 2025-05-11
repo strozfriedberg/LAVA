@@ -67,7 +67,7 @@ impl LogFileRecord {
             hash_of_entire_record: hash_csv_record(&record),
             timestamp: timestamp,
             index: index,
-            record_with_index: record_to_output
+            record_with_index: record_to_output,
         }
     }
 }

@@ -13,7 +13,7 @@ pub mod handlers {
 use handlers::csv_handlers::*;
 use handlers::unstructured_handlers::*;
 pub mod date_regex;
-mod helpers;
+pub mod helpers;
 use helpers::*;
 pub mod basic_objects;
 use basic_objects::*;

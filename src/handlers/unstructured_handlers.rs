@@ -1,9 +1,9 @@
 use crate::basic_objects::*;
 use crate::errors::*;
 use crate::timestamp_tools::*;
+use csv::StringRecord;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use csv::StringRecord;
 
 pub fn try_to_get_timestamp_hit_for_unstructured(
     log_file: &LogFile,
@@ -78,7 +78,11 @@ pub fn stream_unstructured_file(
             .regex_info
             .get_timestamp_object_from_string_contianing_date(line.clone())?
         {
-            processing_object.process_record(LogFileRecord::new(index, current_datetime, StringRecord::from(vec![line])))?;
+            processing_object.process_record(LogFileRecord::new(
+                index,
+                current_datetime,
+                StringRecord::from(vec![line]),
+            ))?;
         }
     }
     Ok(processing_object)

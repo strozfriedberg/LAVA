@@ -35,6 +35,8 @@ pub struct LogRecordProcessor {
     pub previous_timestamp: Option<NaiveDateTime>,
     pub largest_time_gap: Option<TimeGap>,
     pub duplicate_checker_set: HashSet<u64>,
+    pub num_dupes: usize,
+    pub num_redactions: usize,
 }
 
 impl LogRecordProcessor {
@@ -53,7 +55,11 @@ impl LogRecordProcessor {
         Ok(())
     }
 
-    pub fn process_record_for_dupes_and_redactions(&mut self, record: &LogFileRecord, write_hits_to_file: bool) -> Result<()>{
+    pub fn process_record_for_dupes_and_redactions(
+        &mut self,
+        record: &LogFileRecord,
+        write_hits_to_file: bool,
+    ) -> Result<()> {
         let is_duplicate = !self
             .duplicate_checker_set
             .insert(record.hash_of_entire_record);
@@ -64,7 +70,6 @@ impl LogRecordProcessor {
             }
         }
         Ok(())
-
     }
     pub fn write_hit_to_file(&mut self, record: &LogFileRecord) -> Result<()> {
         Ok(())
