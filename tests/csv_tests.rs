@@ -173,7 +173,7 @@ fn get_csv_timestamp_hit_finds_valid_different_timestamp() {
             strftime_format: "%Y-%m-%d %H:%M:%S".to_string(),
             regex: Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").unwrap(),
         }],
-        timestamp_field: None,
+        timestamp_field: Some("second_timestamp".to_string()),
     };
     let result =
         try_to_get_timestamp_hit_for_csv_functionality(headers.clone(), record.clone(), &test_args)

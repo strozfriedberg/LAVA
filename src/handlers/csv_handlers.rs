@@ -100,22 +100,45 @@ pub fn try_to_get_timestamp_hit_for_csv_functionality(
     record: csv::StringRecord,
     execution_settings: &ExecutionSettings,
 ) -> Result<IdentifiedTimeInformation> {
-    for (i, field) in record.iter().enumerate() {
-        for date_regex in execution_settings.regexes.iter() {
-            if date_regex.string_contains_date(field) {
-                return Ok(IdentifiedTimeInformation {
-                    header_row: None,
-                    column_name: Some(headers.get(i).unwrap().to_string()),
-                    column_index: Some(i),
-                    direction: None,
-                    regex_info: date_regex.clone(),
-                });
+    if let Some(field_to_use) = &execution_settings.timestamp_field {
+        for (i, field) in headers.iter().enumerate() {
+            if field.trim() == field_to_use {
+                for date_regex in execution_settings.regexes.iter() {
+                    if date_regex.string_contains_date(record.get(i).ok_or_else(|| LogCheckError::new("Could not get the first field for the selected column."))?) {
+                        return Ok(IdentifiedTimeInformation {
+                            header_row: None,
+                            column_name: Some(headers.get(i).unwrap().to_string()),
+                            column_index: Some(i),
+                            direction: None,
+                            regex_info: date_regex.clone(),
+                        });
+                    }
+                }
+            }
+        }
+        return Err(LogCheckError::new(
+            "Could not find the specified column in the header."
+        ))
+    }
+    else{
+        for (i, field) in record.iter().enumerate() {
+            for date_regex in execution_settings.regexes.iter() {
+                if date_regex.string_contains_date(field) {
+                    return Ok(IdentifiedTimeInformation {
+                        header_row: None,
+                        column_name: Some(headers.get(i).unwrap().to_string()),
+                        column_index: Some(i),
+                        direction: None,
+                        regex_info: date_regex.clone(),
+                    });
+                }
             }
         }
     }
-    Err(LogCheckError::new(format!(
+
+    Err(LogCheckError::new(
         "Could not find a supported timestamp."
-    )))
+    ))
 }
 
 pub fn set_time_direction_by_scanning_csv_file(
