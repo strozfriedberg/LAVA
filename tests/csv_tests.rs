@@ -107,7 +107,7 @@ fn test_get_index_of_header_less_than_5_rows() {
 }
 
 #[test]
-fn finds_valid_timestamp() {
+fn get_csv_timestamp_hit_finds_valid_timestamp() {
     let headers = StringRecord::from(vec!["id", "timestamp", "message"]);
     let record = StringRecord::from(vec!["1", "2024-05-10 10:23:00", "test log"]);
 
@@ -128,4 +128,28 @@ fn finds_valid_timestamp() {
     assert_eq!(result.column_name, Some("timestamp".to_string()));
     assert_eq!(result.column_index, Some(1));
     assert_eq!(result.regex_info.pretty_format, "YYYY-MM-DD HH:MM:SS");
+}
+
+#[test]
+fn get_csv_timestamp_hit_does_not_find_valid_timestamp() {
+    let headers = StringRecord::from(vec!["id", "timestamp", "message"]);
+    let record = StringRecord::from(vec!["1", "no timestamp", "test log"]);
+
+    let test_args = ExecutionSettings {
+            input_dir: PathBuf::from("/dummy/input"),
+            output_dir: PathBuf::from("/dummy/output"),
+            regexes: vec![
+                DateRegex {
+                    pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(),
+                    strftime_format: "%Y-%m-%d %H:%M:%S".to_string(),
+                    regex: Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").unwrap(),
+                },
+            ],
+            timestamp_field: None,
+        };
+    let result = try_to_get_timestamp_hit_for_csv_functionality(headers.clone(), record.clone(), &test_args);
+
+    assert!(result.is_err());
+    let error = result.unwrap_err();
+    assert_eq!(error.to_string(), "Could not find a supported timestamp.");
 }
