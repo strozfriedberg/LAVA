@@ -77,11 +77,11 @@ impl LogRecordProcessor {
         Ok(())
     }
     pub fn write_hit_to_file(&mut self, record: &LogFileRecord) -> Result<()> {
-        let path = "test.csv";
+        let output_dir = "test.csv";
         let file = OpenOptions::new()
         .create(true) 
         .append(true) 
-        .open(path).map_err(|e| LogCheckError::new(format!("Unable to open ouptut file because of {e}")))?;
+        .open(output_dir).map_err(|e| LogCheckError::new(format!("Unable to open ouptut file because of {e}")))?;
         let mut writer = WriterBuilder::new().has_headers(false).from_writer(file);
         writer.write_record(&record.record_with_index).map_err(|e| LogCheckError::new(format!("Unable to write record because of {e}")))?;
         Ok(())
