@@ -17,7 +17,7 @@ mod helpers;
 use helpers::*;
 pub mod basic_objects;
 use basic_objects::*;
-mod timestamp_tools;
+pub mod timestamp_tools;
 use timestamp_tools::*;
 include!(concat!(env!("OUT_DIR"), "/generated_regexes.rs"));
 

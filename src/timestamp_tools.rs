@@ -33,7 +33,7 @@ pub struct LogRecordProcessor {
     pub min_timestamp: Option<NaiveDateTime>,
     pub max_timestamp: Option<NaiveDateTime>,
     pub previous_timestamp: Option<NaiveDateTime>,
-    pub largest_time_gap: Option<TimeGap>, // Eventually maybe make this store the top few?
+    pub largest_time_gap: Option<TimeGap>,
     pub duplicate_checker_set: HashSet<u64>,
 }
 
@@ -54,6 +54,12 @@ impl LogRecordProcessor {
         // // }
 
         //Update earliest and latest timestamp
+        self.process_timestamp(record)?;
+
+        Ok(())
+    }
+
+    pub fn process_timestamp(&mut self, record: LogFileRecord) -> Result<()> {
         if let Some(previous_datetime) = self.previous_timestamp {
             // This is where all logic is done if it isn't the first record
             if self.order == Some(TimeDirection::Ascending) {
@@ -92,7 +98,6 @@ impl LogRecordProcessor {
         }
         self.num_records = self.num_records + 1;
         self.previous_timestamp = Some(record.timestamp);
-
         Ok(())
     }
 
