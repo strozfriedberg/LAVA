@@ -60,7 +60,7 @@ fn main() {
         test_code.push_str("#[test]\n");
         test_code.push_str(&format!("fn test_regex_{}() {{\n", i,));
         test_code.push_str(&format!(
-            "   let re = DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"({})\").unwrap(),\n        }};\n",
+            "   let re = DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"{}\").unwrap(),\n        }};\n",
             item.pretty_format,
             item.strftime_format,
             item.regex

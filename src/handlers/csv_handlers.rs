@@ -25,7 +25,7 @@ pub fn get_index_of_header_functionality<R: BufRead>(reader: R) -> Result<usize>
         let count = line.matches(',').count();
         comma_counts.push((index, count));
     }
-    println!("Comma counts {:?}", comma_counts);
+    // println!("Comma counts {:?}", comma_counts);
     let (_, expected_comma_count) = comma_counts
         .last()
         .ok_or_else(|| LogCheckError::new("Vector of comma counts was empty."))?;
@@ -74,10 +74,17 @@ pub fn try_to_get_timestamp_hit_for_csv(
         .unwrap()
         .map_err(|e| LogCheckError::new(format!("Unable to get first row because of {e}")))?; // This is returning a result, that is why I had to use the question mark below before the iter()
 
-    let mut response =
-        try_to_get_timestamp_hit_for_csv_functionality(headers, record, execution_settings);
-    if let Ok(ref mut partial) = response {
-        partial.header_row = Some(header_row as u64);
+    let mut response = try_to_get_timestamp_hit_for_csv_functionality(headers, record, execution_settings);
+    match response {
+        Ok(ref mut partial) => {
+            partial.header_row = Some(header_row as u64);
+        }
+        Err(ref _e) => {
+            println!(
+                "Could not find a supported timestamp in {}",
+                log_file.file_path.to_string_lossy().to_string()
+            );
+        }
     }
     response
 }
@@ -89,19 +96,7 @@ pub fn try_to_get_timestamp_hit_for_csv_functionality(
 ) -> Result<IdentifiedTimeInformation> {
     for (i, field) in record.iter().enumerate() {
         for date_regex in execution_settings.regexes.iter() {
-            if date_regex.regex.is_match(field) {
-                if let Some(captures) = date_regex.regex.captures(field) {
-                    if let Some(matched) = captures.get(1) {
-                        println!(
-                            "Found match for '{}' on '{}' time format in the '{}' column",
-                            date_regex.pretty_format,
-                            matched.as_str(),
-                            headers.get(i).unwrap().to_string(),
-                            // log_file.file_path.to_string_lossy().to_string()
-                        );
-                    }
-                }
-
+            if date_regex.string_contains_date(field) {
                 return Ok(IdentifiedTimeInformation {
                     header_row: None,
                     column_name: Some(headers.get(i).unwrap().to_string()),
@@ -112,10 +107,6 @@ pub fn try_to_get_timestamp_hit_for_csv_functionality(
             }
         }
     }
-    // println!(
-    //     "Could not find a supported timestamp in {}",
-    //     log_file.file_path.to_string_lossy().to_string()
-    // );
     Err(LogCheckError::new(format!(
         "Could not find a supported timestamp."
     )))
@@ -140,14 +131,9 @@ pub fn set_time_direction_by_scanning_csv_file(
         let value = record
             .get(timestamp_hit.column_index.unwrap())
             .ok_or_else(|| LogCheckError::new("Index of date field not found"))?; // unwrap is safe here because for CSVs, there will always be a column index
-        let current_datetime: NaiveDateTime =
-            NaiveDateTime::parse_from_str(value, &timestamp_hit.regex_info.strftime_format)
-                .map_err(|e| {
-                    LogCheckError::new(format!(
-                        "Issue parsing timestamp from {}, because of {}",
-                        value, e
-                    ))
-                })?;
+        
+        let current_datetime: NaiveDateTime = timestamp_hit.regex_info.get_timestamp_object_from_string_contianing_date(value.to_string())?.ok_or_else(|| LogCheckError::new("No timestamp found when scanning for direction."))?;
+
         if let Some(direction) = direction_checker.process_timestamp(current_datetime) {
             timestamp_hit.direction = Some(direction);
             return Ok(());

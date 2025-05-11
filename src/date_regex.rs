@@ -43,4 +43,10 @@ impl DateRegex {
         }
         return Ok(None); // regex did not capture any portion of the string
     }
+    pub fn string_contains_date(&self, string_to_verify: &str) -> bool {
+        if self.regex.is_match(&string_to_verify) {
+            return true;
+        }
+        false
+    }
 }
