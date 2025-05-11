@@ -28,12 +28,6 @@ pub fn hash_csv_record(record: &StringRecord) -> u64 {
     hasher.finish()
 }
 
-pub fn hash_string(input: &String) -> u64 {
-    let mut hasher = DefaultHasher::new();
-    input.hash(&mut hasher); // Hash the string (dereferenced automatically to &str)
-    hasher.finish() // Return the resulting hash
-}
-
 pub fn write_output_to_csv(
     processed_log_files: &Vec<ProcessedLogFile>,
     execution_settings: &ExecutionSettings,
