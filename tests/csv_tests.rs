@@ -1,9 +1,11 @@
-use log_checker::*;
-use std::io::{Cursor, BufReader};
 use csv::StringRecord;
 use log_checker::basic_objects::ExecutionSettings;
+use log_checker::handlers::csv_handlers::{
+    get_index_of_header_functionality, try_to_get_timestamp_hit_for_csv_functionality,
+};
+use log_checker::*;
+use std::io::{BufReader, Cursor};
 use std::path::PathBuf;
-use log_checker::handlers::csv_handlers::{get_index_of_header_functionality, try_to_get_timestamp_hit_for_csv_functionality};
 include!(concat!(env!("OUT_DIR"), "/generated_regexes.rs"));
 
 #[test]
@@ -112,18 +114,18 @@ fn get_csv_timestamp_hit_finds_valid_timestamp() {
     let record = StringRecord::from(vec!["1", "2024-05-10 10:23:00", "test log"]);
 
     let test_args = ExecutionSettings {
-            input_dir: PathBuf::from("/dummy/input"),
-            output_dir: PathBuf::from("/dummy/output"),
-            regexes: vec![
-                DateRegex {
-                    pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(),
-                    strftime_format: "%Y-%m-%d %H:%M:%S".to_string(),
-                    regex: Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").unwrap(),
-                },
-            ],
-            timestamp_field: None,
-        };
-    let result = try_to_get_timestamp_hit_for_csv_functionality(headers.clone(), record.clone(), &test_args).unwrap();
+        input_dir: PathBuf::from("/dummy/input"),
+        output_dir: PathBuf::from("/dummy/output"),
+        regexes: vec![DateRegex {
+            pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(),
+            strftime_format: "%Y-%m-%d %H:%M:%S".to_string(),
+            regex: Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").unwrap(),
+        }],
+        timestamp_field: None,
+    };
+    let result =
+        try_to_get_timestamp_hit_for_csv_functionality(headers.clone(), record.clone(), &test_args)
+            .unwrap();
 
     assert_eq!(result.column_name, Some("timestamp".to_string()));
     assert_eq!(result.column_index, Some(1));
@@ -136,43 +138,46 @@ fn get_csv_timestamp_hit_does_not_find_valid_timestamp() {
     let record = StringRecord::from(vec!["1", "no timestamp", "test log"]);
 
     let test_args = ExecutionSettings {
-            input_dir: PathBuf::from("/dummy/input"),
-            output_dir: PathBuf::from("/dummy/output"),
-            regexes: vec![
-                DateRegex {
-                    pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(),
-                    strftime_format: "%Y-%m-%d %H:%M:%S".to_string(),
-                    regex: Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").unwrap(),
-                },
-            ],
-            timestamp_field: None,
-        };
-    let result = try_to_get_timestamp_hit_for_csv_functionality(headers.clone(), record.clone(), &test_args);
+        input_dir: PathBuf::from("/dummy/input"),
+        output_dir: PathBuf::from("/dummy/output"),
+        regexes: vec![DateRegex {
+            pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(),
+            strftime_format: "%Y-%m-%d %H:%M:%S".to_string(),
+            regex: Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").unwrap(),
+        }],
+        timestamp_field: None,
+    };
+    let result =
+        try_to_get_timestamp_hit_for_csv_functionality(headers.clone(), record.clone(), &test_args);
 
     assert!(result.is_err());
     let error = result.unwrap_err();
     assert_eq!(error.to_string(), "Could not find a supported timestamp.");
 }
 
-
 #[test]
 fn get_csv_timestamp_hit_finds_valid_different_timestamp() {
     let headers = StringRecord::from(vec!["id", "timestamp", "message", "second_timestamp"]);
-    let record = StringRecord::from(vec!["1", "2024-05-10 10:23:00", "test log", "2024-05-10 10:23:00"]);
+    let record = StringRecord::from(vec![
+        "1",
+        "2024-05-10 10:23:00",
+        "test log",
+        "2024-05-10 10:23:00",
+    ]);
 
     let test_args = ExecutionSettings {
-            input_dir: PathBuf::from("/dummy/input"),
-            output_dir: PathBuf::from("/dummy/output"),
-            regexes: vec![
-                DateRegex {
-                    pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(),
-                    strftime_format: "%Y-%m-%d %H:%M:%S".to_string(),
-                    regex: Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").unwrap(),
-                },
-            ],
-            timestamp_field: None,
-        };
-    let result = try_to_get_timestamp_hit_for_csv_functionality(headers.clone(), record.clone(), &test_args).unwrap();
+        input_dir: PathBuf::from("/dummy/input"),
+        output_dir: PathBuf::from("/dummy/output"),
+        regexes: vec![DateRegex {
+            pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(),
+            strftime_format: "%Y-%m-%d %H:%M:%S".to_string(),
+            regex: Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").unwrap(),
+        }],
+        timestamp_field: None,
+    };
+    let result =
+        try_to_get_timestamp_hit_for_csv_functionality(headers.clone(), record.clone(), &test_args)
+            .unwrap();
 
     assert_eq!(result.column_name, Some("second_timestamp".to_string()));
     assert_eq!(result.column_index, Some(3));

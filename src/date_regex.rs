@@ -3,7 +3,6 @@ use chrono::NaiveDateTime;
 use regex::Regex;
 use serde::Deserialize;
 
-
 #[derive(Deserialize)]
 pub struct RawDateRegex {
     pub pretty_format: String,
@@ -20,7 +19,7 @@ pub struct DateRegex {
 
 impl DateRegex {
     pub fn new_from_raw_date_regex(input: RawDateRegex) -> Self {
-        DateRegex{
+        DateRegex {
             pretty_format: input.pretty_format,
             strftime_format: input.strftime_format,
             regex: Regex::new(&format!(r"({})", input.regex)).unwrap(),

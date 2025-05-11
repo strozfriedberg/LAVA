@@ -1,4 +1,4 @@
-use clap::{arg,Command};
+use clap::{Command, arg};
 use log_checker::process_all_files;
 mod main_helpers;
 use main_helpers::get_full_execution_settings;
@@ -14,10 +14,8 @@ fn main() {
         .get_matches();
 
     let execution_settings = get_full_execution_settings(&matches).unwrap(); // I think unwrap is fine here because I want to crash the program if I get an error here
-    
+
     println!("Input directory: {:?}", execution_settings.input_dir);
     println!("Output directory: {:?}", execution_settings.output_dir);
     process_all_files(execution_settings)
 }
-
-

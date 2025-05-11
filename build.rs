@@ -23,12 +23,14 @@ fn main() {
     let out_dir = env::var_os("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join("generated_regexes.rs");
     let content = fs::read_to_string(yaml_path).expect("Failed to read YAML file");
-    let parsed: Vec<RawDateRegexWithTests> = serde_yaml::from_str(&content).expect("Failed to parse YAML");
+    let parsed: Vec<RawDateRegexWithTests> =
+        serde_yaml::from_str(&content).expect("Failed to parse YAML");
     let mut generated_code = String::new();
     generated_code.push_str("use once_cell::sync::Lazy;\n");
     generated_code.push_str("use regex::Regex;\n");
     generated_code.push_str("use crate::date_regex::DateRegex;\n\n");
-    generated_code.push_str("pub static PREBUILT_DATE_REGEXES: Lazy<Vec<DateRegex>> = Lazy::new(|| {\n");
+    generated_code
+        .push_str("pub static PREBUILT_DATE_REGEXES: Lazy<Vec<DateRegex>> = Lazy::new(|| {\n");
     generated_code.push_str("    vec![\n");
 
     for entry in &parsed {
@@ -53,14 +55,10 @@ fn main() {
     test_code.push_str("    use regex::Regex;\n");
     test_code.push_str("    use chrono::{NaiveDate, NaiveTime, NaiveDateTime};\n");
     test_code.push_str("    use crate::date_regex::DateRegex;\n\n");
-    
-    
-    
+
     for (i, item) in parsed.iter().enumerate() {
         test_code.push_str("#[test]\n");
-        test_code.push_str(&format!(
-             "fn test_regex_{}() {{\n",i,
-        ));
+        test_code.push_str(&format!("fn test_regex_{}() {{\n", i,));
         test_code.push_str(&format!(
             "   let re = DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"({})\").unwrap(),\n        }};\n",
             item.pretty_format,
@@ -74,9 +72,9 @@ fn main() {
         test_code.push_str("    assert_eq!(expected_timestamp, actual_timestamp);\n");
         test_code.push_str("}\n");
     }
-    
+
     test_code.push_str("}\n");
-    
+
     fs::write(&test_out_path, test_code).expect("Failed to write generated_tests.rs");
     println!("cargo:rerun-if-changed=regexes.yml");
     println!("cargo:rerun-if-changed=build.rs");

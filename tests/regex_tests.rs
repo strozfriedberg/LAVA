@@ -1,7 +1,6 @@
 // use regex::Regex;
-use chrono::{NaiveDate, NaiveTime, NaiveDateTime};
-use log_checker::date_regex::{RawDateRegex, DateRegex};
-
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use log_checker::date_regex::{DateRegex, RawDateRegex};
 
 #[test]
 fn test_date_regex_from_raw() {
@@ -15,6 +14,9 @@ fn test_date_regex_from_raw() {
     let date = NaiveDate::from_ymd_opt(2023, 1, 1).unwrap();
     let time = NaiveTime::from_hms_milli_opt(1, 0, 0, 0).unwrap();
     let expected_timestamp = NaiveDateTime::new(date, time);
-    let actual_timestamp = re.get_timestamp_object_from_string_contianing_date(test_input.to_string()).unwrap().expect("Failed to get timestamp");
+    let actual_timestamp = re
+        .get_timestamp_object_from_string_contianing_date(test_input.to_string())
+        .unwrap()
+        .expect("Failed to get timestamp");
     assert_eq!(expected_timestamp, actual_timestamp);
 }

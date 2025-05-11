@@ -3,22 +3,20 @@ use crate::errors::*;
 use crate::helpers::*;
 use crate::timestamp_tools::*;
 use chrono::NaiveDateTime;
-use csv::ReaderBuilder;
 use csv::Reader;
+use csv::ReaderBuilder;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-pub fn get_index_of_header(
-    log_file: &LogFile,
-) -> Result<usize> {
+pub fn get_index_of_header(log_file: &LogFile) -> Result<usize> {
     let file = File::open(&log_file.file_path)
-    .map_err(|e| LogCheckError::new(format!("Unable to read csv file because of {e}")))?;
+        .map_err(|e| LogCheckError::new(format!("Unable to read csv file because of {e}")))?;
     let reader = BufReader::new(file);
-    
+
     get_index_of_header_functionality(reader)
 }
 
-pub fn get_index_of_header_functionality<R: BufRead>(reader: R) -> Result<usize>{
+pub fn get_index_of_header_functionality<R: BufRead>(reader: R) -> Result<usize> {
     let mut comma_counts: Vec<(usize, usize)> = Vec::new();
 
     for (index, line_result) in reader.lines().enumerate().take(7) {
@@ -28,32 +26,40 @@ pub fn get_index_of_header_functionality<R: BufRead>(reader: R) -> Result<usize>
         comma_counts.push((index, count));
     }
     println!("Comma counts {:?}", comma_counts);
-    let (_, expected_comma_count) = comma_counts.last().ok_or_else(|| LogCheckError::new("Vector of comma counts was empty."))?;
-    for (index, comma_count) in comma_counts.iter().rev(){
+    let (_, expected_comma_count) = comma_counts
+        .last()
+        .ok_or_else(|| LogCheckError::new("Vector of comma counts was empty."))?;
+    for (index, comma_count) in comma_counts.iter().rev() {
         if comma_count < expected_comma_count {
-            return Ok(index+1)
+            return Ok(index + 1);
         }
     }
     Ok(0)
 }
 
-pub fn get_reader_from_certain_header_index(header_index: usize, log_file: &LogFile) -> Result<Reader<BufReader<File>>>{
+pub fn get_reader_from_certain_header_index(
+    header_index: usize,
+    log_file: &LogFile,
+) -> Result<Reader<BufReader<File>>> {
     let file = File::open(&log_file.file_path)
-    .map_err(|e| LogCheckError::new(format!("Unable to read csv file because of {e}")))?;
+        .map_err(|e| LogCheckError::new(format!("Unable to read csv file because of {e}")))?;
     let mut buf_reader = BufReader::new(file);
     for _ in 0..header_index {
         let mut dummy = String::new();
-        buf_reader.read_line(&mut dummy).map_err(|e| LogCheckError::new(format!("Unable to read file because of {e}")))?;
+        buf_reader
+            .read_line(&mut dummy)
+            .map_err(|e| LogCheckError::new(format!("Unable to read file because of {e}")))?;
     }
     let reader = ReaderBuilder::new()
-    .has_headers(true) // Set to false if there's no header
-    .from_reader(buf_reader);
+        .has_headers(true) // Set to false if there's no header
+        .from_reader(buf_reader);
     Ok(reader)
 }
 
-pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, execution_settings: &ExecutionSettings) -> Result<IdentifiedTimeInformation> {
-
-
+pub fn try_to_get_timestamp_hit_for_csv(
+    log_file: &LogFile,
+    execution_settings: &ExecutionSettings,
+) -> Result<IdentifiedTimeInformation> {
     let header_row = get_index_of_header(log_file)?;
     // println!("Using header index {}", header_row);
     let mut reader = get_reader_from_certain_header_index(header_row, log_file)?;
@@ -67,16 +73,20 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, execution_settings: 
         .next()
         .unwrap()
         .map_err(|e| LogCheckError::new(format!("Unable to get first row because of {e}")))?; // This is returning a result, that is why I had to use the question mark below before the iter()
-    
-    let mut response = try_to_get_timestamp_hit_for_csv_functionality(headers, record, execution_settings);
+
+    let mut response =
+        try_to_get_timestamp_hit_for_csv_functionality(headers, record, execution_settings);
     if let Ok(ref mut partial) = response {
         partial.header_row = Some(header_row as u64);
     }
     response
 }
 
-pub fn try_to_get_timestamp_hit_for_csv_functionality(headers : csv::StringRecord, record: csv::StringRecord, execution_settings: &ExecutionSettings) -> Result<IdentifiedTimeInformation> {
-
+pub fn try_to_get_timestamp_hit_for_csv_functionality(
+    headers: csv::StringRecord,
+    record: csv::StringRecord,
+    execution_settings: &ExecutionSettings,
+) -> Result<IdentifiedTimeInformation> {
     for (i, field) in record.iter().enumerate() {
         for date_regex in execution_settings.regexes.iter() {
             if date_regex.regex.is_match(field) {
@@ -106,16 +116,18 @@ pub fn try_to_get_timestamp_hit_for_csv_functionality(headers : csv::StringRecor
     //     "Could not find a supported timestamp in {}",
     //     log_file.file_path.to_string_lossy().to_string()
     // );
-    Err(LogCheckError::new(
-        format!("Could not find a supported timestamp."),
-    ))
+    Err(LogCheckError::new(format!(
+        "Could not find a supported timestamp."
+    )))
 }
 
 pub fn set_time_direction_by_scanning_csv_file(
     log_file: &LogFile,
     timestamp_hit: &mut IdentifiedTimeInformation,
 ) -> Result<()> {
-    let header_row = timestamp_hit.header_row.ok_or_else(|| LogCheckError::new("No header row found."))?;
+    let header_row = timestamp_hit
+        .header_row
+        .ok_or_else(|| LogCheckError::new("No header row found."))?;
     let mut rdr = get_reader_from_certain_header_index(header_row as usize, log_file)?;
     let mut direction_checker = TimeDirectionChecker::default();
     for result in rdr.records() {
@@ -131,7 +143,10 @@ pub fn set_time_direction_by_scanning_csv_file(
         let current_datetime: NaiveDateTime =
             NaiveDateTime::parse_from_str(value, &timestamp_hit.regex_info.strftime_format)
                 .map_err(|e| {
-                    LogCheckError::new(format!("Issue parsing timestamp from {}, because of {}",value, e))
+                    LogCheckError::new(format!(
+                        "Issue parsing timestamp from {}, because of {}",
+                        value, e
+                    ))
                 })?;
         if let Some(direction) = direction_checker.process_timestamp(current_datetime) {
             timestamp_hit.direction = Some(direction);
@@ -150,7 +165,9 @@ pub fn stream_csv_file(
     // not sure we want to include the whole hashset in this? Maybe only inlcude results
     let mut processing_object = LogRecordProcessor::new_with_order(timestamp_hit.direction.clone());
 
-    let header_row = timestamp_hit.header_row.ok_or_else(|| LogCheckError::new("No header row found."))?;
+    let header_row = timestamp_hit
+        .header_row
+        .ok_or_else(|| LogCheckError::new("No header row found."))?;
     let mut rdr = get_reader_from_certain_header_index(header_row as usize, log_file)?;
     for (index, result) in rdr.records().enumerate() {
         // I think I should just include the index in the timestamp hit
@@ -161,7 +178,13 @@ pub fn stream_csv_file(
             .ok_or_else(|| LogCheckError::new("Index of date field not found"))?;
         let current_datetime: NaiveDateTime = timestamp_hit
             .regex_info
-            .get_timestamp_object_from_string_contianing_date(value.to_string())?.ok_or_else(|| LogCheckError::new(format!("No supported timestamp found timestamp column at index {}",index)))?;
+            .get_timestamp_object_from_string_contianing_date(value.to_string())?
+            .ok_or_else(|| {
+                LogCheckError::new(format!(
+                    "No supported timestamp found timestamp column at index {}",
+                    index
+                ))
+            })?;
         let hash_of_record = hash_csv_record(&record);
         processing_object.process_record(LogFileRecord {
             hash_of_entire_record: hash_of_record,

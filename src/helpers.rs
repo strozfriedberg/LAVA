@@ -6,8 +6,6 @@ use csv::Writer;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-
-
 pub fn generate_log_filename() -> String {
     let now = Utc::now();
     let formatted = now.format("%Y-%m-%d_%H-%M-%S_LogCheck_Output.csv");
@@ -36,7 +34,10 @@ pub fn hash_string(input: &String) -> u64 {
     hasher.finish() // Return the resulting hash
 }
 
-pub fn write_output_to_csv(processed_log_files: &Vec<ProcessedLogFile>, execution_settings: &ExecutionSettings) -> Result<()> {
+pub fn write_output_to_csv(
+    processed_log_files: &Vec<ProcessedLogFile>,
+    execution_settings: &ExecutionSettings,
+) -> Result<()> {
     // in the final version, maybe have a full version that has tons of fields, and then a simplified version. Could have command line arg to trigger verbose one
     //Add something here to create the
     let output_filepath = execution_settings.output_dir.join(generate_log_filename());
@@ -86,4 +87,3 @@ pub fn write_output_to_csv(processed_log_files: &Vec<ProcessedLogFile>, executio
     println!("Data written to {}", output_filepath.to_string_lossy());
     Ok(())
 }
-

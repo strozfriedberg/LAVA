@@ -30,11 +30,15 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
     for entry in glob(&pattern).expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => {
-                let metadata = std::fs::metadata(&path).map_err(|e| LogCheckError::new(format!("Failed to read metadata of file becase of {e}"))).unwrap();
+                let metadata = std::fs::metadata(&path)
+                    .map_err(|e| {
+                        LogCheckError::new(format!("Failed to read metadata of file becase of {e}"))
+                    })
+                    .unwrap();
                 if metadata.is_file() {
                     paths.push(path);
                 }
-            },
+            }
             Err(e) => println!("{:?}", e),
         }
     }
@@ -83,7 +87,10 @@ pub fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile> {
     supported_files
 }
 
-pub fn process_file(log_file: &LogFile, execution_settings: &ExecutionSettings) -> Result<ProcessedLogFile> {
+pub fn process_file(
+    log_file: &LogFile,
+    execution_settings: &ExecutionSettings,
+) -> Result<ProcessedLogFile> {
     let mut base_processed_file = ProcessedLogFile::default();
 
     //get hash and metadata. Does not matter what kind of file it is for this function
@@ -207,7 +214,10 @@ fn get_metadata_and_hash(file_path: &PathBuf) -> Result<(String, u64, String, St
     ))
 }
 
-pub fn try_to_get_timestamp_hit(log_file: &LogFile, execution_settings: &ExecutionSettings) -> Result<IdentifiedTimeInformation> {
+pub fn try_to_get_timestamp_hit(
+    log_file: &LogFile,
+    execution_settings: &ExecutionSettings,
+) -> Result<IdentifiedTimeInformation> {
     if log_file.log_type == LogType::Csv {
         return try_to_get_timestamp_hit_for_csv(log_file, execution_settings);
     } else if log_file.log_type == LogType::Unstructured {

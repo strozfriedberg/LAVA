@@ -5,7 +5,6 @@ use crate::timestamp_tools::*;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-
 pub fn try_to_get_timestamp_hit_for_unstructured(
     log_file: &LogFile,
     execution_settings: &ExecutionSettings,
@@ -85,9 +84,6 @@ pub fn stream_unstructured_file(
                 index: index,
             })?
         }
-        // let current_datetime = timestamp_hit
-        //     .regex_info
-        //     .get_timestamp_object_from_string_contianing_date(line)?;
     }
     Ok(processing_object)
 }
