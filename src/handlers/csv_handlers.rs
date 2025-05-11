@@ -206,12 +206,7 @@ pub fn stream_csv_file(
                     index
                 ))
             })?;
-        let hash_of_record = hash_csv_record(&record);
-        processing_object.process_record(LogFileRecord {
-            hash_of_entire_record: hash_of_record,
-            timestamp: current_datetime,
-            index: index,
-        })?
+        processing_object.process_record(LogFileRecord::new(index, current_datetime, record))?
     }
     Ok(processing_object)
 }
