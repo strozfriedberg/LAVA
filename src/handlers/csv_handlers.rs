@@ -28,7 +28,7 @@ pub fn get_index_of_header_functionality<R: BufRead>(reader: R) -> Result<usize>
         let count = line.matches(',').count();
         comma_counts.push((index, count));
     }
-    // println!("Comma counts {:?}", comma_counts);
+    println!("Comma counts {:?}", comma_counts);
     let (_, expected_comma_count) = comma_counts.last().ok_or_else(|| LogCheckError::new("Vector of comma counts was empty."))?;
     for (index, comma_count) in comma_counts.iter().rev(){
         if comma_count < expected_comma_count {
@@ -58,7 +58,6 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, regexes_to_use: &Vec
     let header_row = get_index_of_header(log_file)?;
     // println!("Using header index {}", header_row);
     let mut reader = get_reader_from_certain_header_index(header_row, log_file)?;
-
     let headers: csv::StringRecord = reader
         .headers()
         .map_err(|e| LogCheckError::new(format!("Unable to get headers because of {e}")))?
@@ -69,23 +68,33 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, regexes_to_use: &Vec
         .next()
         .unwrap()
         .map_err(|e| LogCheckError::new(format!("Unable to get first row because of {e}")))?; // This is returning a result, that is why I had to use the question mark below before the iter()
+    
+    let mut response = try_to_get_timestamp_hit_for_csv_functionality(headers, record, regexes_to_use);
+    if let Ok(ref mut partial) = response {
+        partial.header_row = Some(header_row as u64);
+    }
+    response
+}
+
+pub fn try_to_get_timestamp_hit_for_csv_functionality(headers : csv::StringRecord, record: csv::StringRecord, regexes_to_use: &Vec<DateRegex>) -> Result<IdentifiedTimeInformation> {
+
     for (i, field) in record.iter().enumerate() {
         for date_regex in regexes_to_use.iter() {
             if date_regex.regex.is_match(field) {
                 if let Some(captures) = date_regex.regex.captures(field) {
                     if let Some(matched) = captures.get(1) {
                         println!(
-                            "Found match for '{}' on '{}' time format in the '{}' column of {}",
+                            "Found match for '{}' on '{}' time format in the '{}' column",
                             date_regex.pretty_format,
                             matched.as_str(),
                             headers.get(i).unwrap().to_string(),
-                            log_file.file_path.to_string_lossy().to_string()
+                            // log_file.file_path.to_string_lossy().to_string()
                         );
                     }
                 }
 
                 return Ok(IdentifiedTimeInformation {
-                    header_row: Some(header_row as u64),
+                    header_row: None,
                     column_name: Some(headers.get(i).unwrap().to_string()),
                     column_index: Some(i),
                     direction: None,
@@ -94,12 +103,12 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, regexes_to_use: &Vec
             }
         }
     }
-    println!(
-        "Could not find a supported timestamp in {}",
-        log_file.file_path.to_string_lossy().to_string()
-    );
+    // println!(
+    //     "Could not find a supported timestamp in {}",
+    //     log_file.file_path.to_string_lossy().to_string()
+    // );
     Err(LogCheckError::new(
-        format!("Could not find a supported timestamp format in row {}.", header_row+1),
+        format!("Could not find a supported timestamp."),
     ))
 }
 
