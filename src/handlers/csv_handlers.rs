@@ -78,6 +78,12 @@ pub fn try_to_get_timestamp_hit_for_csv(
     match response {
         Ok(ref mut partial) => {
             partial.header_row = Some(header_row as u64);
+            println!(
+                "Found match for '{}' time format in the '{}' column of {}",
+                partial.regex_info.pretty_format,
+                partial.column_name.as_ref().ok_or_else(|| LogCheckError::new("No column name found."))?,
+                log_file.file_path.to_string_lossy().to_string()
+            );
         }
         Err(ref _e) => {
             println!(
