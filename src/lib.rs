@@ -86,17 +86,6 @@ pub fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile> {
 pub fn process_file(log_file: &LogFile, command_line_args: &CommandLineArgs) -> Result<ProcessedLogFile> {
     let mut base_processed_file = ProcessedLogFile::default();
 
-    // command_line_args
-    // .provided_regexes
-    // .get_or_insert_with(|| PREBUILT_DATE_REGEXES.clone());
-    //Decide which regexes to use
-    let regexes_to_actually_use = if let Some(regexes) = &command_line_args.provided_regexes {
-        regexes.clone()
-    } else {
-        PREBUILT_DATE_REGEXES.clone()
-    };
-
-
     //get hash and metadata. Does not matter what kind of file it is for this function
     let (hash, size, file_name, file_path) = match get_metadata_and_hash(&log_file.file_path)
         .map_err(|e| PhaseError::MetaDataRetieval(e.to_string()))
@@ -113,7 +102,7 @@ pub fn process_file(log_file: &LogFile, command_line_args: &CommandLineArgs) -> 
     base_processed_file.file_path = Some(file_path);
 
     // get the timestamp field. will do this for all of them, but there will just be some fields that only get filled in for structured datatypes
-    let mut timestamp_hit = match try_to_get_timestamp_hit(log_file, &regexes_to_actually_use)
+    let mut timestamp_hit = match try_to_get_timestamp_hit(log_file, command_line_args)
         .map_err(|e| PhaseError::TimeDiscovery(e.to_string()))
     {
         Ok(result) => result,
@@ -218,11 +207,11 @@ fn get_metadata_and_hash(file_path: &PathBuf) -> Result<(String, u64, String, St
     ))
 }
 
-pub fn try_to_get_timestamp_hit(log_file: &LogFile, regexes_to_use: &Vec<DateRegex>) -> Result<IdentifiedTimeInformation> {
+pub fn try_to_get_timestamp_hit(log_file: &LogFile, command_line_args: &CommandLineArgs) -> Result<IdentifiedTimeInformation> {
     if log_file.log_type == LogType::Csv {
-        return try_to_get_timestamp_hit_for_csv(log_file, regexes_to_use);
+        return try_to_get_timestamp_hit_for_csv(log_file, command_line_args);
     } else if log_file.log_type == LogType::Unstructured {
-        return try_to_get_timestamp_hit_for_unstructured(log_file, regexes_to_use);
+        return try_to_get_timestamp_hit_for_unstructured(log_file, command_line_args);
     }
     Err(LogCheckError::new(
         "Have not implemented scanning for timestamp for this file type yet",

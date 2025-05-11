@@ -6,6 +6,7 @@ use std::path::Path;
 use std::fs;
 use log_checker::date_regex::DateRegex;
 use log_checker::date_regex::RawDateRegex;
+use log_checker::PREBUILT_DATE_REGEXES;
 
 pub fn get_full_command_line_args(matches: &ArgMatches) -> Result<CommandLineArgs> { // might want to perfrom lots of sanitation here
     let input_dir = PathBuf::from(matches.get_one::<String>("input").ok_or_else(|| LogCheckError::new("No input parameter found."))?.clone());
@@ -13,20 +14,19 @@ pub fn get_full_command_line_args(matches: &ArgMatches) -> Result<CommandLineArg
 
     setup_output_dir(&output_dir)?;
 
-    let regexes = matches
-    .get_one::<String>("regexes")
-    .map(|regex_yml_path| {
+    let regexes: Vec<DateRegex> = if let Some(regex_yml_path) = matches.get_one::<String>("regexes") {
         get_user_supplied_regexes_from_command_line(Path::new(regex_yml_path))
-            .map_err(|e| LogCheckError::new(format!("Unable to open output file because of {e}")))
-    })
-    .transpose()?;
+            .map_err(|e| LogCheckError::new(format!("Unable to open output file because of {e}")))?
+    } else {
+        PREBUILT_DATE_REGEXES.clone()
+    };
 
     let timestamp_field = matches.get_one::<String>("tf").cloned();
 
     Ok(CommandLineArgs {
         input_dir: input_dir,
         output_dir: output_dir,
-        provided_regexes: regexes,
+        regexes: regexes,
         timestamp_field: timestamp_field,
     })
 }

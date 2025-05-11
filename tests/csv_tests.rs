@@ -1,6 +1,8 @@
 use log_checker::*;
 use std::io::{Cursor, BufReader};
 use csv::StringRecord;
+use log_checker::basic_objects::CommandLineArgs;
+use std::path::PathBuf;
 use log_checker::handlers::csv_handlers::{get_index_of_header_functionality, try_to_get_timestamp_hit_for_csv_functionality};
 include!(concat!(env!("OUT_DIR"), "/generated_regexes.rs"));
 
@@ -109,15 +111,19 @@ fn finds_valid_timestamp() {
     let headers = StringRecord::from(vec!["id", "timestamp", "message"]);
     let record = StringRecord::from(vec!["1", "2024-05-10 10:23:00", "test log"]);
 
-    let regexes = 
-        vec![
-            DateRegex {
-                pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(),
-                strftime_format: "%Y-%m-%d %H:%M:%S".to_string(),
-                regex: Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").unwrap(),
-            },
-        ];
-    let result = try_to_get_timestamp_hit_for_csv_functionality(headers.clone(), record.clone(), &regexes).unwrap();
+    let test_args = CommandLineArgs {
+            input_dir: PathBuf::from("/dummy/input"),
+            output_dir: PathBuf::from("/dummy/output"),
+            regexes: vec![
+                DateRegex {
+                    pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(),
+                    strftime_format: "%Y-%m-%d %H:%M:%S".to_string(),
+                    regex: Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").unwrap(),
+                },
+            ],
+            timestamp_field: None,
+        };
+    let result = try_to_get_timestamp_hit_for_csv_functionality(headers.clone(), record.clone(), &test_args).unwrap();
 
     assert_eq!(result.column_name, Some("timestamp".to_string()));
     assert_eq!(result.column_index, Some(1));
