@@ -1,7 +1,7 @@
 #[cfg(test)]
 use chrono::NaiveDateTime;
 use log_checker::basic_objects::{LogFileRecord, TimeDirection};
-use log_checker::timestamp_tools::LogRecordProcessor;
+use log_checker::timestamp_tools::{LogRecordProcessor, TimeDirectionChecker};
 
 fn make_fake_record(index: usize, timestamp_str: &str) -> LogFileRecord {
     LogFileRecord {
@@ -9,6 +9,9 @@ fn make_fake_record(index: usize, timestamp_str: &str) -> LogFileRecord {
         timestamp: NaiveDateTime::parse_from_str(timestamp_str, "%Y-%m-%d %H:%M:%S").unwrap(),
         hash_of_entire_record: index as u64, // For simplicity
     }
+}
+fn dt(s: &str) -> NaiveDateTime {
+    NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S").unwrap()
 }
 
 #[test]
@@ -35,8 +38,14 @@ fn processes_ascending_records_correctly() {
         "2024-05-01 15:00:00"
     );
     assert_eq!(processor.num_records, 3);
-    assert_eq!(results.largest_gap_duration.unwrap(), "02:00:00".to_string());
-    assert_eq!(results.largest_gap.unwrap(), "2024-05-01 13:00:00 to 2024-05-01 15:00:00".to_string());
+    assert_eq!(
+        results.largest_gap_duration.unwrap(),
+        "02:00:00".to_string()
+    );
+    assert_eq!(
+        results.largest_gap.unwrap(),
+        "2024-05-01 13:00:00 to 2024-05-01 15:00:00".to_string()
+    );
 }
 
 #[test]
@@ -63,8 +72,14 @@ fn processes_ascending_records_same_time_gap_correctly() {
         "2024-05-01 14:00:00"
     );
     assert_eq!(processor.num_records, 3);
-    assert_eq!(results.largest_gap_duration.unwrap(), "01:00:00".to_string());
-    assert_eq!(results.largest_gap.unwrap(), "2024-05-01 12:00:00 to 2024-05-01 13:00:00".to_string());
+    assert_eq!(
+        results.largest_gap_duration.unwrap(),
+        "01:00:00".to_string()
+    );
+    assert_eq!(
+        results.largest_gap.unwrap(),
+        "2024-05-01 12:00:00 to 2024-05-01 13:00:00".to_string()
+    );
 }
 
 #[test]
@@ -91,8 +106,14 @@ fn processes_descending_records_correctly() {
         "2024-05-01 14:00:00"
     );
     assert_eq!(processor.num_records, 3);
-    assert_eq!(results.largest_gap_duration.unwrap(), "02:00:00".to_string());
-    assert_eq!(results.largest_gap.unwrap(), "2024-05-01 11:00:00 to 2024-05-01 13:00:00".to_string());
+    assert_eq!(
+        results.largest_gap_duration.unwrap(),
+        "02:00:00".to_string()
+    );
+    assert_eq!(
+        results.largest_gap.unwrap(),
+        "2024-05-01 11:00:00 to 2024-05-01 13:00:00".to_string()
+    );
 }
 
 #[test]
@@ -125,4 +146,39 @@ fn detects_out_of_order_in_descending() {
         result.unwrap_err().to_string(),
         "File was not sorted on the identified timestamp. Out of order record at index 1"
     );
+}
+
+#[test]
+fn returns_none_on_first_timestamp() {
+    let mut checker = TimeDirectionChecker::default();
+    let result = checker.process_timestamp(dt("2024-05-01 12:00:00"));
+    assert_eq!(result, None);
+    assert_eq!(checker.previous, Some(dt("2024-05-01 12:00:00")));
+}
+
+#[test]
+fn detects_ascending_order() {
+    let mut checker = TimeDirectionChecker {
+        previous: Some(dt("2024-05-01 12:00:00")),
+    };
+    let result = checker.process_timestamp(dt("2024-05-01 13:00:00"));
+    assert_eq!(result, Some(TimeDirection::Ascending));
+}
+
+#[test]
+fn detects_descending_order() {
+    let mut checker = TimeDirectionChecker {
+        previous: Some(dt("2024-05-01 13:00:00")),
+    };
+    let result = checker.process_timestamp(dt("2024-05-01 12:00:00"));
+    assert_eq!(result, Some(TimeDirection::Descending));
+}
+
+#[test]
+fn returns_none_when_timestamps_are_equal() {
+    let mut checker = TimeDirectionChecker {
+        previous: Some(dt("2024-05-01 12:00:00")),
+    };
+    let result = checker.process_timestamp(dt("2024-05-01 12:00:00"));
+    assert_eq!(result, None);
 }
