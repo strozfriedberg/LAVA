@@ -17,7 +17,7 @@ pub fn try_to_get_timestamp_hit_for_unstructured(
         let line = line_result
             .map_err(|e| LogCheckError::new(format!("Error reading line because of {}", e)))?;
         for date_regex in execution_settings.regexes.iter() {
-            if date_regex.regex.is_match(&line) {
+            if date_regex.string_contains_date(&line) {
                 println!(
                     "Found match for '{}' time format in {}",
                     date_regex.pretty_format,
