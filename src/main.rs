@@ -1,7 +1,7 @@
 use clap::{arg,Command};
 use log_checker::process_all_files;
 mod main_helpers;
-use main_helpers::get_full_command_line_args;
+use main_helpers::get_full_execution_settings;
 
 fn main() {
     let matches = Command::new("LogCheck")
@@ -13,11 +13,11 @@ fn main() {
         .arg(arg!(-t --tf <VALUE> "Timestamp field to use for time analysis. Supports -> for nested keys in JSONL.").required(false))
         .get_matches();
 
-    let command_line_args = get_full_command_line_args(&matches).unwrap(); // I think unwrap is fine here because I want to crash the program if I get an error here
+    let execution_settings = get_full_execution_settings(&matches).unwrap(); // I think unwrap is fine here because I want to crash the program if I get an error here
     
-    println!("Input directory: {:?}", command_line_args.input_dir);
-    println!("Output directory: {:?}", command_line_args.output_dir);
-    process_all_files(command_line_args)
+    println!("Input directory: {:?}", execution_settings.input_dir);
+    println!("Output directory: {:?}", execution_settings.output_dir);
+    process_all_files(execution_settings)
 }
 
 

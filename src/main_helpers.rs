@@ -8,7 +8,7 @@ use log_checker::date_regex::DateRegex;
 use log_checker::date_regex::RawDateRegex;
 use log_checker::PREBUILT_DATE_REGEXES;
 
-pub fn get_full_command_line_args(matches: &ArgMatches) -> Result<CommandLineArgs> { // might want to perfrom lots of sanitation here
+pub fn get_full_execution_settings(matches: &ArgMatches) -> Result<ExecutionSettings> { // might want to perfrom lots of sanitation here
     let input_dir = PathBuf::from(matches.get_one::<String>("input").ok_or_else(|| LogCheckError::new("No input parameter found."))?.clone());
     let output_dir = PathBuf::from(matches.get_one::<String>("output").ok_or_else(|| LogCheckError::new("No output parameter found."))?.clone());
 
@@ -23,7 +23,7 @@ pub fn get_full_command_line_args(matches: &ArgMatches) -> Result<CommandLineArg
 
     let timestamp_field = matches.get_one::<String>("tf").cloned();
 
-    Ok(CommandLineArgs {
+    Ok(ExecutionSettings {
         input_dir: input_dir,
         output_dir: output_dir,
         regexes: regexes,

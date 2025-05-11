@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 
 #[derive(Debug)]
-pub struct CommandLineArgs {
+pub struct ExecutionSettings {
     pub input_dir: PathBuf,
     pub output_dir: PathBuf,
     pub regexes: Vec<DateRegex>,

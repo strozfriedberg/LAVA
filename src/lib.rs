@@ -24,9 +24,9 @@ include!(concat!(env!("OUT_DIR"), "/generated_regexes.rs"));
 #[cfg(test)]
 include!(concat!(env!("OUT_DIR"), "/generated_tests.rs"));
 
-pub fn process_all_files(command_line_args: CommandLineArgs) {
+pub fn process_all_files(execution_settings: ExecutionSettings) {
     let mut paths: Vec<PathBuf> = Vec::new();
-    let pattern = format!("{}/**/*", command_line_args.input_dir.to_string_lossy());
+    let pattern = format!("{}/**/*", execution_settings.input_dir.to_string_lossy());
     for entry in glob(&pattern).expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => {
@@ -43,10 +43,10 @@ pub fn process_all_files(command_line_args: CommandLineArgs) {
 
     let results: Vec<ProcessedLogFile> = supported_files
         .par_iter()
-        .map(|path| process_file(path, &command_line_args).expect("Error processing file"))
+        .map(|path| process_file(path, &execution_settings).expect("Error processing file"))
         .collect();
 
-    if let Err(e) = write_output_to_csv(&results, &command_line_args) {
+    if let Err(e) = write_output_to_csv(&results, &execution_settings) {
         eprintln!("Failed to write to CSV: {}", e);
     }
 }
@@ -83,7 +83,7 @@ pub fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile> {
     supported_files
 }
 
-pub fn process_file(log_file: &LogFile, command_line_args: &CommandLineArgs) -> Result<ProcessedLogFile> {
+pub fn process_file(log_file: &LogFile, execution_settings: &ExecutionSettings) -> Result<ProcessedLogFile> {
     let mut base_processed_file = ProcessedLogFile::default();
 
     //get hash and metadata. Does not matter what kind of file it is for this function
@@ -102,7 +102,7 @@ pub fn process_file(log_file: &LogFile, command_line_args: &CommandLineArgs) -> 
     base_processed_file.file_path = Some(file_path);
 
     // get the timestamp field. will do this for all of them, but there will just be some fields that only get filled in for structured datatypes
-    let mut timestamp_hit = match try_to_get_timestamp_hit(log_file, command_line_args)
+    let mut timestamp_hit = match try_to_get_timestamp_hit(log_file, execution_settings)
         .map_err(|e| PhaseError::TimeDiscovery(e.to_string()))
     {
         Ok(result) => result,
@@ -207,11 +207,11 @@ fn get_metadata_and_hash(file_path: &PathBuf) -> Result<(String, u64, String, St
     ))
 }
 
-pub fn try_to_get_timestamp_hit(log_file: &LogFile, command_line_args: &CommandLineArgs) -> Result<IdentifiedTimeInformation> {
+pub fn try_to_get_timestamp_hit(log_file: &LogFile, execution_settings: &ExecutionSettings) -> Result<IdentifiedTimeInformation> {
     if log_file.log_type == LogType::Csv {
-        return try_to_get_timestamp_hit_for_csv(log_file, command_line_args);
+        return try_to_get_timestamp_hit_for_csv(log_file, execution_settings);
     } else if log_file.log_type == LogType::Unstructured {
-        return try_to_get_timestamp_hit_for_unstructured(log_file, command_line_args);
+        return try_to_get_timestamp_hit_for_unstructured(log_file, execution_settings);
     }
     Err(LogCheckError::new(
         "Have not implemented scanning for timestamp for this file type yet",

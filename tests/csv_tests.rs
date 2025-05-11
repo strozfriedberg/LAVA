@@ -1,7 +1,7 @@
 use log_checker::*;
 use std::io::{Cursor, BufReader};
 use csv::StringRecord;
-use log_checker::basic_objects::CommandLineArgs;
+use log_checker::basic_objects::ExecutionSettings;
 use std::path::PathBuf;
 use log_checker::handlers::csv_handlers::{get_index_of_header_functionality, try_to_get_timestamp_hit_for_csv_functionality};
 include!(concat!(env!("OUT_DIR"), "/generated_regexes.rs"));
@@ -111,7 +111,7 @@ fn finds_valid_timestamp() {
     let headers = StringRecord::from(vec!["id", "timestamp", "message"]);
     let record = StringRecord::from(vec!["1", "2024-05-10 10:23:00", "test log"]);
 
-    let test_args = CommandLineArgs {
+    let test_args = ExecutionSettings {
             input_dir: PathBuf::from("/dummy/input"),
             output_dir: PathBuf::from("/dummy/output"),
             regexes: vec![

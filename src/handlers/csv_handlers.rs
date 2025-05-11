@@ -51,7 +51,7 @@ pub fn get_reader_from_certain_header_index(header_index: usize, log_file: &LogF
     Ok(reader)
 }
 
-pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, command_line_args: &CommandLineArgs) -> Result<IdentifiedTimeInformation> {
+pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, execution_settings: &ExecutionSettings) -> Result<IdentifiedTimeInformation> {
 
 
     let header_row = get_index_of_header(log_file)?;
@@ -68,17 +68,17 @@ pub fn try_to_get_timestamp_hit_for_csv(log_file: &LogFile, command_line_args: &
         .unwrap()
         .map_err(|e| LogCheckError::new(format!("Unable to get first row because of {e}")))?; // This is returning a result, that is why I had to use the question mark below before the iter()
     
-    let mut response = try_to_get_timestamp_hit_for_csv_functionality(headers, record, command_line_args);
+    let mut response = try_to_get_timestamp_hit_for_csv_functionality(headers, record, execution_settings);
     if let Ok(ref mut partial) = response {
         partial.header_row = Some(header_row as u64);
     }
     response
 }
 
-pub fn try_to_get_timestamp_hit_for_csv_functionality(headers : csv::StringRecord, record: csv::StringRecord, command_line_args: &CommandLineArgs) -> Result<IdentifiedTimeInformation> {
+pub fn try_to_get_timestamp_hit_for_csv_functionality(headers : csv::StringRecord, record: csv::StringRecord, execution_settings: &ExecutionSettings) -> Result<IdentifiedTimeInformation> {
 
     for (i, field) in record.iter().enumerate() {
-        for date_regex in command_line_args.regexes.iter() {
+        for date_regex in execution_settings.regexes.iter() {
             if date_regex.regex.is_match(field) {
                 if let Some(captures) = date_regex.regex.captures(field) {
                     if let Some(matched) = captures.get(1) {
