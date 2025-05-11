@@ -3,6 +3,8 @@ use crate::errors::*;
 use crate::helpers::*;
 use chrono::NaiveDateTime;
 use std::collections::HashSet;
+use std::fs::OpenOptions;
+use csv::{WriterBuilder, StringRecord};
 
 #[derive(PartialEq, Debug, Default)]
 pub struct TimeDirectionChecker {
@@ -26,9 +28,10 @@ impl TimeDirectionChecker {
     }
 }
 
-#[derive(PartialEq, Debug, Default)]
+#[derive(Debug, Default)]
 pub struct LogRecordProcessor {
     pub order: Option<TimeDirection>,
+    pub execution_settings: Option<ExecutionSettings>,
     pub num_records: usize,
     pub min_timestamp: Option<NaiveDateTime>,
     pub max_timestamp: Option<NaiveDateTime>,
@@ -40,9 +43,10 @@ pub struct LogRecordProcessor {
 }
 
 impl LogRecordProcessor {
-    pub fn new_with_order(order: Option<TimeDirection>) -> Self {
+    pub fn new_with_order(order: Option<TimeDirection>, execution_settings: &ExecutionSettings) -> Self {
         Self {
             order,
+            execution_settings: Some(execution_settings.clone()),
             ..Default::default()
         }
     }
@@ -65,6 +69,7 @@ impl LogRecordProcessor {
             .insert(record.hash_of_entire_record);
         if is_duplicate {
             println!("Found duplicate record at index {}", record.index);
+            self.num_dupes += 1;
             if write_hits_to_file {
                 let _ = self.write_hit_to_file(record)?;
             }
@@ -72,6 +77,13 @@ impl LogRecordProcessor {
         Ok(())
     }
     pub fn write_hit_to_file(&mut self, record: &LogFileRecord) -> Result<()> {
+        let path = "test.csv";
+        let file = OpenOptions::new()
+        .create(true) 
+        .append(true) 
+        .open(path).map_err(|e| LogCheckError::new(format!("Unable to open ouptut file because of {e}")))?;
+        let mut writer = WriterBuilder::new().has_headers(false).from_writer(file);
+        writer.write_record(&record.record_with_index).map_err(|e| LogCheckError::new(format!("Unable to write record because of {e}")))?;
         Ok(())
     }
     pub fn process_timestamp(&mut self, record: &LogFileRecord) -> Result<()> {

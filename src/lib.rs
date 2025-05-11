@@ -132,18 +132,9 @@ pub fn process_file(
             return Ok(base_processed_file);
         }
     };
-    // let direction = timestamp_hit
-    //     .direction
-    //     .clone()
-    //     .ok_or_else(|| LogCheckError::new("Index of date field not found"))?;
-    // println!(
-    //     "{} appears to be in {:?} order!",
-    //     log_file.file_path.to_string_lossy(),
-    //     direction
-    // );
 
     // Stream the file to find statistics on time and other stuff
-    let completed_statistics_object = match stream_file(log_file, &timestamp_hit)
+    let completed_statistics_object = match stream_file(log_file, &timestamp_hit, execution_settings)
         .map_err(|e| PhaseError::FileStreaming(e.to_string()))
     {
         Ok(result) => result,
@@ -246,12 +237,13 @@ pub fn set_time_direction_by_scanning_file(
 pub fn stream_file(
     log_file: &LogFile,
     timestamp_hit: &IdentifiedTimeInformation,
+    execution_settings: &ExecutionSettings,
 ) -> Result<LogRecordProcessor> {
     if log_file.log_type == LogType::Csv {
-        return stream_csv_file(log_file, timestamp_hit);
+        return stream_csv_file(log_file, timestamp_hit, execution_settings);
     }
     if log_file.log_type == LogType::Unstructured {
-        return stream_unstructured_file(log_file, timestamp_hit);
+        return stream_unstructured_file(log_file, timestamp_hit, execution_settings);
     }
     Err(LogCheckError::new(
         "Have not implemented streaming for this file type yet",

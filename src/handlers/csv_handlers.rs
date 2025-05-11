@@ -181,9 +181,10 @@ pub fn set_time_direction_by_scanning_csv_file(
 pub fn stream_csv_file(
     log_file: &LogFile,
     timestamp_hit: &IdentifiedTimeInformation,
+    execution_settings: &ExecutionSettings,
 ) -> Result<LogRecordProcessor> {
     // not sure we want to include the whole hashset in this? Maybe only inlcude results
-    let mut processing_object = LogRecordProcessor::new_with_order(timestamp_hit.direction.clone());
+    let mut processing_object = LogRecordProcessor::new_with_order(timestamp_hit.direction.clone(), execution_settings);
 
     let header_row = timestamp_hit
         .header_row

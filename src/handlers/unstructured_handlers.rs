@@ -65,8 +65,9 @@ pub fn set_time_direction_by_scanning_unstructured_file(
 pub fn stream_unstructured_file(
     log_file: &LogFile,
     timestamp_hit: &IdentifiedTimeInformation,
+    execution_settings: &ExecutionSettings,
 ) -> Result<LogRecordProcessor> {
-    let mut processing_object = LogRecordProcessor::new_with_order(timestamp_hit.direction.clone());
+    let mut processing_object = LogRecordProcessor::new_with_order(timestamp_hit.direction.clone(), execution_settings);
     let file = File::open(&log_file.file_path)
         .map_err(|e| LogCheckError::new(format!("Unable to open log file because of {e}")))?;
     let reader = BufReader::new(file);

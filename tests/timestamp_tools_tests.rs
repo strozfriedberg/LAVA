@@ -1,13 +1,14 @@
 #[cfg(test)]
 use chrono::NaiveDateTime;
 use csv::StringRecord;
-use log_checker::basic_objects::{LogFileRecord, TimeDirection};
+use log_checker::basic_objects::{ExecutionSettings, TimeDirection};
 use log_checker::timestamp_tools::{LogRecordProcessor, TimeDirectionChecker};
 use log_checker::helpers::{make_fake_record, dt};
 
 #[test]
 fn processes_ascending_records_correctly() {
-    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Ascending));
+    let settings = ExecutionSettings::default();
+    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Ascending),&settings);
 
     processor
         .process_timestamp(&make_fake_record(0, "2024-05-01 12:00:00", StringRecord::from(vec!["test"])))
@@ -41,7 +42,8 @@ fn processes_ascending_records_correctly() {
 
 #[test]
 fn processes_ascending_records_same_time_gap_correctly() {
-    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Ascending));
+    let settings = ExecutionSettings::default();
+    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Ascending), &settings);
 
     processor
         .process_timestamp(&make_fake_record(0, "2024-05-01 12:00:00", StringRecord::from(vec!["test"])))
@@ -75,7 +77,8 @@ fn processes_ascending_records_same_time_gap_correctly() {
 
 #[test]
 fn processes_descending_records_correctly() {
-    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Descending));
+    let settings = ExecutionSettings::default();
+    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Descending), &settings);
 
     processor
         .process_timestamp(&make_fake_record(0, "2024-05-01 14:00:00", StringRecord::from(vec!["test"])))
@@ -109,7 +112,8 @@ fn processes_descending_records_correctly() {
 
 #[test]
 fn detects_out_of_order_in_ascending() {
-    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Ascending));
+    let settings = ExecutionSettings::default();
+    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Ascending), &settings);
 
     processor
         .process_timestamp(&make_fake_record(0, "2024-05-01 12:00:00", StringRecord::from(vec!["test"])))
@@ -125,7 +129,8 @@ fn detects_out_of_order_in_ascending() {
 
 #[test]
 fn detects_out_of_order_in_descending() {
-    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Descending));
+    let settings = ExecutionSettings::default();
+    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Descending), &settings);
 
     processor
         .process_timestamp(&make_fake_record(0, "2024-05-01 12:00:00", StringRecord::from(vec!["test"])))

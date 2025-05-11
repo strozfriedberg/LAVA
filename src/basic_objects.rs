@@ -6,7 +6,7 @@ use serde::Serialize;
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Default)]
 pub struct ExecutionSettings {
     pub input_dir: PathBuf,
     pub output_dir: PathBuf,
