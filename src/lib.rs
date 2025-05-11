@@ -43,7 +43,7 @@ pub fn process_all_files(command_line_args: CommandLineArgs) {
 
     let results: Vec<ProcessedLogFile> = supported_files
         .par_iter()
-        .map(|path| process_file(path, &command_line_args.provided_regexes).expect("Error processing file"))
+        .map(|path| process_file(path, &command_line_args).expect("Error processing file"))
         .collect();
 
     if let Err(e) = write_output_to_csv(&results, &command_line_args) {
@@ -83,11 +83,14 @@ pub fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile> {
     supported_files
 }
 
-pub fn process_file(log_file: &LogFile, regexes_to_use: &Option<Vec<DateRegex>>) -> Result<ProcessedLogFile> {
+pub fn process_file(log_file: &LogFile, command_line_args: &CommandLineArgs) -> Result<ProcessedLogFile> {
     let mut base_processed_file = ProcessedLogFile::default();
 
+    // command_line_args
+    // .provided_regexes
+    // .get_or_insert_with(|| PREBUILT_DATE_REGEXES.clone());
     //Decide which regexes to use
-    let regexes_to_actually_use = if let Some(regexes) = regexes_to_use {
+    let regexes_to_actually_use = if let Some(regexes) = &command_line_args.provided_regexes {
         regexes.clone()
     } else {
         PREBUILT_DATE_REGEXES.clone()
