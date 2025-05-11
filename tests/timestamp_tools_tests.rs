@@ -22,19 +22,49 @@ fn processes_ascending_records_correctly() {
         .process_timestamp(make_fake_record(1, "2024-05-01 13:00:00"))
         .unwrap();
     processor
-        .process_timestamp(make_fake_record(2, "2024-05-01 14:00:00"))
+        .process_timestamp(make_fake_record(2, "2024-05-01 15:00:00"))
         .unwrap();
 
+    let results = processor.get_statistics().unwrap();
     assert_eq!(
-        processor.min_timestamp.unwrap().to_string(),
+        results.min_timestamp.unwrap().to_string(),
         "2024-05-01 12:00:00"
     );
     assert_eq!(
-        processor.max_timestamp.unwrap().to_string(),
+        results.max_timestamp.unwrap().to_string(),
+        "2024-05-01 15:00:00"
+    );
+    assert_eq!(processor.num_records, 3);
+    assert_eq!(results.largest_gap_duration.unwrap(), "02:00:00".to_string());
+    assert_eq!(results.largest_gap.unwrap(), "2024-05-01 13:00:00 to 2024-05-01 15:00:00".to_string());
+}
+
+#[test]
+fn processes_ascending_records_same_time_gap_correctly() {
+    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Ascending));
+
+    processor
+        .process_timestamp(make_fake_record(0, "2024-05-01 12:00:00"))
+        .unwrap();
+    processor
+        .process_timestamp(make_fake_record(1, "2024-05-01 13:00:00"))
+        .unwrap();
+    processor
+        .process_timestamp(make_fake_record(2, "2024-05-01 14:00:00"))
+        .unwrap();
+
+    let results = processor.get_statistics().unwrap();
+    assert_eq!(
+        results.min_timestamp.unwrap().to_string(),
+        "2024-05-01 12:00:00"
+    );
+    assert_eq!(
+        results.max_timestamp.unwrap().to_string(),
         "2024-05-01 14:00:00"
     );
     assert_eq!(processor.num_records, 3);
-    assert!(processor.largest_time_gap.is_some());
+    assert_eq!(results.largest_gap_duration.unwrap(), "01:00:00".to_string());
+    assert_eq!(results.largest_gap.unwrap(), "2024-05-01 12:00:00 to 2024-05-01 13:00:00".to_string());
 }
 
 #[test]
@@ -48,19 +78,21 @@ fn processes_descending_records_correctly() {
         .process_timestamp(make_fake_record(1, "2024-05-01 13:00:00"))
         .unwrap();
     processor
-        .process_timestamp(make_fake_record(2, "2024-05-01 12:00:00"))
+        .process_timestamp(make_fake_record(2, "2024-05-01 11:00:00"))
         .unwrap();
 
+    let results = processor.get_statistics().unwrap();
     assert_eq!(
-        processor.max_timestamp.unwrap().to_string(),
+        results.min_timestamp.unwrap().to_string(),
+        "2024-05-01 11:00:00"
+    );
+    assert_eq!(
+        results.max_timestamp.unwrap().to_string(),
         "2024-05-01 14:00:00"
     );
-    assert_eq!(
-        processor.min_timestamp.unwrap().to_string(),
-        "2024-05-01 12:00:00"
-    );
     assert_eq!(processor.num_records, 3);
-    assert!(processor.largest_time_gap.is_some());
+    assert_eq!(results.largest_gap_duration.unwrap(), "02:00:00".to_string());
+    assert_eq!(results.largest_gap.unwrap(), "2024-05-01 11:00:00 to 2024-05-01 13:00:00".to_string());
 }
 
 #[test]
