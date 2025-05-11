@@ -161,7 +161,7 @@ pub fn stream_csv_file(
             .ok_or_else(|| LogCheckError::new("Index of date field not found"))?;
         let current_datetime: NaiveDateTime = timestamp_hit
             .regex_info
-            .get_timestamp_object_from_string_that_is_exact_date(value.to_string())?;
+            .get_timestamp_object_from_string_contianing_date(value.to_string())?.ok_or_else(|| LogCheckError::new(format!("No supported timestamp found timestamp column at index {}",index)))?;
         let hash_of_record = hash_csv_record(&record);
         processing_object.process_record(LogFileRecord {
             hash_of_entire_record: hash_of_record,

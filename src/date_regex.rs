@@ -44,15 +44,4 @@ impl DateRegex {
         }
         return Ok(None); // regex did not capture any portion of the string
     }
-
-    pub fn get_timestamp_object_from_string_that_is_exact_date(
-        &self,
-        string_that_is_date: String,
-    ) -> Result<NaiveDateTime> {
-        let parsed_datetime =
-            NaiveDateTime::parse_from_str(&string_that_is_date, &self.strftime_format).map_err(
-                |e| LogCheckError::new(format!("Issue parsing timestamp because of {e}")),
-            )?;
-        Ok(parsed_datetime)
-    }
 }
