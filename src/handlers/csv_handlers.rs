@@ -74,14 +74,18 @@ pub fn try_to_get_timestamp_hit_for_csv(
         .unwrap()
         .map_err(|e| LogCheckError::new(format!("Unable to get first row because of {e}")))?; // This is returning a result, that is why I had to use the question mark below before the iter()
 
-    let mut response = try_to_get_timestamp_hit_for_csv_functionality(headers, record, execution_settings);
+    let mut response =
+        try_to_get_timestamp_hit_for_csv_functionality(headers, record, execution_settings);
     match response {
         Ok(ref mut partial) => {
             partial.header_row = Some(header_row as u64);
             println!(
                 "Found match for '{}' time format in the '{}' column of {}",
                 partial.regex_info.pretty_format,
-                partial.column_name.as_ref().ok_or_else(|| LogCheckError::new("No column name found."))?,
+                partial
+                    .column_name
+                    .as_ref()
+                    .ok_or_else(|| LogCheckError::new("No column name found."))?,
                 log_file.file_path.to_string_lossy().to_string()
             );
         }
@@ -104,7 +108,9 @@ pub fn try_to_get_timestamp_hit_for_csv_functionality(
         for (i, field) in headers.iter().enumerate() {
             if field.trim() == field_to_use {
                 for date_regex in execution_settings.regexes.iter() {
-                    if date_regex.string_contains_date(record.get(i).ok_or_else(|| LogCheckError::new("Could not get the first field for the selected column."))?) {
+                    if date_regex.string_contains_date(record.get(i).ok_or_else(|| {
+                        LogCheckError::new("Could not get the first field for the selected column.")
+                    })?) {
                         return Ok(IdentifiedTimeInformation {
                             header_row: None,
                             column_name: Some(headers.get(i).unwrap().to_string()),
@@ -117,10 +123,9 @@ pub fn try_to_get_timestamp_hit_for_csv_functionality(
             }
         }
         return Err(LogCheckError::new(
-            "Could not find the specified column in the header."
-        ))
-    }
-    else{
+            "Could not find the specified column in the header.",
+        ));
+    } else {
         for (i, field) in record.iter().enumerate() {
             for date_regex in execution_settings.regexes.iter() {
                 if date_regex.string_contains_date(field) {
@@ -136,9 +141,7 @@ pub fn try_to_get_timestamp_hit_for_csv_functionality(
         }
     }
 
-    Err(LogCheckError::new(
-        "Could not find a supported timestamp."
-    ))
+    Err(LogCheckError::new("Could not find a supported timestamp."))
 }
 
 pub fn set_time_direction_by_scanning_csv_file(
@@ -160,8 +163,11 @@ pub fn set_time_direction_by_scanning_csv_file(
         let value = record
             .get(timestamp_hit.column_index.unwrap())
             .ok_or_else(|| LogCheckError::new("Index of date field not found"))?; // unwrap is safe here because for CSVs, there will always be a column index
-        
-        let current_datetime: NaiveDateTime = timestamp_hit.regex_info.get_timestamp_object_from_string_contianing_date(value.to_string())?.ok_or_else(|| LogCheckError::new("No timestamp found when scanning for direction."))?;
+
+        let current_datetime: NaiveDateTime = timestamp_hit
+            .regex_info
+            .get_timestamp_object_from_string_contianing_date(value.to_string())?
+            .ok_or_else(|| LogCheckError::new("No timestamp found when scanning for direction."))?;
 
         if let Some(direction) = direction_checker.process_timestamp(current_datetime) {
             timestamp_hit.direction = Some(direction);
