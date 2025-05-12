@@ -87,7 +87,7 @@ impl LogRecordProcessor {
             .duplicate_checker_set
             .insert(record.hash_of_entire_record);
         if is_duplicate {
-            println!("Found duplicate record at index {}", record.index);
+            // println!("Found duplicate record at index {}", record.index);
             self.num_dupes += 1;
             if write_hits_to_file {
                 let _ = self.write_hit_to_file(record)?;
@@ -217,6 +217,8 @@ impl LogRecordProcessor {
             largest_time_gap.end_time.format("%Y-%m-%d %H:%M:%S")
         ));
         statistics_fields.largest_gap_duration = Some(format_timedelta(largest_time_gap.gap));
+        statistics_fields.num_dupes = Some(self.num_dupes.to_string());
+        statistics_fields.num_redactions = Some(self.num_redactions.to_string());
         Ok(statistics_fields)
     }
 }

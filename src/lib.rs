@@ -162,6 +162,8 @@ pub fn process_file(
     base_processed_file.max_timestamp = formatted_statistics.max_timestamp;
     base_processed_file.min_max_duration = formatted_statistics.min_max_duration;
     base_processed_file.num_records = formatted_statistics.num_records;
+    base_processed_file.num_dupes = formatted_statistics.num_dupes;
+    base_processed_file.num_redactions = formatted_statistics.num_redactions;
 
     Ok(base_processed_file)
 }

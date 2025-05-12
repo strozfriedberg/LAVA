@@ -60,6 +60,8 @@ pub fn write_output_to_csv(
         "Duration of Entire Log File",
         "Largest Time Gap",
         "Duration of Largest Time Gap",
+        "Duplicate Record Count",
+        "Possible Redactions Count",
         "Error",
     ])
     .map_err(|e| LogCheckError::new(format!("Unable to write headers because of {e}")))?;
@@ -78,6 +80,8 @@ pub fn write_output_to_csv(
             log_file.min_max_duration.as_deref().unwrap_or(""),
             log_file.largest_gap.as_deref().unwrap_or(""),
             log_file.largest_gap_duration.as_deref().unwrap_or(""),
+            log_file.num_dupes.as_deref().unwrap_or(""),
+            log_file.num_redactions.as_deref().unwrap_or(""),
             log_file.error.as_deref().unwrap_or(""),
         ))
         .map_err(|e| {
