@@ -11,7 +11,7 @@ fn test_process_record_no_duplicate() {
         Some(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
-        None
+        None,
     );
 
     let record = make_fake_record(0, "2024-05-01 14:00:00", StringRecord::from(vec!["test"]));
@@ -27,7 +27,7 @@ fn test_process_record_with_one_duplicate() {
         Some(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
-        None
+        None,
     );
 
     let record1 = make_fake_record(0, "2024-05-01 14:00:00", StringRecord::from(vec!["test"]));
@@ -48,7 +48,7 @@ fn test_process_record_with_two_duplicate() {
         Some(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
-        None
+        None,
     );
 
     let record1 = make_fake_record(0, "2024-05-01 14:00:00", StringRecord::from(vec!["test45"]));
@@ -69,7 +69,7 @@ fn test_process_record_with_no_dupe_multiple_values() {
         Some(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
-        None
+        None,
     );
 
     let record1 = make_fake_record(
@@ -102,7 +102,7 @@ fn test_process_record_with_dupe_multiple_values() {
         Some(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
-        None
+        None,
     );
 
     let record1 = make_fake_record(

@@ -51,17 +51,15 @@ impl LogRecordProcessor {
         order: Option<TimeDirection>,
         execution_settings: &ExecutionSettings,
         log_file_stem: String,
-        headers: Option<StringRecord>
+        headers: Option<StringRecord>,
     ) -> Self {
         let output_headers = match headers {
             Some(csv_headers) => {
                 let mut record_to_output = StringRecord::from(vec!["Index of Hit".to_string()]);
                 record_to_output.extend(csv_headers.iter());
                 record_to_output
-            },
-            None => {
-                StringRecord::from(vec!["Index of Hit","Record"])
             }
+            None => StringRecord::from(vec!["Index of Hit", "Record"]),
         };
         Self {
             order,

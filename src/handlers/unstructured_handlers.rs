@@ -73,7 +73,7 @@ pub fn stream_unstructured_file(
         timestamp_hit.direction.clone(),
         execution_settings,
         get_file_stem(log_file)?,
-        None
+        None,
     );
     let file = File::open(&log_file.file_path)
         .map_err(|e| LogCheckError::new(format!("Unable to open log file because of {e}")))?;
