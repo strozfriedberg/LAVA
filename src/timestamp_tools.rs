@@ -58,12 +58,12 @@ impl LogRecordProcessor {
     pub fn build_file_path(&self, alert_type: AlertOutputType) -> Result<PathBuf> {
         let execution_settings = self.execution_settings.clone().ok_or_else(|| LogCheckError::new("Could not find execution settings"))?;
 
-        let output_filename = match alert_type {
-            AlertOutputType::Duplicate => format!("{}_DUPLICATES.csv", self.file_name),
-            AlertOutputType::Redaction => format!("{}_POSSIBLE_REDACTIONS.csv", self.file_name),
+        let output_subfolder_and_filename = match alert_type {
+            AlertOutputType::Duplicate => format!("Duplicates/{}_DUPLICATES.csv", self.file_name),
+            AlertOutputType::Redaction => format!("Redactions/{}_POSSIBLE_REDACTIONS.csv", self.file_name),
         };
     
-        Ok(execution_settings.output_dir.join(output_filename))
+        Ok(execution_settings.output_dir.join(output_subfolder_and_filename))
     }
 
     pub fn process_record(&mut self, record: LogFileRecord) -> Result<()> {
