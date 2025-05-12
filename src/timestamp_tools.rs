@@ -2,8 +2,10 @@ use crate::basic_objects::*;
 use crate::errors::*;
 use crate::helpers::*;
 use chrono::NaiveDateTime;
+use clap::builder::Str;
 use std::collections::HashSet;
 use std::fs::OpenOptions;
+use std::path::PathBuf;
 use csv::{WriterBuilder, StringRecord};
 
 #[derive(PartialEq, Debug, Default)]
@@ -32,6 +34,7 @@ impl TimeDirectionChecker {
 pub struct LogRecordProcessor {
     pub order: Option<TimeDirection>,
     pub execution_settings: Option<ExecutionSettings>,
+    pub file_name: String,
     pub num_records: usize,
     pub min_timestamp: Option<NaiveDateTime>,
     pub max_timestamp: Option<NaiveDateTime>,
@@ -43,13 +46,26 @@ pub struct LogRecordProcessor {
 }
 
 impl LogRecordProcessor {
-    pub fn new_with_order(order: Option<TimeDirection>, execution_settings: &ExecutionSettings) -> Self {
+    pub fn new_with_order(order: Option<TimeDirection>, execution_settings: &ExecutionSettings, log_file_stem: String) -> Self {
         Self {
             order,
             execution_settings: Some(execution_settings.clone()),
+            file_name: log_file_stem,
             ..Default::default()
         }
     }
+
+    pub fn build_file_path(&self, alert_type: AlertOutputType) -> Result<PathBuf> {
+        let execution_settings = self.execution_settings.clone().ok_or_else(|| LogCheckError::new("Could not find execution settings"))?;
+
+        let output_filename = match alert_type {
+            AlertOutputType::Duplicate => format!("{}_DUPLICATES.csv", self.file_name),
+            AlertOutputType::Redaction => format!("{}_POSSIBLE_REDACTIONS.csv", self.file_name),
+        };
+    
+        Ok(execution_settings.output_dir.join(output_filename))
+    }
+
     pub fn process_record(&mut self, record: LogFileRecord) -> Result<()> {
         //Check for duplicates
         self.process_record_for_dupes_and_redactions(&record, true)?;
@@ -86,6 +102,7 @@ impl LogRecordProcessor {
         writer.write_record(&record.record_with_index).map_err(|e| LogCheckError::new(format!("Unable to write record because of {e}")))?;
         Ok(())
     }
+
     pub fn process_timestamp(&mut self, record: &LogFileRecord) -> Result<()> {
         if let Some(previous_datetime) = self.previous_timestamp {
             // This is where all logic is done if it isn't the first record

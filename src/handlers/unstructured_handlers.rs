@@ -1,6 +1,7 @@
 use crate::basic_objects::*;
 use crate::errors::*;
 use crate::timestamp_tools::*;
+use crate::helpers::get_file_stem;
 use csv::StringRecord;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -67,7 +68,7 @@ pub fn stream_unstructured_file(
     timestamp_hit: &IdentifiedTimeInformation,
     execution_settings: &ExecutionSettings,
 ) -> Result<LogRecordProcessor> {
-    let mut processing_object = LogRecordProcessor::new_with_order(timestamp_hit.direction.clone(), execution_settings);
+    let mut processing_object = LogRecordProcessor::new_with_order(timestamp_hit.direction.clone(), execution_settings, get_file_stem(log_file)?);
     let file = File::open(&log_file.file_path)
         .map_err(|e| LogCheckError::new(format!("Unable to open log file because of {e}")))?;
     let reader = BufReader::new(file);

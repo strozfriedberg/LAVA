@@ -27,6 +27,12 @@ pub enum TimeDirection {
     Descending,
 }
 
+#[derive(PartialEq, Debug, Clone)]
+pub enum AlertOutputType {
+    Duplicate,
+    Redaction,
+}
+
 #[derive(PartialEq, Debug)]
 pub struct LogFile {
     pub log_type: LogType,

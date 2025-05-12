@@ -1,6 +1,7 @@
 use crate::basic_objects::*;
 use crate::errors::*;
 use chrono::{TimeDelta, Utc};
+use clap::builder::Str;
 use csv::StringRecord;
 use csv::Writer;
 use std::collections::hash_map::DefaultHasher;
@@ -27,6 +28,11 @@ pub fn hash_csv_record(record: &StringRecord) -> u64 {
     let mut hasher = DefaultHasher::new();
     record.iter().for_each(|field| field.hash(&mut hasher));
     hasher.finish()
+}
+
+pub fn get_file_stem(log_file: &LogFile) -> Result<String> {
+    let file_name = &log_file.file_path.file_stem().ok_or_else(|| LogCheckError::new("Could not get file stem."))?;
+    Ok(file_name.to_string_lossy().to_string())
 }
 
 pub fn write_output_to_csv(
