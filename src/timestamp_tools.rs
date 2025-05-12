@@ -2,11 +2,10 @@ use crate::basic_objects::*;
 use crate::errors::*;
 use crate::helpers::*;
 use chrono::NaiveDateTime;
-use clap::builder::Str;
+use csv::WriterBuilder;
 use std::collections::HashSet;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
-use csv::{WriterBuilder, StringRecord};
 
 #[derive(PartialEq, Debug, Default)]
 pub struct TimeDirectionChecker {
@@ -46,7 +45,11 @@ pub struct LogRecordProcessor {
 }
 
 impl LogRecordProcessor {
-    pub fn new_with_order(order: Option<TimeDirection>, execution_settings: &ExecutionSettings, log_file_stem: String) -> Self {
+    pub fn new_with_order(
+        order: Option<TimeDirection>,
+        execution_settings: &ExecutionSettings,
+        log_file_stem: String,
+    ) -> Self {
         Self {
             order,
             execution_settings: Some(execution_settings.clone()),
@@ -54,18 +57,6 @@ impl LogRecordProcessor {
             ..Default::default()
         }
     }
-
-    pub fn build_file_path(&self, alert_type: AlertOutputType) -> Result<PathBuf> {
-        let execution_settings = self.execution_settings.clone().ok_or_else(|| LogCheckError::new("Could not find execution settings"))?;
-
-        let output_subfolder_and_filename = match alert_type {
-            AlertOutputType::Duplicate => format!("Duplicates/{}_DUPLICATES.csv", self.file_name),
-            AlertOutputType::Redaction => format!("Redactions/{}_POSSIBLE_REDACTIONS.csv", self.file_name),
-        };
-    
-        Ok(execution_settings.output_dir.join(output_subfolder_and_filename))
-    }
-
     pub fn process_record(&mut self, record: LogFileRecord) -> Result<()> {
         //Check for duplicates
         self.process_record_for_dupes_and_redactions(&record, true)?;
@@ -93,14 +84,37 @@ impl LogRecordProcessor {
         Ok(())
     }
     pub fn write_hit_to_file(&mut self, record: &LogFileRecord) -> Result<()> {
-        let output_dir = "test.csv";
+        let output_file = self.build_file_path(AlertOutputType::Duplicate)?;
         let file = OpenOptions::new()
-        .create(true) 
-        .append(true) 
-        .open(output_dir).map_err(|e| LogCheckError::new(format!("Unable to open ouptut file because of {e}")))?;
+            .create(true)
+            .append(true)
+            .open(output_file)
+            .map_err(|e| {
+                LogCheckError::new(format!("Unable to open ouptut file because of {e}"))
+            })?;
         let mut writer = WriterBuilder::new().has_headers(false).from_writer(file);
-        writer.write_record(&record.record_with_index).map_err(|e| LogCheckError::new(format!("Unable to write record because of {e}")))?;
+        writer
+            .write_record(&record.record_with_index)
+            .map_err(|e| LogCheckError::new(format!("Unable to write record because of {e}")))?;
         Ok(())
+    }
+
+    pub fn build_file_path(&self, alert_type: AlertOutputType) -> Result<PathBuf> {
+        let execution_settings = self
+            .execution_settings
+            .clone()
+            .ok_or_else(|| LogCheckError::new("Could not find execution settings"))?;
+
+        let output_subfolder_and_filename = match alert_type {
+            AlertOutputType::Duplicate => format!("Duplicates/{}_DUPLICATES.csv", self.file_name),
+            AlertOutputType::Redaction => {
+                format!("Redactions/{}_POSSIBLE_REDACTIONS.csv", self.file_name)
+            }
+        };
+
+        Ok(execution_settings
+            .output_dir
+            .join(output_subfolder_and_filename))
     }
 
     pub fn process_timestamp(&mut self, record: &LogFileRecord) -> Result<()> {

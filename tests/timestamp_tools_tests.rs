@@ -1,23 +1,39 @@
+use csv::StringRecord;
+use log_checker::basic_objects::{AlertOutputType, ExecutionSettings, TimeDirection};
+use log_checker::helpers::{dt, make_fake_record};
+use log_checker::timestamp_tools::{LogRecordProcessor, TimeDirectionChecker};
 #[cfg(test)]
 use std::path::PathBuf;
-use csv::StringRecord;
-use log_checker::basic_objects::{ExecutionSettings, TimeDirection, AlertOutputType};
-use log_checker::timestamp_tools::{LogRecordProcessor, TimeDirectionChecker};
-use log_checker::helpers::{make_fake_record, dt};
 
 #[test]
 fn processes_ascending_records_correctly() {
     let settings = ExecutionSettings::default();
-    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Ascending),&settings, "Test".to_string());
+    let mut processor = LogRecordProcessor::new_with_order(
+        Some(TimeDirection::Ascending),
+        &settings,
+        "Test".to_string(),
+    );
 
     processor
-        .process_timestamp(&make_fake_record(0, "2024-05-01 12:00:00", StringRecord::from(vec!["test"])))
+        .process_timestamp(&make_fake_record(
+            0,
+            "2024-05-01 12:00:00",
+            StringRecord::from(vec!["test"]),
+        ))
         .unwrap();
     processor
-        .process_timestamp(&make_fake_record(1, "2024-05-01 13:00:00", StringRecord::from(vec!["test"])))
+        .process_timestamp(&make_fake_record(
+            1,
+            "2024-05-01 13:00:00",
+            StringRecord::from(vec!["test"]),
+        ))
         .unwrap();
     processor
-        .process_timestamp(&make_fake_record(2, "2024-05-01 15:00:00", StringRecord::from(vec!["test"])))
+        .process_timestamp(&make_fake_record(
+            2,
+            "2024-05-01 15:00:00",
+            StringRecord::from(vec!["test"]),
+        ))
         .unwrap();
 
     let results = processor.get_statistics().unwrap();
@@ -43,16 +59,32 @@ fn processes_ascending_records_correctly() {
 #[test]
 fn processes_ascending_records_same_time_gap_correctly() {
     let settings = ExecutionSettings::default();
-    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Ascending), &settings, "Test".to_string());
+    let mut processor = LogRecordProcessor::new_with_order(
+        Some(TimeDirection::Ascending),
+        &settings,
+        "Test".to_string(),
+    );
 
     processor
-        .process_timestamp(&make_fake_record(0, "2024-05-01 12:00:00", StringRecord::from(vec!["test"])))
+        .process_timestamp(&make_fake_record(
+            0,
+            "2024-05-01 12:00:00",
+            StringRecord::from(vec!["test"]),
+        ))
         .unwrap();
     processor
-        .process_timestamp(&make_fake_record(1, "2024-05-01 13:00:00", StringRecord::from(vec!["test"])))
+        .process_timestamp(&make_fake_record(
+            1,
+            "2024-05-01 13:00:00",
+            StringRecord::from(vec!["test"]),
+        ))
         .unwrap();
     processor
-        .process_timestamp(&make_fake_record(2, "2024-05-01 14:00:00", StringRecord::from(vec!["test"])))
+        .process_timestamp(&make_fake_record(
+            2,
+            "2024-05-01 14:00:00",
+            StringRecord::from(vec!["test"]),
+        ))
         .unwrap();
 
     let results = processor.get_statistics().unwrap();
@@ -78,16 +110,32 @@ fn processes_ascending_records_same_time_gap_correctly() {
 #[test]
 fn processes_descending_records_correctly() {
     let settings = ExecutionSettings::default();
-    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Descending), &settings, "Test".to_string());
+    let mut processor = LogRecordProcessor::new_with_order(
+        Some(TimeDirection::Descending),
+        &settings,
+        "Test".to_string(),
+    );
 
     processor
-        .process_timestamp(&make_fake_record(0, "2024-05-01 14:00:00", StringRecord::from(vec!["test"])))
+        .process_timestamp(&make_fake_record(
+            0,
+            "2024-05-01 14:00:00",
+            StringRecord::from(vec!["test"]),
+        ))
         .unwrap();
     processor
-        .process_timestamp(&make_fake_record(1, "2024-05-01 13:00:00", StringRecord::from(vec!["test"])))
+        .process_timestamp(&make_fake_record(
+            1,
+            "2024-05-01 13:00:00",
+            StringRecord::from(vec!["test"]),
+        ))
         .unwrap();
     processor
-        .process_timestamp(&make_fake_record(2, "2024-05-01 11:00:00", StringRecord::from(vec!["test"])))
+        .process_timestamp(&make_fake_record(
+            2,
+            "2024-05-01 11:00:00",
+            StringRecord::from(vec!["test"]),
+        ))
         .unwrap();
 
     let results = processor.get_statistics().unwrap();
@@ -113,12 +161,24 @@ fn processes_descending_records_correctly() {
 #[test]
 fn detects_out_of_order_in_ascending() {
     let settings = ExecutionSettings::default();
-    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Ascending), &settings, "Test".to_string());
+    let mut processor = LogRecordProcessor::new_with_order(
+        Some(TimeDirection::Ascending),
+        &settings,
+        "Test".to_string(),
+    );
 
     processor
-        .process_timestamp(&make_fake_record(0, "2024-05-01 12:00:00", StringRecord::from(vec!["test"])))
+        .process_timestamp(&make_fake_record(
+            0,
+            "2024-05-01 12:00:00",
+            StringRecord::from(vec!["test"]),
+        ))
         .unwrap();
-    let result = processor.process_timestamp(&make_fake_record(1, "2024-05-01 11:00:00", StringRecord::from(vec!["test"])));
+    let result = processor.process_timestamp(&make_fake_record(
+        1,
+        "2024-05-01 11:00:00",
+        StringRecord::from(vec!["test"]),
+    ));
 
     assert!(result.is_err());
     assert_eq!(
@@ -130,12 +190,24 @@ fn detects_out_of_order_in_ascending() {
 #[test]
 fn detects_out_of_order_in_descending() {
     let settings = ExecutionSettings::default();
-    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Descending), &settings, "Test".to_string());
+    let mut processor = LogRecordProcessor::new_with_order(
+        Some(TimeDirection::Descending),
+        &settings,
+        "Test".to_string(),
+    );
 
     processor
-        .process_timestamp(&make_fake_record(0, "2024-05-01 12:00:00", StringRecord::from(vec!["test"])))
+        .process_timestamp(&make_fake_record(
+            0,
+            "2024-05-01 12:00:00",
+            StringRecord::from(vec!["test"]),
+        ))
         .unwrap();
-    let result = processor.process_timestamp(&make_fake_record(1, "2024-05-01 13:00:00", StringRecord::from(vec!["test"])));
+    let result = processor.process_timestamp(&make_fake_record(
+        1,
+        "2024-05-01 13:00:00",
+        StringRecord::from(vec!["test"]),
+    ));
 
     assert!(result.is_err());
     assert_eq!(
@@ -185,10 +257,19 @@ fn test_build_file_path_duplicate() {
         output_dir: PathBuf::from("/tmp/output"),
         ..Default::default()
     };
-    let processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Descending), &settings, "Test".to_string());
+    let processor = LogRecordProcessor::new_with_order(
+        Some(TimeDirection::Descending),
+        &settings,
+        "Test".to_string(),
+    );
 
-    let result = processor.build_file_path(AlertOutputType::Duplicate).unwrap();
-    assert_eq!(result, PathBuf::from("/tmp/output/Duplicates/Test_DUPLICATES.csv"));
+    let result = processor
+        .build_file_path(AlertOutputType::Duplicate)
+        .unwrap();
+    assert_eq!(
+        result,
+        PathBuf::from("/tmp/output/Duplicates/Test_DUPLICATES.csv")
+    );
 }
 
 #[test]
@@ -197,10 +278,19 @@ fn test_build_file_path_duplicate_weird_path() {
         output_dir: PathBuf::from("/tmp/\\output//"),
         ..Default::default()
     };
-    let processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Descending), &settings, "Test".to_string());
+    let processor = LogRecordProcessor::new_with_order(
+        Some(TimeDirection::Descending),
+        &settings,
+        "Test".to_string(),
+    );
 
-    let result = processor.build_file_path(AlertOutputType::Duplicate).unwrap();
-    assert_eq!(result, PathBuf::from("/tmp/output/Duplicates/Test_DUPLICATES.csv"));
+    let result = processor
+        .build_file_path(AlertOutputType::Duplicate)
+        .unwrap();
+    assert_eq!(
+        result,
+        PathBuf::from("/tmp/output/Duplicates/Test_DUPLICATES.csv")
+    );
 }
 
 #[test]
@@ -209,10 +299,19 @@ fn test_build_file_path_redaction() {
         output_dir: PathBuf::from("/tmp/output"),
         ..Default::default()
     };
-    let processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Descending), &settings, "Test".to_string());
+    let processor = LogRecordProcessor::new_with_order(
+        Some(TimeDirection::Descending),
+        &settings,
+        "Test".to_string(),
+    );
 
-    let result = processor.build_file_path(AlertOutputType::Redaction).unwrap();
-    assert_eq!(result, PathBuf::from("/tmp/output/Redactions/Test_POSSIBLE_REDACTIONS.csv"));
+    let result = processor
+        .build_file_path(AlertOutputType::Redaction)
+        .unwrap();
+    assert_eq!(
+        result,
+        PathBuf::from("/tmp/output/Redactions/Test_POSSIBLE_REDACTIONS.csv")
+    );
 }
 
 #[test]

@@ -134,15 +134,16 @@ pub fn process_file(
     };
 
     // Stream the file to find statistics on time and other stuff
-    let completed_statistics_object = match stream_file(log_file, &timestamp_hit, execution_settings)
-        .map_err(|e| PhaseError::FileStreaming(e.to_string()))
-    {
-        Ok(result) => result,
-        Err(e) => {
-            base_processed_file.error = Some(e.to_string());
-            return Ok(base_processed_file);
-        }
-    };
+    let completed_statistics_object =
+        match stream_file(log_file, &timestamp_hit, execution_settings)
+            .map_err(|e| PhaseError::FileStreaming(e.to_string()))
+        {
+            Ok(result) => result,
+            Err(e) => {
+                base_processed_file.error = Some(e.to_string());
+                return Ok(base_processed_file);
+            }
+        };
 
     // Get the formatted stats from the stats object
     let formatted_statistics = match completed_statistics_object

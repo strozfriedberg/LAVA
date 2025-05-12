@@ -1,13 +1,17 @@
 use csv::StringRecord;
 use log_checker::basic_objects::{ExecutionSettings, TimeDirection};
-use log_checker::timestamp_tools::LogRecordProcessor;
 use log_checker::helpers::make_fake_record;
+use log_checker::timestamp_tools::LogRecordProcessor;
 
 // Test when the record is not a duplicate
 #[test]
 fn test_process_record_no_duplicate() {
     let settings = ExecutionSettings::default();
-    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Descending), &settings, "Test".to_string());
+    let mut processor = LogRecordProcessor::new_with_order(
+        Some(TimeDirection::Descending),
+        &settings,
+        "Test".to_string(),
+    );
 
     let record = make_fake_record(0, "2024-05-01 14:00:00", StringRecord::from(vec!["test"]));
     let _ = processor.process_record_for_dupes_and_redactions(&record, false);
@@ -18,7 +22,11 @@ fn test_process_record_no_duplicate() {
 #[test]
 fn test_process_record_with_one_duplicate() {
     let settings = ExecutionSettings::default();
-    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Descending), &settings, "Test".to_string());
+    let mut processor = LogRecordProcessor::new_with_order(
+        Some(TimeDirection::Descending),
+        &settings,
+        "Test".to_string(),
+    );
 
     let record1 = make_fake_record(0, "2024-05-01 14:00:00", StringRecord::from(vec!["test"]));
     let record2 = make_fake_record(0, "2024-05-01 14:00:00", StringRecord::from(vec!["test45"]));
@@ -34,7 +42,11 @@ fn test_process_record_with_one_duplicate() {
 #[test]
 fn test_process_record_with_two_duplicate() {
     let settings = ExecutionSettings::default();
-    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Descending), &settings, "Test".to_string());
+    let mut processor = LogRecordProcessor::new_with_order(
+        Some(TimeDirection::Descending),
+        &settings,
+        "Test".to_string(),
+    );
 
     let record1 = make_fake_record(0, "2024-05-01 14:00:00", StringRecord::from(vec!["test45"]));
     let record2 = make_fake_record(0, "2024-05-01 14:00:00", StringRecord::from(vec!["test45"]));
@@ -50,11 +62,27 @@ fn test_process_record_with_two_duplicate() {
 #[test]
 fn test_process_record_with_no_dupe_multiple_values() {
     let settings = ExecutionSettings::default();
-    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Descending), &settings, "Test".to_string());
+    let mut processor = LogRecordProcessor::new_with_order(
+        Some(TimeDirection::Descending),
+        &settings,
+        "Test".to_string(),
+    );
 
-    let record1 = make_fake_record(0, "2024-05-01 14:00:00", StringRecord::from(vec!["test45", "1"]));
-    let record2 = make_fake_record(0, "2024-05-01 14:00:00", StringRecord::from(vec!["test45", "2"]));
-    let record3 = make_fake_record(0, "2024-05-01 14:00:00", StringRecord::from(vec!["test45", "3"]));
+    let record1 = make_fake_record(
+        0,
+        "2024-05-01 14:00:00",
+        StringRecord::from(vec!["test45", "1"]),
+    );
+    let record2 = make_fake_record(
+        0,
+        "2024-05-01 14:00:00",
+        StringRecord::from(vec!["test45", "2"]),
+    );
+    let record3 = make_fake_record(
+        0,
+        "2024-05-01 14:00:00",
+        StringRecord::from(vec!["test45", "3"]),
+    );
     let _ = processor.process_record_for_dupes_and_redactions(&record1, false);
     let _ = processor.process_record_for_dupes_and_redactions(&record2, false);
     let _ = processor.process_record_for_dupes_and_redactions(&record3, false);
@@ -66,11 +94,27 @@ fn test_process_record_with_no_dupe_multiple_values() {
 #[test]
 fn test_process_record_with_dupe_multiple_values() {
     let settings = ExecutionSettings::default();
-    let mut processor = LogRecordProcessor::new_with_order(Some(TimeDirection::Descending), &settings, "Test".to_string());
+    let mut processor = LogRecordProcessor::new_with_order(
+        Some(TimeDirection::Descending),
+        &settings,
+        "Test".to_string(),
+    );
 
-    let record1 = make_fake_record(0, "2024-05-01 14:00:00", StringRecord::from(vec!["test45", "1"]));
-    let record2 = make_fake_record(0, "2024-05-01 14:00:00", StringRecord::from(vec!["test45", "2"]));
-    let record3 = make_fake_record(0, "2024-05-01 14:00:00", StringRecord::from(vec!["test45", "1"]));
+    let record1 = make_fake_record(
+        0,
+        "2024-05-01 14:00:00",
+        StringRecord::from(vec!["test45", "1"]),
+    );
+    let record2 = make_fake_record(
+        0,
+        "2024-05-01 14:00:00",
+        StringRecord::from(vec!["test45", "2"]),
+    );
+    let record3 = make_fake_record(
+        0,
+        "2024-05-01 14:00:00",
+        StringRecord::from(vec!["test45", "1"]),
+    );
     let _ = processor.process_record_for_dupes_and_redactions(&record1, false);
     let _ = processor.process_record_for_dupes_and_redactions(&record2, false);
     let _ = processor.process_record_for_dupes_and_redactions(&record3, false);
