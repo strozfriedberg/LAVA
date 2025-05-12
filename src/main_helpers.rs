@@ -40,6 +40,7 @@ pub fn get_full_execution_settings(matches: &ArgMatches) -> Result<ExecutionSett
         output_dir: output_dir,
         regexes: regexes,
         timestamp_field: timestamp_field,
+        quick_mode: matches.get_flag("quick"),
     })
 }
 

@@ -11,6 +11,7 @@ fn main() {
         .arg(arg!(-o --output <VALUE> "Output directory.").default_value("LogCheck_Output"))
         .arg(arg!(-r --regexes <VALUE> "YML file with custom timestamp parsing to use. See Input_Regexes.yml for an example.").required(false))
         .arg(arg!(-t --tf <VALUE> "Timestamp field to use for time analysis. Supports -> for nested keys in JSONL.").required(false))
+        .arg(arg!(-q --quick "Enable quick mode. Skips resource-intensive processing steps such as duplicate detection."))
         .get_matches();
 
     let execution_settings = get_full_execution_settings(&matches).unwrap(); // I think unwrap is fine here because I want to crash the program if I get an error here

@@ -28,6 +28,7 @@ pub struct ExecutionSettings {
     pub output_dir: PathBuf,
     pub regexes: Vec<DateRegex>,
     pub timestamp_field: Option<String>,
+    pub quick_mode: bool,
 }
 
 #[derive(PartialEq, Debug)]
