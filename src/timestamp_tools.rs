@@ -2,6 +2,7 @@ use crate::basic_objects::*;
 use crate::errors::*;
 use crate::helpers::*;
 use chrono::NaiveDateTime;
+use csv::StringRecord;
 use csv::WriterBuilder;
 use std::collections::HashSet;
 use std::fs::OpenOptions;
@@ -34,6 +35,7 @@ pub struct LogRecordProcessor {
     pub order: Option<TimeDirection>,
     pub execution_settings: Option<ExecutionSettings>,
     pub file_name: String,
+    pub output_headers: StringRecord,
     pub num_records: usize,
     pub min_timestamp: Option<NaiveDateTime>,
     pub max_timestamp: Option<NaiveDateTime>,
@@ -49,11 +51,23 @@ impl LogRecordProcessor {
         order: Option<TimeDirection>,
         execution_settings: &ExecutionSettings,
         log_file_stem: String,
+        headers: Option<StringRecord>
     ) -> Self {
+        let output_headers = match headers {
+            Some(csv_headers) => {
+                let mut record_to_output = StringRecord::from(vec!["Index of Hit".to_string()]);
+                record_to_output.extend(csv_headers.iter());
+                record_to_output
+            },
+            None => {
+                StringRecord::from(vec!["Index of Hit","Record"])
+            }
+        };
         Self {
             order,
             execution_settings: Some(execution_settings.clone()),
             file_name: log_file_stem,
+            output_headers: output_headers,
             ..Default::default()
         }
     }
@@ -85,14 +99,25 @@ impl LogRecordProcessor {
     }
     pub fn write_hit_to_file(&mut self, record: &LogFileRecord) -> Result<()> {
         let output_file = self.build_file_path(AlertOutputType::Duplicate)?;
+        let file_existed_before = output_file.exists();
         let file = OpenOptions::new()
             .create(true)
             .append(true)
             .open(output_file)
             .map_err(|e| {
-                LogCheckError::new(format!("Unable to open ouptut file because of {e}"))
+                LogCheckError::new(format!("Unable to create output file because of {e}"))
             })?;
-        let mut writer = WriterBuilder::new().has_headers(false).from_writer(file);
+
+        let mut writer = WriterBuilder::new()
+            .has_headers(false) // Disable automatic header writing
+            .from_writer(file);
+
+        if !file_existed_before {
+            writer.write_record(&self.output_headers).map_err(|e| {
+                LogCheckError::new(format!("Unable to write headers to file because of {e}"))
+            })?;
+        }
+
         writer
             .write_record(&record.record_with_index)
             .map_err(|e| LogCheckError::new(format!("Unable to write record because of {e}")))?;

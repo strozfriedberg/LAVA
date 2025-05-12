@@ -12,6 +12,7 @@ fn processes_ascending_records_correctly() {
         Some(TimeDirection::Ascending),
         &settings,
         "Test".to_string(),
+        None
     );
 
     processor
@@ -63,6 +64,7 @@ fn processes_ascending_records_same_time_gap_correctly() {
         Some(TimeDirection::Ascending),
         &settings,
         "Test".to_string(),
+        None
     );
 
     processor
@@ -114,6 +116,7 @@ fn processes_descending_records_correctly() {
         Some(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
+        None
     );
 
     processor
@@ -165,6 +168,7 @@ fn detects_out_of_order_in_ascending() {
         Some(TimeDirection::Ascending),
         &settings,
         "Test".to_string(),
+        None
     );
 
     processor
@@ -194,6 +198,7 @@ fn detects_out_of_order_in_descending() {
         Some(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
+        None
     );
 
     processor
@@ -261,6 +266,7 @@ fn test_build_file_path_duplicate() {
         Some(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
+        None
     );
 
     let result = processor
@@ -282,6 +288,7 @@ fn test_build_file_path_duplicate_weird_path() {
         Some(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
+        None
     );
 
     let result = processor
@@ -303,6 +310,7 @@ fn test_build_file_path_redaction() {
         Some(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
+        None
     );
 
     let result = processor

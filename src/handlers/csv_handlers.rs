@@ -5,6 +5,7 @@ use crate::timestamp_tools::*;
 use chrono::NaiveDateTime;
 use csv::Reader;
 use csv::ReaderBuilder;
+use csv::StringRecord;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
@@ -114,6 +115,7 @@ pub fn try_to_get_timestamp_hit_for_csv_functionality(
                         return Ok(IdentifiedTimeInformation {
                             header_row: None,
                             column_name: Some(headers.get(i).unwrap().to_string()),
+                            headers: Some(headers),
                             column_index: Some(i),
                             direction: None,
                             regex_info: date_regex.clone(),
@@ -132,6 +134,7 @@ pub fn try_to_get_timestamp_hit_for_csv_functionality(
                     return Ok(IdentifiedTimeInformation {
                         header_row: None,
                         column_name: Some(headers.get(i).unwrap().to_string()),
+                        headers: Some(headers),
                         column_index: Some(i),
                         direction: None,
                         regex_info: date_regex.clone(),
@@ -189,6 +192,7 @@ pub fn stream_csv_file(
         timestamp_hit.direction.clone(),
         execution_settings,
         get_file_stem(log_file)?,
+        timestamp_hit.headers.clone(),
     );
 
     let header_row = timestamp_hit

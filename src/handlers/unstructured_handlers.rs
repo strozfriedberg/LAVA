@@ -26,6 +26,7 @@ pub fn try_to_get_timestamp_hit_for_unstructured(
                 );
                 return Ok(IdentifiedTimeInformation {
                     header_row: None,
+                    headers: None,
                     column_name: None,
                     column_index: None,
                     direction: None,
@@ -72,6 +73,7 @@ pub fn stream_unstructured_file(
         timestamp_hit.direction.clone(),
         execution_settings,
         get_file_stem(log_file)?,
+        None
     );
     let file = File::open(&log_file.file_path)
         .map_err(|e| LogCheckError::new(format!("Unable to open log file because of {e}")))?;

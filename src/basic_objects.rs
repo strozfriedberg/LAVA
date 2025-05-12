@@ -133,6 +133,7 @@ impl TimeGap {
 pub struct IdentifiedTimeInformation {
     // Maybe add a date format pretty. and then also the date format that gets used by chrono
     pub header_row: Option<u64>,
+    pub headers: Option<StringRecord>,
     pub column_name: Option<String>,
     pub column_index: Option<usize>,
     pub regex_info: DateRegex,
