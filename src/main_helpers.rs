@@ -1,9 +1,9 @@
 use clap::ArgMatches;
-use log_checker::PREBUILT_DATE_REGEXES;
-use log_checker::basic_objects::*;
-use log_checker::date_regex::DateRegex;
-use log_checker::date_regex::RawDateRegex;
-use log_checker::errors::*;
+use LAVA::PREBUILT_DATE_REGEXES;
+use LAVA::basic_objects::*;
+use LAVA::date_regex::DateRegex;
+use LAVA::date_regex::RawDateRegex;
+use LAVA::errors::*;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;

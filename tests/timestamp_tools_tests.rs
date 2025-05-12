@@ -1,7 +1,7 @@
 use csv::StringRecord;
-use log_checker::basic_objects::{AlertOutputType, ExecutionSettings, TimeDirection};
-use log_checker::helpers::{dt, make_fake_record};
-use log_checker::timestamp_tools::{LogRecordProcessor, TimeDirectionChecker};
+use LAVA::basic_objects::{AlertOutputType, ExecutionSettings, TimeDirection};
+use LAVA::helpers::{dt, make_fake_record};
+use LAVA::timestamp_tools::{LogRecordProcessor, TimeDirectionChecker};
 #[cfg(test)]
 use std::path::PathBuf;
 

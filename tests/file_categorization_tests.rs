@@ -1,5 +1,5 @@
-use log_checker::basic_objects::*;
-use log_checker::*;
+use LAVA::basic_objects::*;
+use LAVA::*;
 use std::path::PathBuf;
 
 #[test]

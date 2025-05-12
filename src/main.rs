@@ -1,5 +1,5 @@
 use clap::{Command, arg};
-use log_checker::process_all_files;
+use LAVA::process_all_files;
 mod main_helpers;
 use main_helpers::get_full_execution_settings;
 

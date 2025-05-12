@@ -1,9 +1,9 @@
 use csv::StringRecord;
-use log_checker::basic_objects::ExecutionSettings;
-use log_checker::handlers::csv_handlers::{
+use LAVA::basic_objects::ExecutionSettings;
+use LAVA::handlers::csv_handlers::{
     get_index_of_header_functionality, try_to_get_timestamp_hit_for_csv_functionality,
 };
-use log_checker::*;
+use LAVA::*;
 use std::io::{BufReader, Cursor};
 use std::path::PathBuf;
 include!(concat!(env!("OUT_DIR"), "/generated_regexes.rs"));

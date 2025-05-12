@@ -1,4 +1,4 @@
-# LogChecker (Pending Name Change)
+# Log Anomaly and Validity Analyzer (LAVA)
 
 This tool will be used to verify the completness of logs
 

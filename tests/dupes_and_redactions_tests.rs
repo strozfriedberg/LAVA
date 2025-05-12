@@ -1,7 +1,7 @@
 use csv::StringRecord;
-use log_checker::basic_objects::{ExecutionSettings, TimeDirection};
-use log_checker::helpers::make_fake_record;
-use log_checker::timestamp_tools::LogRecordProcessor;
+use LAVA::basic_objects::{ExecutionSettings, TimeDirection};
+use LAVA::helpers::make_fake_record;
+use LAVA::timestamp_tools::LogRecordProcessor;
 
 // Test when the record is not a duplicate
 #[test]
