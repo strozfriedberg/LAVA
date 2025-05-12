@@ -3,9 +3,24 @@ use crate::helpers::*;
 use chrono::{NaiveDateTime, TimeDelta};
 use clap::builder::Str;
 use csv::StringRecord;
+use regex::Regex;
 use serde::Serialize;
 use std::cmp::Ordering;
 use std::path::PathBuf;
+use serde::Deserialize;
+
+
+#[derive(Debug, Deserialize)]
+struct RawRedactionPattern {
+    name: String,
+    pattern: String,
+}
+
+#[derive(Debug)]
+struct RedactionPattern {
+    name: String,
+    pattern: Regex,
+}
 
 #[derive(Debug, Clone, Default)]
 pub struct ExecutionSettings {
