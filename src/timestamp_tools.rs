@@ -33,7 +33,7 @@ impl TimeDirectionChecker {
 #[derive(Debug, Default)]
 pub struct LogRecordProcessor {
     pub order: Option<TimeDirection>,
-    pub execution_settings: Option<ExecutionSettings>,
+    pub execution_settings: ExecutionSettings,
     pub file_name: String,
     pub output_headers: StringRecord,
     pub num_records: usize,
@@ -63,7 +63,7 @@ impl LogRecordProcessor {
         };
         Self {
             order,
-            execution_settings: Some(execution_settings.clone()),
+            execution_settings: execution_settings.clone(),
             file_name: log_file_stem,
             output_headers: output_headers,
             ..Default::default()
@@ -71,7 +71,9 @@ impl LogRecordProcessor {
     }
     pub fn process_record(&mut self, record: LogFileRecord) -> Result<()> {
         //Check for duplicates
-        self.process_record_for_dupes_and_redactions(&record, true)?;
+        if !self.execution_settings.quick_mode {
+            self.process_record_for_dupes_and_redactions(&record, true)?;
+        }
         //Update earliest and latest timestamp
         self.process_timestamp(&record)?;
 
@@ -123,10 +125,7 @@ impl LogRecordProcessor {
     }
 
     pub fn build_file_path(&self, alert_type: AlertOutputType) -> Result<PathBuf> {
-        let execution_settings = self
-            .execution_settings
-            .clone()
-            .ok_or_else(|| LogCheckError::new("Could not find execution settings"))?;
+        let execution_settings = self.execution_settings.clone();
 
         let output_subfolder_and_filename = match alert_type {
             AlertOutputType::Duplicate => format!("Duplicates/{}_DUPLICATES.csv", self.file_name),

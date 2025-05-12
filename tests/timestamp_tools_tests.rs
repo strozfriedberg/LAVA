@@ -321,19 +321,3 @@ fn test_build_file_path_redaction() {
         PathBuf::from("/tmp/output/Redactions/Test_POSSIBLE_REDACTIONS.csv")
     );
 }
-
-#[test]
-fn test_build_file_path_missing_execution_settings() {
-    let processor = LogRecordProcessor {
-        file_name: "Test".to_string(),
-        execution_settings: None,
-        ..Default::default()
-    };
-
-    let result = processor.build_file_path(AlertOutputType::Duplicate);
-    assert!(result.is_err());
-    assert_eq!(
-        result.unwrap_err().to_string(),
-        "Could not find execution settings"
-    );
-}
