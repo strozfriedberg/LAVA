@@ -8,7 +8,7 @@ use csv::ReaderBuilder;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 #[cfg(test)]
-mod tests;
+mod csv_handler_tests;
 
 pub fn get_index_of_header(log_file: &LogFile) -> Result<usize> {
     let file = File::open(&log_file.file_path)
