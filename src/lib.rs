@@ -55,7 +55,7 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
     }
 }
 
-pub fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile> {
+fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile> {
     let mut supported_files: Vec<LogFile> = Vec::new();
 
     for file_path in file_paths {
@@ -251,4 +251,34 @@ pub fn stream_file(
     Err(LogCheckError::new(
         "Have not implemented streaming for this file type yet",
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn categorizes_csvs() {
+        let mut paths: Vec<PathBuf> = Vec::new();
+        paths.push(PathBuf::from("/path/to/file1.json"));
+        paths.push(PathBuf::from("/path/to/file1.txt"));
+        paths.push(PathBuf::from("/path/to/file2.csv"));
+
+        let result = categorize_files(&paths);
+        let expected: Vec<LogFile> = vec![
+            LogFile {
+                log_type: LogType::Json,
+                file_path: PathBuf::from("/path/to/file1.json"),
+            },
+            LogFile {
+                log_type: LogType::Unstructured,
+                file_path: PathBuf::from("/path/to/file1.txt"),
+            },
+            LogFile {
+                log_type: LogType::Csv,
+                file_path: PathBuf::from("/path/to/file2.csv"),
+            },
+        ];
+
+        assert_eq!(result, expected);
+    }
 }
