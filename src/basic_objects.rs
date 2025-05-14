@@ -1,7 +1,6 @@
 use crate::date_regex::*;
 use crate::helpers::*;
 use chrono::{NaiveDateTime, TimeDelta};
-use clap::builder::Str;
 use csv::StringRecord;
 use regex::Regex;
 use serde::Deserialize;
@@ -78,7 +77,7 @@ pub struct ProcessedLogFile {
 #[derive(PartialEq, Debug)]
 pub struct LogFileRecord {
     pub hash_of_entire_record: u64,
-    pub record_with_index: StringRecord,
+    raw_record: StringRecord,
     pub timestamp: NaiveDateTime,
     pub index: usize,
 }
@@ -90,9 +89,18 @@ impl LogFileRecord {
         Self {
             hash_of_entire_record: hash_csv_record(&record),
             timestamp: timestamp,
+            raw_record: record,
             index: index,
-            record_with_index: record_to_output,
         }
+    }
+    pub fn get_record_to_output(&self, alert_type: AlertOutputType) -> StringRecord {
+        let mut base_record = match alert_type {
+            AlertOutputType::Duplicate => StringRecord::from(vec![self.index.to_string(), self.hash_of_entire_record.to_string()]),
+            AlertOutputType::Redaction => StringRecord::from(vec![self.index.to_string()])
+            
+        };
+        base_record.extend(self.raw_record.iter());
+        base_record
     }
 }
 

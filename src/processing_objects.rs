@@ -44,7 +44,7 @@ pub struct LogRecordProcessor {
     pub order: Option<TimeDirection>,
     pub execution_settings: ExecutionSettings,
     pub file_name: String,
-    pub output_headers: StringRecord,
+    pub data_field_headers: StringRecord,
     pub num_records: usize,
     pub min_timestamp: Option<NaiveDateTime>,
     pub max_timestamp: Option<NaiveDateTime>,
@@ -62,19 +62,17 @@ impl LogRecordProcessor {
         log_file_stem: String,
         headers: Option<StringRecord>,
     ) -> Self {
-        let output_headers = match headers {
+        let data_field_headers = match headers {
             Some(csv_headers) => {
-                let mut record_to_output = StringRecord::from(vec!["Index of Hit".to_string()]);
-                record_to_output.extend(csv_headers.iter());
-                record_to_output
+                csv_headers
             }
-            None => StringRecord::from(vec!["Index of Hit", "Record"]),
+            None => StringRecord::from(vec!["Record"]),
         };
         Self {
             order,
             execution_settings: execution_settings.clone(),
             file_name: log_file_stem,
-            output_headers: output_headers,
+            data_field_headers: data_field_headers,
             ..Default::default()
         }
     }
@@ -122,15 +120,26 @@ impl LogRecordProcessor {
             .from_writer(file);
 
         if !file_existed_before {
-            writer.write_record(&self.output_headers).map_err(|e| {
+            writer.write_record(&self.get_full_output_headers_based_on_alert_type(AlertOutputType::Duplicate)).map_err(|e| {
                 LogCheckError::new(format!("Unable to write headers to file because of {e}"))
             })?;
         }
 
         writer
-            .write_record(&record.record_with_index)
+            .write_record(&record.get_record_to_output(AlertOutputType::Duplicate))
             .map_err(|e| LogCheckError::new(format!("Unable to write record because of {e}")))?;
         Ok(())
+    }
+
+    fn get_full_output_headers_based_on_alert_type(&self, alert_type: AlertOutputType) -> StringRecord {
+
+        let mut full_output_headers = match alert_type {
+            AlertOutputType::Duplicate => StringRecord::from(vec!["Index of Hit", "Hash of Record"]),
+            AlertOutputType::Redaction => StringRecord::from(vec!["Index of Hit", "Hash of Record"]),
+        };
+
+        full_output_headers.extend(self.data_field_headers.iter());
+        full_output_headers
     }
 
     pub fn build_file_path(&self, alert_type: AlertOutputType) -> Result<PathBuf> {

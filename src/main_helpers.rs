@@ -44,7 +44,7 @@ pub fn get_full_execution_settings(matches: &ArgMatches) -> Result<ExecutionSett
     })
 }
 
-pub fn setup_output_dir(output_dir: &Path) -> Result<()> {
+fn setup_output_dir(output_dir: &Path) -> Result<()> {
     if !output_dir.exists() {
         fs::create_dir_all(output_dir).map_err(|e| {
             LogCheckError::new(format!("Unable to create output directory because of {e}"))
@@ -65,7 +65,7 @@ pub fn setup_output_dir(output_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-pub fn get_user_supplied_regexes_from_command_line(
+fn get_user_supplied_regexes_from_command_line(
     regex_file_path: &Path,
 ) -> Result<Vec<DateRegex>> {
     let content = fs::read_to_string(regex_file_path)

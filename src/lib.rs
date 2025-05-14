@@ -13,11 +13,11 @@ mod handlers {
 use handlers::csv_handlers::*;
 use handlers::unstructured_handlers::*;
 mod date_regex;
-pub mod helpers;
+mod helpers;
 use helpers::*;
-pub mod basic_objects;
+mod basic_objects;
 use basic_objects::*;
-pub mod processing_objects;
+mod processing_objects;
 use processing_objects::*;
 pub mod main_helpers;
 include!(concat!(env!("OUT_DIR"), "/generated_regexes.rs"));

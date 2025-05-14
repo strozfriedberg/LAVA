@@ -1,8 +1,7 @@
 use super::super::*;
-use crate::basic_objects::{AlertOutputType, ExecutionSettings, TimeDirection};
+use crate::basic_objects::{ExecutionSettings, TimeDirection};
 use crate::test_helpers::*;
 use csv::StringRecord;
-use std::path::PathBuf;
 
 
 #[test]
