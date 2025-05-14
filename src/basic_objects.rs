@@ -8,6 +8,10 @@ use serde::Serialize;
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
+#[cfg(test)]
+mod logfilerecord_tests;
+
+
 #[derive(Debug, Deserialize)]
 struct RawRedactionPattern {
     name: String,
