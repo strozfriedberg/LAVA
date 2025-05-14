@@ -1,9 +1,9 @@
-use clap::ArgMatches;
 use LAVA::PREBUILT_DATE_REGEXES;
 use LAVA::basic_objects::*;
 use LAVA::date_regex::DateRegex;
 use LAVA::date_regex::RawDateRegex;
 use LAVA::errors::*;
+use clap::ArgMatches;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;

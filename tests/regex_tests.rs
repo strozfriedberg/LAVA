@@ -1,6 +1,6 @@
 // use regex::Regex;
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use LAVA::date_regex::{DateRegex, RawDateRegex};
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
 #[test]
 fn test_date_regex_from_raw() {
