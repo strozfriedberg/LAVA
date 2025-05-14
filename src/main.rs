@@ -1,7 +1,6 @@
 use LAVA::process_all_files;
 use clap::{Command, arg};
-mod main_helpers;
-use main_helpers::get_full_execution_settings;
+use LAVA::main_helpers::get_full_execution_settings;
 
 fn main() {
     let matches = Command::new("LogCheck")

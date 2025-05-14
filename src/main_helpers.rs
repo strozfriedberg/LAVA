@@ -1,8 +1,8 @@
-use LAVA::PREBUILT_DATE_REGEXES;
-use LAVA::basic_objects::*;
-use LAVA::date_regex::DateRegex;
-use LAVA::date_regex::RawDateRegex;
-use LAVA::errors::*;
+use crate::PREBUILT_DATE_REGEXES;
+use crate::basic_objects::*;
+use crate::date_regex::DateRegex;
+use crate::date_regex::RawDateRegex;
+use crate::errors::*;
 use clap::ArgMatches;
 use std::fs;
 use std::path::Path;

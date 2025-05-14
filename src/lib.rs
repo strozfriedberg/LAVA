@@ -4,21 +4,22 @@ use sha2::{Digest, Sha256};
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
-pub mod errors;
+mod errors;
 use errors::*;
-pub mod handlers {
+mod handlers {
     pub mod csv_handlers;
     pub mod unstructured_handlers;
 }
 use handlers::csv_handlers::*;
 use handlers::unstructured_handlers::*;
-pub mod date_regex;
+mod date_regex;
 pub mod helpers;
 use helpers::*;
 pub mod basic_objects;
 use basic_objects::*;
 pub mod timestamp_tools;
 use timestamp_tools::*;
+pub mod main_helpers;
 include!(concat!(env!("OUT_DIR"), "/generated_regexes.rs"));
 
 #[cfg(test)]
@@ -87,7 +88,7 @@ fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile> {
     supported_files
 }
 
-pub fn process_file(
+fn process_file(
     log_file: &LogFile,
     execution_settings: &ExecutionSettings,
 ) -> Result<ProcessedLogFile> {
@@ -208,7 +209,7 @@ fn get_metadata_and_hash(file_path: &PathBuf) -> Result<(String, u64, String, St
     ))
 }
 
-pub fn try_to_get_timestamp_hit(
+fn try_to_get_timestamp_hit(
     log_file: &LogFile,
     execution_settings: &ExecutionSettings,
 ) -> Result<IdentifiedTimeInformation> {
@@ -222,7 +223,7 @@ pub fn try_to_get_timestamp_hit(
     ))
 }
 
-pub fn set_time_direction_by_scanning_file(
+fn set_time_direction_by_scanning_file(
     log_file: &LogFile,
     timestamp_hit: &mut IdentifiedTimeInformation,
 ) -> Result<()> {
@@ -237,7 +238,7 @@ pub fn set_time_direction_by_scanning_file(
     ))
 }
 
-pub fn stream_file(
+fn stream_file(
     log_file: &LogFile,
     timestamp_hit: &IdentifiedTimeInformation,
     execution_settings: &ExecutionSettings,
