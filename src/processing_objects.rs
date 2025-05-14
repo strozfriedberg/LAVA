@@ -8,6 +8,15 @@ use std::collections::HashSet;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
 
+
+#[cfg(test)]
+mod tests {
+    mod direction_checker_tests;
+    mod dupe_processing_tests;
+    mod timestamp_processing_tests;
+    mod build_file_path_tests;
+}
+
 #[derive(PartialEq, Debug, Default)]
 pub struct TimeDirectionChecker {
     pub previous: Option<NaiveDateTime>,
@@ -72,7 +81,7 @@ impl LogRecordProcessor {
     pub fn process_record(&mut self, record: LogFileRecord) -> Result<()> {
         //Check for duplicates
         if !self.execution_settings.quick_mode {
-            self.process_record_for_dupes_and_redactions(&record, true)?;
+            self.process_record_for_dupes(&record, true)?;
         }
         //Update earliest and latest timestamp
         self.process_timestamp(&record)?;
@@ -80,7 +89,7 @@ impl LogRecordProcessor {
         Ok(())
     }
 
-    pub fn process_record_for_dupes_and_redactions(
+    pub fn process_record_for_dupes(
         &mut self,
         record: &LogFileRecord,
         write_hits_to_file: bool,

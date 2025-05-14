@@ -17,10 +17,13 @@ pub mod helpers;
 use helpers::*;
 pub mod basic_objects;
 use basic_objects::*;
-pub mod timestamp_tools;
-use timestamp_tools::*;
+pub mod processing_objects;
+use processing_objects::*;
 pub mod main_helpers;
 include!(concat!(env!("OUT_DIR"), "/generated_regexes.rs"));
+
+#[cfg(test)]
+mod test_helpers;
 
 #[cfg(test)]
 include!(concat!(env!("OUT_DIR"), "/generated_tests.rs"));

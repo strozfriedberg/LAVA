@@ -1,9 +1,9 @@
-use LAVA::basic_objects::{AlertOutputType, ExecutionSettings, TimeDirection};
-use LAVA::helpers::{dt, make_fake_record};
-use LAVA::timestamp_tools::{LogRecordProcessor, TimeDirectionChecker};
+use super::super::*;
+use crate::basic_objects::{AlertOutputType, ExecutionSettings, TimeDirection};
+use crate::test_helpers::*;
 use csv::StringRecord;
-#[cfg(test)]
 use std::path::PathBuf;
+
 
 #[test]
 fn processes_ascending_records_correctly() {
@@ -218,106 +218,5 @@ fn detects_out_of_order_in_descending() {
     assert_eq!(
         result.unwrap_err().to_string(),
         "File was not sorted on the identified timestamp. Out of order record at index 1"
-    );
-}
-
-#[test]
-fn returns_none_on_first_timestamp() {
-    let mut checker = TimeDirectionChecker::default();
-    let result = checker.process_timestamp(dt("2024-05-01 12:00:00"));
-    assert_eq!(result, None);
-    assert_eq!(checker.previous, Some(dt("2024-05-01 12:00:00")));
-}
-
-#[test]
-fn detects_ascending_order() {
-    let mut checker = TimeDirectionChecker {
-        previous: Some(dt("2024-05-01 12:00:00")),
-    };
-    let result = checker.process_timestamp(dt("2024-05-01 13:00:00"));
-    assert_eq!(result, Some(TimeDirection::Ascending));
-}
-
-#[test]
-fn detects_descending_order() {
-    let mut checker = TimeDirectionChecker {
-        previous: Some(dt("2024-05-01 13:00:00")),
-    };
-    let result = checker.process_timestamp(dt("2024-05-01 12:00:00"));
-    assert_eq!(result, Some(TimeDirection::Descending));
-}
-
-#[test]
-fn returns_none_when_timestamps_are_equal() {
-    let mut checker = TimeDirectionChecker {
-        previous: Some(dt("2024-05-01 12:00:00")),
-    };
-    let result = checker.process_timestamp(dt("2024-05-01 12:00:00"));
-    assert_eq!(result, None);
-}
-
-#[test]
-fn test_build_file_path_duplicate() {
-    let settings = ExecutionSettings {
-        output_dir: PathBuf::from("/tmp/output"),
-        ..Default::default()
-    };
-    let processor = LogRecordProcessor::new_with_order(
-        Some(TimeDirection::Descending),
-        &settings,
-        "Test".to_string(),
-        None,
-    );
-
-    let result = processor
-        .build_file_path(AlertOutputType::Duplicate)
-        .unwrap();
-    assert_eq!(
-        result,
-        PathBuf::from("/tmp/output/Duplicates/Test_DUPLICATES.csv")
-    );
-}
-
-#[test]
-fn test_build_file_path_duplicate_weird_path() {
-    let settings = ExecutionSettings {
-        output_dir: PathBuf::from("/tmp/\\output//"),
-        ..Default::default()
-    };
-    let processor = LogRecordProcessor::new_with_order(
-        Some(TimeDirection::Descending),
-        &settings,
-        "Test".to_string(),
-        None,
-    );
-
-    let result = processor
-        .build_file_path(AlertOutputType::Duplicate)
-        .unwrap();
-    assert_eq!(
-        result,
-        PathBuf::from("/tmp/output/Duplicates/Test_DUPLICATES.csv")
-    );
-}
-
-#[test]
-fn test_build_file_path_redaction() {
-    let settings = ExecutionSettings {
-        output_dir: PathBuf::from("/tmp/output"),
-        ..Default::default()
-    };
-    let processor = LogRecordProcessor::new_with_order(
-        Some(TimeDirection::Descending),
-        &settings,
-        "Test".to_string(),
-        None,
-    );
-
-    let result = processor
-        .build_file_path(AlertOutputType::Redaction)
-        .unwrap();
-    assert_eq!(
-        result,
-        PathBuf::from("/tmp/output/Redactions/Test_POSSIBLE_REDACTIONS.csv")
     );
 }
