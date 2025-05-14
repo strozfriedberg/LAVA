@@ -2,6 +2,8 @@ use crate::errors::*;
 use chrono::NaiveDateTime;
 use regex::Regex;
 use serde::Deserialize;
+#[cfg(test)]
+mod date_regex_tests;
 
 #[derive(Deserialize)]
 pub struct RawDateRegex {
@@ -50,3 +52,4 @@ impl DateRegex {
         false
     }
 }
+
