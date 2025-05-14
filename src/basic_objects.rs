@@ -11,7 +11,6 @@ use std::path::PathBuf;
 #[cfg(test)]
 mod logfilerecord_tests;
 
-
 #[derive(Debug, Deserialize)]
 struct RawRedactionPattern {
     name: String,
@@ -99,9 +98,11 @@ impl LogFileRecord {
     }
     pub fn get_record_to_output(&self, alert_type: AlertOutputType) -> StringRecord {
         let mut base_record = match alert_type {
-            AlertOutputType::Duplicate => StringRecord::from(vec![self.index.to_string(), self.hash_of_entire_record.to_string()]),
-            AlertOutputType::Redaction => StringRecord::from(vec![self.index.to_string()])
-            
+            AlertOutputType::Duplicate => StringRecord::from(vec![
+                self.index.to_string(),
+                self.hash_of_entire_record.to_string(),
+            ]),
+            AlertOutputType::Redaction => StringRecord::from(vec![self.index.to_string()]),
         };
         base_record.extend(self.raw_record.iter());
         base_record

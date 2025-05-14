@@ -1,7 +1,7 @@
 use super::super::*;
 use crate::basic_objects::{ExecutionSettings, TimeDirection};
-use csv::StringRecord;
 use crate::test_helpers::*;
+use csv::StringRecord;
 // Test when the record is not a duplicate
 #[test]
 fn test_process_record_no_duplicate() {

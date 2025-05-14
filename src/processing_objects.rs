@@ -8,13 +8,12 @@ use std::collections::HashSet;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
 
-
 #[cfg(test)]
 mod tests {
+    mod build_file_path_tests;
     mod direction_checker_tests;
     mod dupe_processing_tests;
     mod timestamp_processing_tests;
-    mod build_file_path_tests;
 }
 
 #[derive(PartialEq, Debug, Default)]
@@ -63,9 +62,7 @@ impl LogRecordProcessor {
         headers: Option<StringRecord>,
     ) -> Self {
         let data_field_headers = match headers {
-            Some(csv_headers) => {
-                csv_headers
-            }
+            Some(csv_headers) => csv_headers,
             None => StringRecord::from(vec!["Record"]),
         };
         Self {
@@ -120,9 +117,13 @@ impl LogRecordProcessor {
             .from_writer(file);
 
         if !file_existed_before {
-            writer.write_record(&self.get_full_output_headers_based_on_alert_type(AlertOutputType::Duplicate)).map_err(|e| {
-                LogCheckError::new(format!("Unable to write headers to file because of {e}"))
-            })?;
+            writer
+                .write_record(
+                    &self.get_full_output_headers_based_on_alert_type(AlertOutputType::Duplicate),
+                )
+                .map_err(|e| {
+                    LogCheckError::new(format!("Unable to write headers to file because of {e}"))
+                })?;
         }
 
         writer
@@ -131,11 +132,17 @@ impl LogRecordProcessor {
         Ok(())
     }
 
-    fn get_full_output_headers_based_on_alert_type(&self, alert_type: AlertOutputType) -> StringRecord {
-
+    fn get_full_output_headers_based_on_alert_type(
+        &self,
+        alert_type: AlertOutputType,
+    ) -> StringRecord {
         let mut full_output_headers = match alert_type {
-            AlertOutputType::Duplicate => StringRecord::from(vec!["Index of Hit", "Hash of Record"]),
-            AlertOutputType::Redaction => StringRecord::from(vec!["Index of Hit", "Hash of Record"]),
+            AlertOutputType::Duplicate => {
+                StringRecord::from(vec!["Index of Hit", "Hash of Record"])
+            }
+            AlertOutputType::Redaction => {
+                StringRecord::from(vec!["Index of Hit", "Hash of Record"])
+            }
         };
 
         full_output_headers.extend(self.data_field_headers.iter());

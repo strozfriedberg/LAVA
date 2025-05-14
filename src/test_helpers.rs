@@ -1,7 +1,6 @@
-use chrono::NaiveDateTime;
 use crate::basic_objects::LogFileRecord;
+use chrono::NaiveDateTime;
 use csv::StringRecord;
-
 
 pub fn make_fake_record(index: usize, timestamp_str: &str, record: StringRecord) -> LogFileRecord {
     LogFileRecord::new(

@@ -65,9 +65,7 @@ fn setup_output_dir(output_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-fn get_user_supplied_regexes_from_command_line(
-    regex_file_path: &Path,
-) -> Result<Vec<DateRegex>> {
+fn get_user_supplied_regexes_from_command_line(regex_file_path: &Path) -> Result<Vec<DateRegex>> {
     let content = fs::read_to_string(regex_file_path)
         .map_err(|e| LogCheckError::new(format!("Failed to read YAML file because of {e}")))?;
     let parsed: Vec<RawDateRegex> = serde_yaml::from_str(&content)

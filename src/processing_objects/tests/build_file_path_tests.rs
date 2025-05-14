@@ -1,5 +1,5 @@
-use crate::basic_objects::{AlertOutputType, ExecutionSettings, TimeDirection};
 use super::super::*;
+use crate::basic_objects::{AlertOutputType, ExecutionSettings, TimeDirection};
 use std::path::PathBuf;
 
 #[test]

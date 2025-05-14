@@ -3,7 +3,6 @@ use crate::basic_objects::{ExecutionSettings, TimeDirection};
 use crate::test_helpers::*;
 use csv::StringRecord;
 
-
 #[test]
 fn processes_ascending_records_correctly() {
     let settings = ExecutionSettings::default();
