@@ -10,7 +10,7 @@ struct RawDateRegexWithTests {
     pretty_format: String,
     regex: String,
     strftime_format: String,
-    test_input: String,
+    should_match: Vec<String>,
 }
 
 impl fmt::Display for RawDateRegexWithTests {
@@ -122,8 +122,9 @@ fn generate_date_regex_tests(parsed: &Vec<RawDateRegexWithTests>, out_dir: &OsSt
     test_code.push_str("    use crate::date_regex::DateRegex;\n\n");
 
     for (i, item) in parsed.iter().enumerate() {
+        for (should_match_index, should_match_value) in item.should_match.iter().enumerate() {
         test_code.push_str("#[test]\n");
-        test_code.push_str(&format!("fn test_regex_{}() {{\n", i,));
+        test_code.push_str(&format!("fn generated_test_date_regex_{}_should_match_{}() {{\n", i, should_match_index));
         test_code.push_str(&format!(
             "   let re = DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"{}\").unwrap(),\n        }};\n",
             item.pretty_format,
@@ -133,10 +134,10 @@ fn generate_date_regex_tests(parsed: &Vec<RawDateRegexWithTests>, out_dir: &OsSt
         test_code.push_str("    let date = NaiveDate::from_ymd_opt(2023, 1, 1).unwrap();\n");
         test_code.push_str("    let time = NaiveTime::from_hms_milli_opt(1, 0, 0, 0).unwrap();\n");
         test_code.push_str("    let expected_timestamp = NaiveDateTime::new(date, time);\n");
-        test_code.push_str(&format!("    let actual_timestamp = re.get_timestamp_object_from_string_contianing_date(\"{}\".to_string()).unwrap().expect(\"Failed to get timestamp\");\n", item.test_input));
+        test_code.push_str(&format!("    let actual_timestamp = re.get_timestamp_object_from_string_contianing_date(\"{}\".to_string()).unwrap().expect(\"Failed to get timestamp\");\n", should_match_value));
         test_code.push_str("    assert_eq!(expected_timestamp, actual_timestamp);\n");
         test_code.push_str("}\n");
-    }
+    }}
 
     test_code.push_str("}\n");
 
