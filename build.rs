@@ -11,6 +11,7 @@ struct RawDateRegexWithTests {
     regex: String,
     strftime_format: String,
     should_match: Vec<String>,
+    should_not_match: Vec<String>,
 }
 
 impl fmt::Display for RawDateRegexWithTests {
@@ -123,21 +124,59 @@ fn generate_date_regex_tests(parsed: &Vec<RawDateRegexWithTests>, out_dir: &OsSt
 
     for (i, item) in parsed.iter().enumerate() {
         for (should_match_index, should_match_value) in item.should_match.iter().enumerate() {
-        test_code.push_str("#[test]\n");
-        test_code.push_str(&format!("fn generated_test_date_regex_{}_should_match_{}() {{\n", i, should_match_index));
-        test_code.push_str(&format!(
+            test_code.push_str("#[test]\n");
+            test_code.push_str(&format!(
+                "fn generated_test_date_regex_{}_should_match_{}() {{\n",
+                i, should_match_index
+            ));
+            test_code.push_str(&format!(
             "   let re = DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"{}\").unwrap(),\n        }};\n",
             item.pretty_format,
             item.strftime_format,
             item.regex
         ));
-        test_code.push_str("    let date = NaiveDate::from_ymd_opt(2023, 1, 1).unwrap();\n");
-        test_code.push_str("    let time = NaiveTime::from_hms_milli_opt(1, 0, 0, 0).unwrap();\n");
-        test_code.push_str("    let expected_timestamp = NaiveDateTime::new(date, time);\n");
-        test_code.push_str(&format!("    let actual_timestamp = re.get_timestamp_object_from_string_contianing_date(\"{}\".to_string()).unwrap().expect(\"Failed to get timestamp\");\n", should_match_value));
-        test_code.push_str("    assert_eq!(expected_timestamp, actual_timestamp);\n");
-        test_code.push_str("}\n");
-    }}
+            test_code.push_str("    let date = NaiveDate::from_ymd_opt(2023, 1, 1).unwrap();\n");
+            test_code
+                .push_str("    let time = NaiveTime::from_hms_milli_opt(1, 0, 0, 0).unwrap();\n");
+            test_code.push_str("    let expected_timestamp = NaiveDateTime::new(date, time);\n");
+            test_code.push_str(&format!("    let actual_timestamp = re.get_timestamp_object_from_string_contianing_date(\"{}\".to_string()).unwrap().expect(\"Failed to get timestamp\");\n", should_match_value));
+            test_code.push_str("    assert_eq!(expected_timestamp, actual_timestamp);\n");
+            test_code.push_str("}\n");
+        }
+        for (should_match_not_index, should_not_match_value) in
+            item.should_not_match.iter().enumerate()
+        {
+            test_code.push_str("#[test]\n");
+            test_code.push_str(&format!(
+                "fn generated_test_date_regex_{}_should_not_match_{}() {{\n",
+                i, should_match_not_index
+            ));
+            test_code.push_str(&format!(
+            "   let re = DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"{}\").unwrap(),\n        }};\n",
+            item.pretty_format,
+            item.strftime_format,
+            item.regex
+        ));
+            test_code.push_str(&format!(
+                r#"     match re.get_timestamp_object_from_string_contianing_date("{}".to_string()) {{
+            Ok(maybe_date) => {{
+                match maybe_date {{
+                    Some(hit) => {{
+                        let date = NaiveDate::from_ymd_opt(2023, 1, 1).unwrap();
+                        let time = NaiveTime::from_hms_milli_opt(1, 0, 0, 0).unwrap();
+                        let expected_timestamp = NaiveDateTime::new(date, time);
+                        assert_ne!(hit, expected_timestamp);
+                    }},
+                    None => assert!(true)
+                }}
+            }},
+            Err(e) => panic!("{{}}",e)
+        }}"#,
+                should_not_match_value
+            ));
+            test_code.push_str("}\n");
+        }
+    }
 
     test_code.push_str("}\n");
 
@@ -159,7 +198,8 @@ fn generate_redactions_regex_tests(parsed: &Vec<RawRedactionWithTests>, out_dir:
             test_code.push_str("#[test]\n");
             test_code.push_str(&format!(
                 "fn test_redaction_{}_should_match_{}() {{\n",
-                item.name.trim().replace(' ', "_").to_lowercase(), match_number,
+                item.name.trim().replace(' ', "_").to_lowercase(),
+                match_number,
             ));
             test_code.push_str(&format!(
                 "   let re = RedactionRegex {{\n            name: \"{}\".to_string(),\n            pattern: Regex::new(r\"{}\").unwrap(),\n        }};\n",
@@ -177,7 +217,8 @@ fn generate_redactions_regex_tests(parsed: &Vec<RawRedactionWithTests>, out_dir:
             test_code.push_str("#[test]\n");
             test_code.push_str(&format!(
                 "fn test_redaction_{}_should_not_match_{}() {{\n",
-                item.name.trim().replace(' ', "_").to_lowercase(), match_number,
+                item.name.trim().replace(' ', "_").to_lowercase(),
+                match_number,
             ));
             test_code.push_str(&format!(
                 "   let re = RedactionRegex {{\n            name: \"{}\".to_string(),\n            pattern: Regex::new(r\"{}\").unwrap(),\n        }};\n",
