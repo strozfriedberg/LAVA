@@ -32,7 +32,7 @@ fn test_get_record_to_output_duplicate() {
     let expected = {
         let mut sr = StringRecord::from(vec![
             index.to_string(),
-            record.hash_of_entire_record.to_string(),
+            format!("{:x}", record.hash_of_entire_record),
         ]);
         sr.extend(raw.iter());
         sr
