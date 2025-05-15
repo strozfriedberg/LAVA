@@ -1,44 +1,134 @@
 - name: Asterisks
   pattern: "^\\*{3,}$"
+  should_match:
+    - "***"
+    - "********"
+  should_not_match:
+    - "**"
+    - "*masked*"
 
 - name: Bracketed REDACTED
   pattern: "\\[REDACTED\\]"
+  should_match:
+    - "[REDACTED]"
+    - "This is [REDACTED] info"
+  should_not_match:
+    - "REDACTED"
+    - "[REDACTED"
 
 - name: Unbracketed REDACTED
   pattern: "\\bREDACTED\\b"
+  should_match:
+    - "REDACTED"
+    - "Data is REDACTED for privacy"
+  should_not_match:
+    - "[REDACTED]"
+    - "UNREDACTED"
 
 - name: REMOVED
   pattern: "\\bREMOVED( FOR SECURITY)?\\b"
+  should_match:
+    - "REMOVED"
+    - "REMOVED FOR SECURITY"
+  should_not_match:
+    - "REMOVED FOR MAINTENANCE"
+    - "NOT REMOVED"
 
 - name: MASKED
   pattern: "\\b(DATA )?MASKED\\b"
+  should_match:
+    - "MASKED"
+    - "DATA MASKED"
+  should_not_match:
+    - "FULLY MASKED DATA"
+    - "DATA-MASKED"
 
 - name: FILTERED
   pattern: "\\b(CONTENT )?FILTERED\\b"
+  should_match:
+    - "FILTERED"
+    - "CONTENT FILTERED"
+  should_not_match:
+    - "CONTENTFILTERED"
+    - "FILTERED OUT"
 
 - name: HIDDEN
   pattern: "\\b(INTENTIONALLY )?HIDDEN\\b"
+  should_match:
+    - "HIDDEN"
+    - "INTENTIONALLY HIDDEN"
+  should_not_match:
+    - "INTENTIONALLYHIDDEN"
+    - "HIDDENLY"
 
 - name: Partially Masked Email
   pattern: "[a-zA-Z0-9._%+-]{1,3}\\*{2,}@"
+  should_match:
+    - "jo**@example.com"
+    - "a***@domain.net"
+  should_not_match:
+    - "john@example.com"
+    - "abc@domain.com"
 
 - name: Partially Masked Number
   pattern: "\\d{2,}\\*{2,}\\d{2,}"
+  should_match:
+    - "1234**56"
+    - "98765****21"
+  should_not_match:
+    - "123456"
+    - "12*34"
 
 - name: Masked IP Address
   pattern: "\\d{1,3}\\.\\d{1,3}\\.\\*{2,}\\.\\*{2,}"
+  should_match:
+    - "192.168.**.**"
+    - "10.0.***.****"
+  should_not_match:
+    - "192.168.1.1"
+    - "192.***.***.1"
 
 - name: Masked Credit Card
   pattern: "\\*{4}-\\*{4}-\\*{4}-\\d{4}"
+  should_match:
+    - "****-****-****-1234"
+    - "****-****-****-5678"
+  should_not_match:
+    - "1234-****-****-****"
+    - "****-****-****-****"
 
 - name: Custom Angle Bracketed Redaction
   pattern: "<<REDACTED>>"
+  should_match:
+    - "<<REDACTED>>"
+    - "Data is <<REDACTED>>"
+  should_not_match:
+    - "<REDACTED>"
+    - "<<REDACTED>"
 
 - name: Custom Square Bracketed Token
   pattern: "\\[\\[SENSITIVE\\]\\]"
+  should_match:
+    - "[[SENSITIVE]]"
+    - "See [[SENSITIVE]] content"
+  should_not_match:
+    - "[SENSITIVE]"
+    - "[[SENSITIVE]"
 
 - name: Anonymized Marker
   pattern: "\\bANONYMIZED_DATA\\b"
+  should_match:
+    - "ANONYMIZED_DATA"
+    - "The record is ANONYMIZED_DATA"
+  should_not_match:
+    - "ANONYMIZED_DATA_FIELD"
+    - "MY_ANONYMIZED_DATA"
 
 - name: Base64 Placeholder
   pattern: "\\bBASE64_REDACTED\\b"
+  should_match:
+    - "BASE64_REDACTED"
+    - "Data: BASE64_REDACTED"
+  should_not_match:
+    - "BASE64_REDACTED_STRING"
+    - "MYBASE64_REDACTED"
