@@ -7,6 +7,7 @@ use csv::WriterBuilder;
 use std::collections::HashSet;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
+include!(concat!(env!("OUT_DIR"), "/generated_redaction_regexes.rs"));
 
 #[cfg(test)]
 mod tests {
@@ -77,6 +78,7 @@ impl LogRecordProcessor {
         //Check for duplicates
         if !self.execution_settings.quick_mode {
             self.process_record_for_dupes(&record, true)?;
+            self.process_record_for_redactions(&record, true)?;
         }
         //Update earliest and latest timestamp
         self.process_timestamp(&record)?;
@@ -96,13 +98,32 @@ impl LogRecordProcessor {
             // println!("Found duplicate record at index {}", record.index);
             self.num_dupes += 1;
             if write_hits_to_file {
-                let _ = self.write_hit_to_file(record)?;
+                let _ = self.write_hit_to_file(record, AlertOutputType::Duplicate)?;
             }
         }
         Ok(())
     }
-    pub fn write_hit_to_file(&mut self, record: &LogFileRecord) -> Result<()> {
-        let output_file = self.build_file_path(AlertOutputType::Duplicate)?;
+    pub fn process_record_for_redactions(
+        &mut self,
+        record: &LogFileRecord,
+        write_hits_to_file: bool,
+    ) -> Result<()> {
+        for redaction in PREBUILT_REDACTION_REGEXES.iter(){
+            println!("Redaction name {}", redaction.name);
+            if redaction.string_record_contains_match(&record.raw_record) {
+                // println!("Found duplicate record at index {}", record.index);
+                self.num_redactions += 1;
+                println!("Found redaction in record {:?}", record.raw_record);
+                if write_hits_to_file {
+                    let _ = self.write_hit_to_file(record, AlertOutputType::Redaction)?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+    pub fn write_hit_to_file(&mut self, record: &LogFileRecord, alert_type: AlertOutputType) -> Result<()> {
+        let output_file = self.build_file_path(&alert_type)?;
         let file_existed_before = output_file.exists();
         let file = OpenOptions::new()
             .create(true)
@@ -119,7 +140,7 @@ impl LogRecordProcessor {
         if !file_existed_before {
             writer
                 .write_record(
-                    &self.get_full_output_headers_based_on_alert_type(AlertOutputType::Duplicate),
+                    &self.get_full_output_headers_based_on_alert_type(&alert_type),
                 )
                 .map_err(|e| {
                     LogCheckError::new(format!("Unable to write headers to file because of {e}"))
@@ -127,14 +148,14 @@ impl LogRecordProcessor {
         }
 
         writer
-            .write_record(&record.get_record_to_output(AlertOutputType::Duplicate))
+            .write_record(&record.get_record_to_output(&alert_type))
             .map_err(|e| LogCheckError::new(format!("Unable to write record because of {e}")))?;
         Ok(())
     }
 
     fn get_full_output_headers_based_on_alert_type(
         &self,
-        alert_type: AlertOutputType,
+        alert_type: &AlertOutputType,
     ) -> StringRecord {
         let mut full_output_headers = match alert_type {
             AlertOutputType::Duplicate => {
@@ -149,7 +170,7 @@ impl LogRecordProcessor {
         full_output_headers
     }
 
-    pub fn build_file_path(&self, alert_type: AlertOutputType) -> Result<PathBuf> {
+    pub fn build_file_path(&self, alert_type: &AlertOutputType) -> Result<PathBuf> {
         let execution_settings = self.execution_settings.clone();
 
         let output_subfolder_and_filename = match alert_type {

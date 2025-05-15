@@ -16,7 +16,7 @@ fn test_build_file_path_duplicate() {
     );
 
     let result = processor
-        .build_file_path(AlertOutputType::Duplicate)
+        .build_file_path(&AlertOutputType::Duplicate)
         .unwrap();
     assert_eq!(
         result,
@@ -38,7 +38,7 @@ fn test_build_file_path_duplicate_weird_path() {
     );
 
     let result = processor
-        .build_file_path(AlertOutputType::Duplicate)
+        .build_file_path(&AlertOutputType::Duplicate)
         .unwrap();
     assert_eq!(
         result,
@@ -60,7 +60,7 @@ fn test_build_file_path_redaction() {
     );
 
     let result = processor
-        .build_file_path(AlertOutputType::Redaction)
+        .build_file_path(&AlertOutputType::Redaction)
         .unwrap();
     assert_eq!(
         result,

@@ -1,8 +1,8 @@
 - name: Asterisks
-  pattern: "^\\*{3,}$"
+  pattern: "\\*{3,}"
   should_match:
     - "***"
-    - "********"
+    - "sadasda********adsd"
   should_not_match:
     - "**"
     - "*masked*"

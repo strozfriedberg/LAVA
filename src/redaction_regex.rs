@@ -8,6 +8,7 @@ pub struct RedactionRegex {
 }
 
 impl RedactionRegex {
+    #[cfg(test)]
     pub fn string_contains_match(&self, string_to_verify: &str) -> bool {
         if self.pattern.is_match(&string_to_verify) {
             return true;

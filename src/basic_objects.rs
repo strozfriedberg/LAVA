@@ -66,7 +66,7 @@ pub struct ProcessedLogFile {
 #[derive(PartialEq, Debug)]
 pub struct LogFileRecord {
     pub hash_of_entire_record: u64,
-    raw_record: StringRecord,
+    pub raw_record: StringRecord,
     pub timestamp: NaiveDateTime,
     pub index: usize,
 }
@@ -82,7 +82,7 @@ impl LogFileRecord {
             index: index,
         }
     }
-    pub fn get_record_to_output(&self, alert_type: AlertOutputType) -> StringRecord {
+    pub fn get_record_to_output(&self, alert_type: &AlertOutputType) -> StringRecord {
         let mut base_record = match alert_type {
             AlertOutputType::Duplicate => StringRecord::from(vec![
                 self.index.to_string(),
