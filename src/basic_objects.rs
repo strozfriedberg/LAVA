@@ -100,7 +100,7 @@ impl LogFileRecord {
         let mut base_record = match alert_type {
             AlertOutputType::Duplicate => StringRecord::from(vec![
                 self.index.to_string(),
-                self.hash_of_entire_record.to_string(),
+                format!("{:x}", self.hash_of_entire_record),
             ]),
             AlertOutputType::Redaction => StringRecord::from(vec![self.index.to_string()]),
         };
