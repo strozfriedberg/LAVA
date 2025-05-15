@@ -2,8 +2,6 @@ use crate::date_regex::*;
 use crate::helpers::*;
 use chrono::{NaiveDateTime, TimeDelta};
 use csv::StringRecord;
-use regex::Regex;
-use serde::Deserialize;
 use serde::Serialize;
 use std::cmp::Ordering;
 use std::path::PathBuf;

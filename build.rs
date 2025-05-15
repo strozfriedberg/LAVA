@@ -23,8 +23,8 @@ impl fmt::Display for RawDateRegexWithTests {
 struct RawRedactionWithTests {
     name: String,
     pattern: String,
-    should_match: String,
-    should_not_match: String,
+    should_match: Vec<String>,
+    should_not_match: Vec<String>,
 }
 
 impl fmt::Display for RawRedactionWithTests {
@@ -34,21 +34,52 @@ impl fmt::Display for RawRedactionWithTests {
 }
 
 fn main() {
-    let regex_yaml_path = Path::new("regexes.yml");
-    let content = fs::read_to_string(regex_yaml_path).expect("Failed to read YAML file");
-    let parsed: Vec<RawDateRegexWithTests> =
-        serde_yaml::from_str(&content).expect("Failed to parse YAML");
-
     let out_dir = env::var_os("OUT_DIR").unwrap();
 
-    generate_date_regex_vector(&parsed, &out_dir);
-    generate_date_regex_tests(&parsed, &out_dir);
+    let date_regex_yaml_path = Path::new("build_yml_files\\dates.yml");
+    let date_regex_content = fs::read_to_string(date_regex_yaml_path).expect("Failed to read YAML file");
+    let date_regex_parsed: Vec<RawDateRegexWithTests> =
+        serde_yaml::from_str(&date_regex_content).expect("Failed to parse YAML");
 
-    generate_
+    generate_date_regex_vector(&date_regex_parsed, &out_dir);
+    generate_date_regex_tests(&date_regex_parsed, &out_dir);
+
+    let redactions_regex_yaml_path = Path::new("build_yml_files\\redactions.yml");
+    let redactions_regex_content = fs::read_to_string(redactions_regex_yaml_path).expect("Failed to read YAML file");
+    let redactions_regex_parsed: Vec<RawRedactionWithTests> =
+        serde_yaml::from_str(&redactions_regex_content).expect("Failed to parse YAML");
+
+    generate_redactions_regex_vector(&redactions_regex_parsed, &out_dir);
 
     println!("cargo:rerun-if-changed=redactions.yml");
     println!("cargo:rerun-if-changed=regexes.yml");
     println!("cargo:rerun-if-changed=build.rs");
+}
+
+fn generate_redactions_regex_vector(parsed: &Vec<RawRedactionWithTests>, out_dir: &OsString) {
+
+    let dest_path = Path::new(out_dir).join("generated_redaction_regexes.rs");
+
+    let mut generated_code = String::new();
+    generated_code.push_str("use once_cell::sync::Lazy;\n");
+    generated_code.push_str("use regex::Regex;\n");
+    generated_code.push_str("use crate::redaction_regex::RedactionRegex;\n\n");
+    generated_code
+        .push_str("pub static PREBUILT_REDACTION_REGEXES: Lazy<Vec<RedactionRegex>> = Lazy::new(|| {\n");
+    generated_code.push_str("    vec![\n");
+
+    for entry in parsed {
+        // Write each item in the vec
+        generated_code.push_str(&format!(
+            "        RedactionRegex {{\n            name: \"{}\".to_string(),\n            pattern: Regex::new(r\"{}\").unwrap(),\n        }},\n",
+            entry.name,
+            entry.pattern,
+        ));
+    }
+
+    generated_code.push_str("    ]\n});\n");
+
+    fs::write(&dest_path, generated_code).expect("Failed to write generated_redaction_regexes.rs");
 }
 
 
