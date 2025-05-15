@@ -11,17 +11,6 @@ use std::path::PathBuf;
 #[cfg(test)]
 mod logfilerecord_tests;
 
-#[derive(Debug, Deserialize)]
-struct RawRedactionPattern {
-    name: String,
-    pattern: String,
-}
-
-#[derive(Debug)]
-struct RedactionPattern {
-    name: String,
-    pattern: Regex,
-}
 
 #[derive(Debug, Clone, Default)]
 pub struct ExecutionSettings {
