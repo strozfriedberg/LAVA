@@ -15,6 +15,7 @@ mod tests {
     mod direction_checker_tests;
     mod dupe_processing_tests;
     mod timestamp_processing_tests;
+    mod redaction_processing_tests;
 }
 
 #[derive(PartialEq, Debug, Default)]
@@ -109,7 +110,6 @@ impl LogRecordProcessor {
         write_hits_to_file: bool,
     ) -> Result<()> {
         for redaction in PREBUILT_REDACTION_REGEXES.iter(){
-            println!("Redaction name {}", redaction.name);
             if redaction.string_record_contains_match(&record.raw_record) {
                 // println!("Found duplicate record at index {}", record.index);
                 self.num_redactions += 1;
@@ -162,7 +162,7 @@ impl LogRecordProcessor {
                 StringRecord::from(vec!["Index of Hit", "Hash of Record"])
             }
             AlertOutputType::Redaction => {
-                StringRecord::from(vec!["Index of Hit", "Hash of Record"])
+                StringRecord::from(vec!["Index of Hit"]) // Maybe in the future add the name of the rule that hit in the second column
             }
         };
 

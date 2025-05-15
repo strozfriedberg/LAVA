@@ -27,7 +27,7 @@
 - name: REMOVED
   pattern: "\\bREMOVED( FOR SECURITY)?\\b"
   should_match:
-    - "REMOVED"
+    - "adad REMOVED sada"
     - "REMOVED FOR SECURITY"
   should_not_match:
     - "removed"

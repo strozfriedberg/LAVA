@@ -4,8 +4,6 @@ pub type Result<T> = std::result::Result<T, LogCheckError>;
 
 #[derive(Debug, Clone, Error)]
 pub enum PhaseError {
-    #[error("Output Dir Setup Error: {0}")]
-    OutputDirSetup(String),
     #[error("Metadata Retreival Error: {0}")]
     MetaDataRetieval(String),
     #[error("Timestamp Discovery Error: {0}")]
