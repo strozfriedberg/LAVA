@@ -19,8 +19,8 @@ mod basic_objects;
 use basic_objects::*;
 mod processing_objects;
 use processing_objects::*;
-mod redaction_regex;
 pub mod main_helpers;
+mod redaction_regex;
 include!(concat!(env!("OUT_DIR"), "/generated_date_regexes.rs"));
 
 #[cfg(test)]
@@ -28,6 +28,9 @@ mod test_helpers;
 
 #[cfg(test)]
 include!(concat!(env!("OUT_DIR"), "/generated_date_tests.rs"));
+
+#[cfg(test)]
+include!(concat!(env!("OUT_DIR"), "/generated_redactions_tests.rs"));
 
 pub fn process_all_files(execution_settings: ExecutionSettings) {
     let mut paths: Vec<PathBuf> = Vec::new();

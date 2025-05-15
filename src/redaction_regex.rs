@@ -1,11 +1,10 @@
-use regex::Regex;
 use csv::StringRecord;
-
+use regex::Regex;
 
 #[derive(Debug)]
-struct RedactionRegex {
-    name: String,
-    pattern: Regex,
+pub struct RedactionRegex {
+    pub name: String,
+    pub pattern: Regex,
 }
 
 impl RedactionRegex {

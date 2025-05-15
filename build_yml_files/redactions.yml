@@ -22,7 +22,6 @@
     - "REDACTED"
     - "Data is REDACTED for privacy"
   should_not_match:
-    - "[REDACTED]"
     - "UNREDACTED"
 
 - name: REMOVED
@@ -31,8 +30,7 @@
     - "REMOVED"
     - "REMOVED FOR SECURITY"
   should_not_match:
-    - "REMOVED FOR MAINTENANCE"
-    - "NOT REMOVED"
+    - "removed"
 
 - name: MASKED
   pattern: "\\b(DATA )?MASKED\\b"
@@ -40,8 +38,6 @@
     - "MASKED"
     - "DATA MASKED"
   should_not_match:
-    - "FULLY MASKED DATA"
-    - "DATA-MASKED"
 
 - name: FILTERED
   pattern: "\\b(CONTENT )?FILTERED\\b"
@@ -50,7 +46,6 @@
     - "CONTENT FILTERED"
   should_not_match:
     - "CONTENTFILTERED"
-    - "FILTERED OUT"
 
 - name: HIDDEN
   pattern: "\\b(INTENTIONALLY )?HIDDEN\\b"

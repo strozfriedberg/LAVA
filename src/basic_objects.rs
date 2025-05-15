@@ -9,7 +9,6 @@ use std::path::PathBuf;
 #[cfg(test)]
 mod logfilerecord_tests;
 
-
 #[derive(Debug, Clone, Default)]
 pub struct ExecutionSettings {
     pub input_dir: PathBuf,

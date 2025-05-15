@@ -37,7 +37,8 @@ fn main() {
     let out_dir = env::var_os("OUT_DIR").unwrap();
 
     let date_regex_yaml_path = Path::new("build_yml_files\\dates.yml");
-    let date_regex_content = fs::read_to_string(date_regex_yaml_path).expect("Failed to read YAML file");
+    let date_regex_content =
+        fs::read_to_string(date_regex_yaml_path).expect("Failed to read YAML file");
     let date_regex_parsed: Vec<RawDateRegexWithTests> =
         serde_yaml::from_str(&date_regex_content).expect("Failed to parse YAML");
 
@@ -45,11 +46,13 @@ fn main() {
     generate_date_regex_tests(&date_regex_parsed, &out_dir);
 
     let redactions_regex_yaml_path = Path::new("build_yml_files\\redactions.yml");
-    let redactions_regex_content = fs::read_to_string(redactions_regex_yaml_path).expect("Failed to read YAML file");
+    let redactions_regex_content =
+        fs::read_to_string(redactions_regex_yaml_path).expect("Failed to read YAML file");
     let redactions_regex_parsed: Vec<RawRedactionWithTests> =
         serde_yaml::from_str(&redactions_regex_content).expect("Failed to parse YAML");
 
     generate_redactions_regex_vector(&redactions_regex_parsed, &out_dir);
+    generate_redactions_regex_tests(&redactions_regex_parsed, &out_dir);
 
     println!("cargo:rerun-if-changed=redactions.yml");
     println!("cargo:rerun-if-changed=regexes.yml");
@@ -57,15 +60,15 @@ fn main() {
 }
 
 fn generate_redactions_regex_vector(parsed: &Vec<RawRedactionWithTests>, out_dir: &OsString) {
-
     let dest_path = Path::new(out_dir).join("generated_redaction_regexes.rs");
 
     let mut generated_code = String::new();
     generated_code.push_str("use once_cell::sync::Lazy;\n");
     generated_code.push_str("use regex::Regex;\n");
     generated_code.push_str("use crate::redaction_regex::RedactionRegex;\n\n");
-    generated_code
-        .push_str("pub static PREBUILT_REDACTION_REGEXES: Lazy<Vec<RedactionRegex>> = Lazy::new(|| {\n");
+    generated_code.push_str(
+        "pub static PREBUILT_REDACTION_REGEXES: Lazy<Vec<RedactionRegex>> = Lazy::new(|| {\n",
+    );
     generated_code.push_str("    vec![\n");
 
     for entry in parsed {
@@ -82,9 +85,7 @@ fn generate_redactions_regex_vector(parsed: &Vec<RawRedactionWithTests>, out_dir
     fs::write(&dest_path, generated_code).expect("Failed to write generated_redaction_regexes.rs");
 }
 
-
 fn generate_date_regex_vector(parsed: &Vec<RawDateRegexWithTests>, out_dir: &OsString) {
-
     let dest_path = Path::new(out_dir).join("generated_date_regexes.rs");
 
     let mut generated_code = String::new();
@@ -110,12 +111,12 @@ fn generate_date_regex_vector(parsed: &Vec<RawDateRegexWithTests>, out_dir: &OsS
     fs::write(&dest_path, generated_code).expect("Failed to write generated_date_regexes.rs");
 }
 
-fn generate_date_regex_tests(parsed: &Vec<RawDateRegexWithTests>, out_dir: &OsString){
+fn generate_date_regex_tests(parsed: &Vec<RawDateRegexWithTests>, out_dir: &OsString) {
     let test_out_path = Path::new(&out_dir).join("generated_date_tests.rs");
 
     let mut test_code = String::new();
     test_code.push_str("#[cfg(test)]\n");
-    test_code.push_str("mod generated_tests {\n");
+    test_code.push_str("mod generated_date_regex_tests {\n");
     test_code.push_str("    use regex::Regex;\n");
     test_code.push_str("    use chrono::{NaiveDate, NaiveTime, NaiveDateTime};\n");
     test_code.push_str("    use crate::date_regex::DateRegex;\n\n");
@@ -135,6 +136,59 @@ fn generate_date_regex_tests(parsed: &Vec<RawDateRegexWithTests>, out_dir: &OsSt
         test_code.push_str(&format!("    let actual_timestamp = re.get_timestamp_object_from_string_contianing_date(\"{}\".to_string()).unwrap().expect(\"Failed to get timestamp\");\n", item.test_input));
         test_code.push_str("    assert_eq!(expected_timestamp, actual_timestamp);\n");
         test_code.push_str("}\n");
+    }
+
+    test_code.push_str("}\n");
+
+    fs::write(&test_out_path, test_code).expect("Failed to write generated_date_tests.rs");
+}
+
+fn generate_redactions_regex_tests(parsed: &Vec<RawRedactionWithTests>, out_dir: &OsString) {
+    let test_out_path = Path::new(&out_dir).join("generated_redactions_tests.rs");
+
+    let mut test_code = String::new();
+    test_code.push_str("#[cfg(test)]\n");
+    test_code.push_str("mod generated_redactions_tests {\n");
+    test_code.push_str("    use regex::Regex;\n");
+    test_code.push_str("    use crate::redaction_regex::RedactionRegex;\n\n");
+
+    for item in parsed.iter() {
+        // Write affermative tests
+        for (match_number, test_value) in item.should_match.iter().enumerate() {
+            test_code.push_str("#[test]\n");
+            test_code.push_str(&format!(
+                "fn test_redaction_{}_should_match_{}() {{\n",
+                item.name.trim().replace(' ', "_").to_lowercase(), match_number,
+            ));
+            test_code.push_str(&format!(
+                "   let re = RedactionRegex {{\n            name: \"{}\".to_string(),\n            pattern: Regex::new(r\"{}\").unwrap(),\n        }};\n",
+                item.name,
+                item.pattern,
+            ));
+            test_code.push_str(&format!(
+                "    assert!(re.string_contains_match(\"{}\"));\n",
+                test_value
+            ));
+            test_code.push_str("}\n");
+        }
+
+        for (match_number, test_value) in item.should_not_match.iter().enumerate() {
+            test_code.push_str("#[test]\n");
+            test_code.push_str(&format!(
+                "fn test_redaction_{}_should_not_match_{}() {{\n",
+                item.name.trim().replace(' ', "_").to_lowercase(), match_number,
+            ));
+            test_code.push_str(&format!(
+                "   let re = RedactionRegex {{\n            name: \"{}\".to_string(),\n            pattern: Regex::new(r\"{}\").unwrap(),\n        }};\n",
+                item.name,
+                item.pattern,
+            ));
+            test_code.push_str(&format!(
+                "    assert!(!re.string_contains_match(\"{}\"));\n",
+                test_value
+            ));
+            test_code.push_str("}\n");
+        }
     }
 
     test_code.push_str("}\n");
