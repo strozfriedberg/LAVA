@@ -40,7 +40,10 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
             Ok(path) => {
                 let metadata = std::fs::metadata(&path)
                     .map_err(|e| {
-                        LogCheckError::new(format!("Failed to read metadata of file becase of {e}"))
+                        LavaError::new(
+                            format!("Failed to read metadata of file becase of {e}"),
+                            LavaErrorLevel::Critical,
+                        )
                     })
                     .unwrap();
                 if metadata.is_file() {
@@ -57,7 +60,7 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
         .par_iter()
         .map(|path| process_file(path, &execution_settings).expect("Error processing file"))
         .collect();
-
+    // Make a line here to go through each ProcessedLogFile, and write that to the error log
     if let Err(e) = write_output_to_csv(&results, &execution_settings) {
         eprintln!("Failed to write to CSV: {}", e);
     }
@@ -101,28 +104,35 @@ pub fn process_file(
 ) -> Result<ProcessedLogFile> {
     let mut base_processed_file = ProcessedLogFile::default();
 
-    //get hash and metadata. Does not matter what kind of file it is for this function
-    let (hash, size, file_name, file_path) = match get_metadata_and_hash(&log_file.file_path)
-        .map_err(|e| PhaseError::MetaDataRetieval(e.to_string()))
-    {
+    //get metadata. Does not matter what kind of file it is for this function
+    let (size, file_name, file_path) = match get_metadata(&log_file.file_path) {
         Ok(result) => result,
         Err(e) => {
-            base_processed_file.error = Some(e.to_string());
+            base_processed_file.errors.push(e);
             return Ok(base_processed_file);
         }
     };
-    base_processed_file.sha256hash = Some(hash);
     base_processed_file.size = Some(size);
     base_processed_file.filename = Some(file_name);
     base_processed_file.file_path = Some(file_path);
 
+    //Get hash if not quick mode
+    if !execution_settings.quick_mode {
+        let hash = match get_hash(&log_file.file_path) {
+            Ok(result) => result,
+            Err(e) => {
+                base_processed_file.errors.push(e);
+                return Ok(base_processed_file);
+            }
+        };
+        base_processed_file.sha256hash = Some(hash);
+    }
+
     // get the timestamp field. will do this for all of them, but there will just be some fields that only get filled in for structured datatypes
-    let mut timestamp_hit = match try_to_get_timestamp_hit(log_file, execution_settings)
-        .map_err(|e| PhaseError::TimeDiscovery(e.to_string()))
-    {
+    let mut timestamp_hit = match try_to_get_timestamp_hit(log_file, execution_settings) {
         Ok(result) => result,
         Err(e) => {
-            base_processed_file.error = Some(e.to_string());
+            base_processed_file.errors.push(e);
             return Ok(base_processed_file);
         }
     };
@@ -131,36 +141,29 @@ pub fn process_file(
     base_processed_file.time_format = Some(timestamp_hit.regex_info.pretty_format.clone());
 
     // Get the direction of time in the file
-    match set_time_direction_by_scanning_file(log_file, &mut timestamp_hit)
-        .map_err(|e| PhaseError::TimeDirection(e.to_string()))
-    {
+    match set_time_direction_by_scanning_file(log_file, &mut timestamp_hit) {
         Ok(_) => {}
         Err(e) => {
-            base_processed_file.error = Some(e.to_string());
+            base_processed_file.errors.push(e);
             return Ok(base_processed_file);
         }
     };
 
     // Stream the file to find statistics on time and other stuff
     let completed_statistics_object =
-        match stream_file(log_file, &timestamp_hit, execution_settings)
-            .map_err(|e| PhaseError::FileStreaming(e.to_string()))
-        {
+        match stream_file(log_file, &timestamp_hit, execution_settings) {
             Ok(result) => result,
             Err(e) => {
-                base_processed_file.error = Some(e.to_string());
+                base_processed_file.errors.push(e);
                 return Ok(base_processed_file);
             }
         };
 
     // Get the formatted stats from the stats object
-    let formatted_statistics = match completed_statistics_object
-        .get_statistics()
-        .map_err(|e| PhaseError::Formatting(e.to_string()))
-    {
+    let formatted_statistics = match completed_statistics_object.get_statistics() {
         Ok(result) => result,
         Err(e) => {
-            base_processed_file.error = Some(e.to_string());
+            base_processed_file.errors.push(e);
             return Ok(base_processed_file);
         }
     };
@@ -172,32 +175,60 @@ pub fn process_file(
     base_processed_file.num_records = formatted_statistics.num_records;
     base_processed_file.num_dupes = formatted_statistics.num_dupes;
     base_processed_file.num_redactions = formatted_statistics.num_redactions;
+    base_processed_file
+        .errors
+        .extend(completed_statistics_object.errors);
 
     Ok(base_processed_file)
 }
 
-fn get_metadata_and_hash(file_path: &PathBuf) -> Result<(String, u64, String, String)> {
-    let mut file = File::open(file_path)
-        .map_err(|e| LogCheckError::new(format!("Unable to open file because of {e}")))?;
+fn get_metadata(file_path: &PathBuf) -> Result<(u64, String, String)> {
+    let file = File::open(file_path).map_err(|e| {
+        LavaError::new(
+            format!("Unable to open file because of {e}"),
+            LavaErrorLevel::Critical,
+        )
+    })?;
     let size = file
         .metadata()
-        .map_err(|e| LogCheckError::new(format!("Unable to get file metadata because of {e}")))?
+        .map_err(|e| {
+            LavaError::new(
+                format!("Unable to get file metadata because of {e}"),
+                LavaErrorLevel::Critical,
+            )
+        })?
         .len();
     let file_name = file_path
         .file_name()
         .ok_or("Error getting filename")
-        .map_err(|e| LogCheckError::new(format!("Unable to open file because of {e}")))?
+        .map_err(|e| {
+            LavaError::new(
+                format!("Unable to open file because of {e}"),
+                LavaErrorLevel::Critical,
+            )
+        })?
         .to_string_lossy()
         .to_string();
+    Ok((size, file_name, file_path.to_string_lossy().to_string()))
+}
+
+fn get_hash(file_path: &PathBuf) -> Result<String> {
+    let mut file = File::open(file_path).map_err(|e| {
+        LavaError::new(
+            format!("Unable to open file because of {e}"),
+            LavaErrorLevel::Critical,
+        )
+    })?;
 
     let mut hasher = Sha256::new();
 
     let mut buffer = [0u8; 4096];
     loop {
         let bytes_read = file.read(&mut buffer).map_err(|e| {
-            LogCheckError::new(format!(
-                "Unable to read bytes during hashing because of {e}"
-            ))
+            LavaError::new(
+                format!("Unable to read bytes during hashing because of {e}"),
+                LavaErrorLevel::Critical,
+            )
         })?;
         if bytes_read == 0 {
             break;
@@ -208,12 +239,7 @@ fn get_metadata_and_hash(file_path: &PathBuf) -> Result<(String, u64, String, St
     let result = hasher.finalize();
     let hash_hex = format!("{:x}", result);
 
-    Ok((
-        hash_hex,
-        size,
-        file_name,
-        file_path.to_string_lossy().to_string(),
-    ))
+    Ok(hash_hex)
 }
 
 fn try_to_get_timestamp_hit(
@@ -225,8 +251,9 @@ fn try_to_get_timestamp_hit(
     } else if log_file.log_type == LogType::Unstructured {
         return try_to_get_timestamp_hit_for_unstructured(log_file, execution_settings);
     }
-    Err(LogCheckError::new(
+    Err(LavaError::new(
         "Have not implemented scanning for timestamp for this file type yet",
+        LavaErrorLevel::Critical,
     ))
 }
 
@@ -240,8 +267,9 @@ fn set_time_direction_by_scanning_file(
     if log_file.log_type == LogType::Unstructured {
         return set_time_direction_by_scanning_unstructured_file(log_file, timestamp_hit);
     }
-    Err(LogCheckError::new(
+    Err(LavaError::new(
         "Have not implemented scanning for directions for this file type yet.",
+        LavaErrorLevel::Critical,
     ))
 }
 
@@ -256,8 +284,9 @@ fn stream_file(
     if log_file.log_type == LogType::Unstructured {
         return stream_unstructured_file(log_file, timestamp_hit, execution_settings);
     }
-    Err(LogCheckError::new(
+    Err(LavaError::new(
         "Have not implemented streaming for this file type yet",
+        LavaErrorLevel::Critical,
     ))
 }
 

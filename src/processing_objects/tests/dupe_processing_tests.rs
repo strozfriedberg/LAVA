@@ -6,7 +6,7 @@ use csv::StringRecord;
 #[test]
 fn test_process_record_no_duplicate() {
     let settings = ExecutionSettings::default();
-    let mut processor = LogRecordProcessor::new_with_order(
+    let mut processor = LogRecordProcessor::new(
         Some(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
@@ -22,7 +22,7 @@ fn test_process_record_no_duplicate() {
 #[test]
 fn test_process_record_with_one_duplicate() {
     let settings = ExecutionSettings::default();
-    let mut processor = LogRecordProcessor::new_with_order(
+    let mut processor = LogRecordProcessor::new(
         Some(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
@@ -43,7 +43,7 @@ fn test_process_record_with_one_duplicate() {
 #[test]
 fn test_process_record_with_two_duplicate() {
     let settings = ExecutionSettings::default();
-    let mut processor = LogRecordProcessor::new_with_order(
+    let mut processor = LogRecordProcessor::new(
         Some(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
@@ -64,7 +64,7 @@ fn test_process_record_with_two_duplicate() {
 #[test]
 fn test_process_record_with_no_dupe_multiple_values() {
     let settings = ExecutionSettings::default();
-    let mut processor = LogRecordProcessor::new_with_order(
+    let mut processor = LogRecordProcessor::new(
         Some(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
@@ -97,7 +97,7 @@ fn test_process_record_with_no_dupe_multiple_values() {
 #[test]
 fn test_process_record_with_dupe_multiple_values() {
     let settings = ExecutionSettings::default();
-    let mut processor = LogRecordProcessor::new_with_order(
+    let mut processor = LogRecordProcessor::new(
         Some(TimeDirection::Descending),
         &settings,
         "Test".to_string(),

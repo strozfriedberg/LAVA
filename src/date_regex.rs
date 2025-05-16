@@ -38,7 +38,12 @@ impl DateRegex {
                 // Now, parse the extracted datetime string into NaiveDateTime using the strftime_format
                 let parsed_datetime =
                     NaiveDateTime::parse_from_str(datetime_str, &self.strftime_format).map_err(
-                        |e| LogCheckError::new(format!("Unable to parse timestamp because {e}")),
+                        |e| {
+                            LavaError::new(
+                                format!("Unable to parse timestamp because {e}"),
+                                LavaErrorLevel::Critical,
+                            )
+                        },
                     )?;
                 return Ok(Some(parsed_datetime));
             }

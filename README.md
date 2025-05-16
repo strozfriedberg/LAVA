@@ -1,4 +1,4 @@
-# Log Anomaly and Validity Analyzer (LAVA)
+# Log Anomaly and Validity Analyzer (lava)
 
 This tool will be used to verify the completness of logs
 

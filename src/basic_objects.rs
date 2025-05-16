@@ -1,8 +1,8 @@
 use crate::date_regex::*;
+use crate::errors::LavaError;
 use crate::helpers::*;
 use chrono::{NaiveDateTime, TimeDelta};
 use csv::StringRecord;
-use serde::Serialize;
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
@@ -19,10 +19,12 @@ pub struct ExecutionSettings {
     pub actually_write_to_files: bool,
 }
 
-
-impl ExecutionSettings{
+impl ExecutionSettings {
     // #[cfg(test)]
-    pub fn create_integration_test_object(timestamp_field: Option<String>, quick_mode: bool) -> Self{
+    pub fn create_integration_test_object(
+        timestamp_field: Option<String>,
+        quick_mode: bool,
+    ) -> Self {
         use crate::PREBUILT_DATE_REGEXES;
         Self {
             timestamp_field: timestamp_field,
@@ -32,7 +34,6 @@ impl ExecutionSettings{
             ..Default::default()
         }
     }
-
 }
 
 #[derive(PartialEq, Debug)]
@@ -60,7 +61,7 @@ pub struct LogFile {
     pub file_path: PathBuf,
 }
 
-#[derive(PartialEq, Debug, Serialize, Default)]
+#[derive(Debug, Default)]
 pub struct ProcessedLogFile {
     pub sha256hash: Option<String>,
     pub filename: Option<String>,
@@ -75,7 +76,19 @@ pub struct ProcessedLogFile {
     pub largest_gap: Option<String>,
     pub largest_gap_duration: Option<String>,
     pub num_records: Option<String>,
-    pub error: Option<String>,
+    pub num_dupes: Option<String>,
+    pub num_redactions: Option<String>,
+    pub errors: Vec<LavaError>,
+}
+
+#[derive(Debug, Default)]
+pub struct TimeStatisticsFields {
+    pub num_records: Option<String>,
+    pub min_timestamp: Option<String>,
+    pub max_timestamp: Option<String>,
+    pub min_max_duration: Option<String>,
+    pub largest_gap: Option<String>,
+    pub largest_gap_duration: Option<String>,
     pub num_dupes: Option<String>,
     pub num_redactions: Option<String>,
 }
@@ -99,29 +112,17 @@ impl LogFileRecord {
             index: index,
         }
     }
-    pub fn get_record_to_output(&self, alert_type: &AlertOutputType) -> StringRecord {
+    pub fn get_record_to_output(&self, alert_type: &AlertOutputType, rule_name: Option<String>) -> StringRecord {
         let mut base_record = match alert_type {
             AlertOutputType::Duplicate => StringRecord::from(vec![
                 self.index.to_string(),
                 format!("{:x}", self.hash_of_entire_record),
             ]),
-            AlertOutputType::Redaction => StringRecord::from(vec![self.index.to_string()]),
+            AlertOutputType::Redaction => StringRecord::from(vec![self.index.to_string(), rule_name.unwrap()]),
         };
         base_record.extend(self.raw_record.iter());
         base_record
     }
-}
-
-#[derive(PartialEq, Debug, Default)]
-pub struct TimeStatisticsFields {
-    pub num_records: Option<String>,
-    pub min_timestamp: Option<String>,
-    pub max_timestamp: Option<String>,
-    pub min_max_duration: Option<String>,
-    pub largest_gap: Option<String>,
-    pub largest_gap_duration: Option<String>,
-    pub num_dupes: Option<String>,
-    pub num_redactions: Option<String>,
 }
 
 #[derive(PartialEq, Debug)]
