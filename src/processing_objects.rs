@@ -14,8 +14,8 @@ mod tests {
     mod build_file_path_tests;
     mod direction_checker_tests;
     mod dupe_processing_tests;
-    mod timestamp_processing_tests;
     mod redaction_processing_tests;
+    mod timestamp_processing_tests;
 }
 
 #[derive(PartialEq, Debug, Default)]
@@ -92,33 +92,32 @@ impl LogRecordProcessor {
         Ok(())
     }
 
-    pub fn process_record_for_dupes(
-        &mut self,
-        record: &LogFileRecord,
-    ) -> Result<()> {
+    pub fn process_record_for_dupes(&mut self, record: &LogFileRecord) -> Result<()> {
         let is_duplicate = !self
             .duplicate_checker_set
             .insert(record.hash_of_entire_record);
         if is_duplicate {
-            println!("Found duplicate record at index {}", record.index);
+            // println!("Found duplicate record at index {}", record.index);
             self.num_dupes += 1;
             if self.execution_settings.actually_write_to_files {
-                let _ = self.write_hit_to_file(record, AlertOutputType::Duplicate)?;
+                match self.write_hit_to_file(record, AlertOutputType::Duplicate){
+                    Ok(()) => (),
+                    Err(e) => self.errors.push(e)
+                }
             }
         }
         Ok(())
     }
-    pub fn process_record_for_redactions(
-        &mut self,
-        record: &LogFileRecord,
-    ) -> Result<()> {
-        for redaction in PREBUILT_REDACTION_REGEXES.iter(){
+    pub fn process_record_for_redactions(&mut self, record: &LogFileRecord) -> Result<()> {
+        for redaction in PREBUILT_REDACTION_REGEXES.iter() {
             if redaction.string_record_contains_match(&record.raw_record) {
-                // println!("Found duplicate record at index {}", record.index);
                 self.num_redactions += 1;
-                println!("Found redaction in record {:?}", record.raw_record);
+                // println!("Found redaction in record {:?}", record.raw_record);
                 if self.execution_settings.actually_write_to_files {
-                    let _ = self.write_hit_to_file(record, AlertOutputType::Redaction)?;
+                    match self.write_hit_to_file(record, AlertOutputType::Redaction){
+                        Ok(()) => (),
+                        Err(e) => self.errors.push(e)
+                    }
                 }
             }
         }
@@ -133,7 +132,7 @@ impl LogRecordProcessor {
             .append(true)
             .open(output_file)
             .map_err(|e| {
-                LavaError::new(format!("Unable to create output file because of {e}"), LavaErrorLevel::Critical)
+                LavaError::new(format!("Unable to create output file because of {e}"), LavaErrorLevel::Medium)
             })?;
 
         let mut writer = WriterBuilder::new()
@@ -142,17 +141,22 @@ impl LogRecordProcessor {
 
         if !file_existed_before {
             writer
-                .write_record(
-                    &self.get_full_output_headers_based_on_alert_type(&alert_type),
-                )
+                .write_record(&self.get_full_output_headers_based_on_alert_type(&alert_type))
                 .map_err(|e| {
-                    LavaError::new(format!("Unable to write headers to file because of {e}"), LavaErrorLevel::Critical)
+                    LavaError::new(
+                        format!("Unable to write headers to file because of {e}"),
+                        LavaErrorLevel::Medium,
+                    )
                 })?;
         }
-
         writer
             .write_record(&record.get_record_to_output(&alert_type))
-            .map_err(|e| LavaError::new(format!("Unable to write record because of {e}"), LavaErrorLevel::Critical))?;
+            .map_err(|e| {
+                LavaError::new(
+                    format!("Unable to write record because of {e}"),
+                    LavaErrorLevel::Medium,
+                )
+            })?;
         Ok(())
     }
 
@@ -251,10 +255,9 @@ impl LogRecordProcessor {
         let min_max_gap = self
             .max_timestamp
             .ok_or_else(|| LavaError::new("No max timestamp found", LavaErrorLevel::Critical))?
-            .signed_duration_since(
-                self.min_timestamp
-                    .ok_or_else(|| LavaError::new("No min timestamp found", LavaErrorLevel::Critical))?,
-            );
+            .signed_duration_since(self.min_timestamp.ok_or_else(|| {
+                LavaError::new("No min timestamp found", LavaErrorLevel::Critical)
+            })?);
         statistics_fields.min_max_duration = Some(format_timedelta(min_max_gap));
 
         let largest_time_gap = self
@@ -267,9 +270,11 @@ impl LogRecordProcessor {
             largest_time_gap.end_time.format("%Y-%m-%d %H:%M:%S")
         ));
         statistics_fields.largest_gap_duration = Some(format_timedelta(largest_time_gap.gap));
-        statistics_fields.num_dupes = Some(self.num_dupes.to_string());
-        statistics_fields.num_redactions = Some(self.num_redactions.to_string());
-        statistics_fields.errors = self.errors.clone();
+        if !self.execution_settings.quick_mode{
+            statistics_fields.num_dupes = Some(self.num_dupes.to_string());
+            statistics_fields.num_redactions = Some(self.num_redactions.to_string());
+        }
+
         Ok(statistics_fields)
     }
 }

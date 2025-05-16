@@ -11,8 +11,12 @@ use std::io::{BufRead, BufReader};
 mod csv_handler_tests;
 
 pub fn get_index_of_header(log_file: &LogFile) -> Result<usize> {
-    let file = File::open(&log_file.file_path)
-        .map_err(|e| LavaError::new(format!("Unable to read csv file because of {e}"), LavaErrorLevel::Critical))?;
+    let file = File::open(&log_file.file_path).map_err(|e| {
+        LavaError::new(
+            format!("Unable to read csv file because of {e}"),
+            LavaErrorLevel::Critical,
+        )
+    })?;
     let reader = BufReader::new(file);
 
     get_index_of_header_functionality(reader)
@@ -22,15 +26,22 @@ pub fn get_index_of_header_functionality<R: BufRead>(reader: R) -> Result<usize>
     let mut comma_counts: Vec<(usize, usize)> = Vec::new();
 
     for (index, line_result) in reader.lines().enumerate().take(7) {
-        let line = line_result
-            .map_err(|e| LavaError::new(format!("Error reading line {}: {}", index, e), LavaErrorLevel::Critical))?;
+        let line = line_result.map_err(|e| {
+            LavaError::new(
+                format!("Error reading line {}: {}", index, e),
+                LavaErrorLevel::Critical,
+            )
+        })?;
         let count = line.matches(',').count();
         comma_counts.push((index, count));
     }
     // println!("Comma counts {:?}", comma_counts);
-    let (_, expected_comma_count) = comma_counts
-        .last()
-        .ok_or_else(|| LavaError::new("Vector of comma counts was empty.", LavaErrorLevel::Critical))?;
+    let (_, expected_comma_count) = comma_counts.last().ok_or_else(|| {
+        LavaError::new(
+            "Vector of comma counts was empty.",
+            LavaErrorLevel::Critical,
+        )
+    })?;
     for (index, comma_count) in comma_counts.iter().rev() {
         if comma_count < expected_comma_count {
             return Ok(index + 1);
@@ -43,14 +54,21 @@ pub fn get_reader_from_certain_header_index(
     header_index: usize,
     log_file: &LogFile,
 ) -> Result<Reader<BufReader<File>>> {
-    let file = File::open(&log_file.file_path)
-        .map_err(|e| LavaError::new(format!("Unable to read csv file because of {e}"), LavaErrorLevel::Critical))?;
+    let file = File::open(&log_file.file_path).map_err(|e| {
+        LavaError::new(
+            format!("Unable to read csv file because of {e}"),
+            LavaErrorLevel::Critical,
+        )
+    })?;
     let mut buf_reader = BufReader::new(file);
     for _ in 0..header_index {
         let mut dummy = String::new();
-        buf_reader
-            .read_line(&mut dummy)
-            .map_err(|e| LavaError::new(format!("Unable to read file because of {e}"), LavaErrorLevel::Critical))?;
+        buf_reader.read_line(&mut dummy).map_err(|e| {
+            LavaError::new(
+                format!("Unable to read file because of {e}"),
+                LavaErrorLevel::Critical,
+            )
+        })?;
     }
     let reader = ReaderBuilder::new()
         .has_headers(true) // Set to false if there's no header
@@ -67,14 +85,20 @@ pub fn try_to_get_timestamp_hit_for_csv(
     let mut reader = get_reader_from_certain_header_index(header_row, log_file)?;
     let headers: csv::StringRecord = reader
         .headers()
-        .map_err(|e| LavaError::new(format!("Unable to get headers because of {e}"), LavaErrorLevel::Critical))?
+        .map_err(|e| {
+            LavaError::new(
+                format!("Unable to get headers because of {e}"),
+                LavaErrorLevel::Critical,
+            )
+        })?
         .clone(); // this returns a &StringRecord
 
-    let record: csv::StringRecord = reader
-        .records()
-        .next()
-        .unwrap()
-        .map_err(|e| LavaError::new(format!("Unable to get first row because of {e}"), LavaErrorLevel::Critical))?; // This is returning a result, that is why I had to use the question mark below before the iter()
+    let record: csv::StringRecord = reader.records().next().unwrap().map_err(|e| {
+        LavaError::new(
+            format!("Unable to get first row because of {e}"),
+            LavaErrorLevel::Critical,
+        )
+    })?; // This is returning a result, that is why I had to use the question mark below before the iter()
 
     let mut response =
         try_to_get_timestamp_hit_for_csv_functionality(headers, record, execution_settings);
@@ -84,10 +108,10 @@ pub fn try_to_get_timestamp_hit_for_csv(
             println!(
                 "Found match for '{}' time format in the '{}' column of {}",
                 partial.regex_info.pretty_format,
-                partial
-                    .column_name
-                    .as_ref()
-                    .ok_or_else(|| LavaError::new("No column name found.", LavaErrorLevel::Critical))?,
+                partial.column_name.as_ref().ok_or_else(|| LavaError::new(
+                    "No column name found.",
+                    LavaErrorLevel::Critical
+                ))?,
                 log_file.file_path.to_string_lossy().to_string()
             );
         }
@@ -111,7 +135,10 @@ pub fn try_to_get_timestamp_hit_for_csv_functionality(
             if field.trim() == field_to_use {
                 for date_regex in execution_settings.regexes.iter() {
                     if date_regex.string_contains_date(record.get(i).ok_or_else(|| {
-                        LavaError::new("Could not get the first field for the selected column.", LavaErrorLevel::Critical)
+                        LavaError::new(
+                            "Could not get the first field for the selected column.",
+                            LavaErrorLevel::Critical,
+                        )
                     })?) {
                         return Ok(IdentifiedTimeInformation {
                             header_row: None,
@@ -126,7 +153,8 @@ pub fn try_to_get_timestamp_hit_for_csv_functionality(
             }
         }
         return Err(LavaError::new(
-            "Could not find the specified column in the header.",LavaErrorLevel::Critical
+            "Could not find the specified column in the header.",
+            LavaErrorLevel::Critical,
         ));
     } else {
         for (i, field) in record.iter().enumerate() {
@@ -145,7 +173,10 @@ pub fn try_to_get_timestamp_hit_for_csv_functionality(
         }
     }
 
-    Err(LavaError::new("Could not find a supported timestamp.", LavaErrorLevel::Critical))
+    Err(LavaError::new(
+        "Could not find a supported timestamp.",
+        LavaErrorLevel::Critical,
+    ))
 }
 
 pub fn set_time_direction_by_scanning_csv_file(
@@ -160,18 +191,26 @@ pub fn set_time_direction_by_scanning_csv_file(
     for result in rdr.records() {
         // I think I should just include the index in the timestamp hit
         let record = result.map_err(|e| {
-            LavaError::new(format!(
-                "Unable to read bytes during hashing because of {e}"
-            ), LavaErrorLevel::Critical)
+            LavaError::new(
+                format!("Unable to read bytes during hashing because of {e}"),
+                LavaErrorLevel::Critical,
+            )
         })?;
         let value = record
             .get(timestamp_hit.column_index.unwrap())
-            .ok_or_else(|| LavaError::new("Index of date field not found", LavaErrorLevel::Critical))?; // unwrap is safe here because for CSVs, there will always be a column index
+            .ok_or_else(|| {
+                LavaError::new("Index of date field not found", LavaErrorLevel::Critical)
+            })?; // unwrap is safe here because for CSVs, there will always be a column index
 
         let current_datetime: NaiveDateTime = timestamp_hit
             .regex_info
             .get_timestamp_object_from_string_contianing_date(value.to_string())?
-            .ok_or_else(|| LavaError::new("No timestamp found when scanning for direction.", LavaErrorLevel::Critical))?;
+            .ok_or_else(|| {
+                LavaError::new(
+                    "No timestamp found when scanning for direction.",
+                    LavaErrorLevel::Critical,
+                )
+            })?;
 
         if let Some(direction) = direction_checker.process_timestamp(current_datetime) {
             timestamp_hit.direction = Some(direction);
@@ -179,7 +218,8 @@ pub fn set_time_direction_by_scanning_csv_file(
         }
     }
     Err(LavaError::new(
-        "Could not determine order, all timestamps may have been equal.",LavaErrorLevel::Critical
+        "Could not determine order, all timestamps may have been equal.",
+        LavaErrorLevel::Critical,
     ))
 }
 
@@ -202,19 +242,28 @@ pub fn stream_csv_file(
     let mut rdr = get_reader_from_certain_header_index(header_row as usize, log_file)?;
     for (index, result) in rdr.records().enumerate() {
         // I think I should just include the index in the timestamp hit
-        let record = result
-            .map_err(|e| LavaError::new(format!("Unable to read csv record because of {e}"), LavaErrorLevel::Critical))?;
+        let record = result.map_err(|e| {
+            LavaError::new(
+                format!("Unable to read csv record because of {e}"),
+                LavaErrorLevel::Critical,
+            )
+        })?;
         let value = record
             .get(timestamp_hit.column_index.unwrap())
-            .ok_or_else(|| LavaError::new("Index of date field not found", LavaErrorLevel::Critical))?;
+            .ok_or_else(|| {
+                LavaError::new("Index of date field not found", LavaErrorLevel::Critical)
+            })?;
         let current_datetime: NaiveDateTime = timestamp_hit
             .regex_info
             .get_timestamp_object_from_string_contianing_date(value.to_string())?
             .ok_or_else(|| {
-                LavaError::new(format!(
-                    "No supported timestamp found timestamp column at index {}",
-                    index
-                ), LavaErrorLevel::Critical)
+                LavaError::new(
+                    format!(
+                        "No supported timestamp found timestamp column at index {}",
+                        index
+                    ),
+                    LavaErrorLevel::Critical,
+                )
             })?;
         processing_object.process_record(LogFileRecord::new(index, current_datetime, record))?
     }

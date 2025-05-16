@@ -176,7 +176,7 @@ fn detects_out_of_order_in_ascending() {
             StringRecord::from(vec!["test"]),
         ))
         .unwrap();
-    let result = processor.process_timestamp(&make_fake_record(
+    let _ = processor.process_timestamp(&make_fake_record(
         1,
         "2024-05-01 11:00:00",
         StringRecord::from(vec!["test"]),
@@ -207,7 +207,7 @@ fn detects_out_of_order_in_descending() {
             StringRecord::from(vec!["test"]),
         ))
         .unwrap();
-    let result = processor.process_timestamp(&make_fake_record(
+    let _ = processor.process_timestamp(&make_fake_record(
         1,
         "2024-05-01 13:00:00",
         StringRecord::from(vec!["test"]),

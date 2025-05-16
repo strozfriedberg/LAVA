@@ -43,8 +43,12 @@ pub fn write_output_to_csv(
     // in the final version, maybe have a full version that has tons of fields, and then a simplified version. Could have command line arg to trigger verbose one
     //Add something here to create the
     let output_filepath = execution_settings.output_dir.join(generate_log_filename());
-    let mut wtr = Writer::from_path(&output_filepath)
-        .map_err(|e| LavaError::new(format!("Unable to open ouptut file because of {e}"), LavaErrorLevel::Critical))?;
+    let mut wtr = Writer::from_path(&output_filepath).map_err(|e| {
+        LavaError::new(
+            format!("Unable to open ouptut file because of {e}"),
+            LavaErrorLevel::Critical,
+        )
+    })?;
     wtr.write_record(&[
         "Filename",
         "File Path",
@@ -63,12 +67,25 @@ pub fn write_output_to_csv(
         "Possible Redactions Count",
         "Error",
     ])
-    .map_err(|e| LavaError::new(format!("Unable to write headers because of {e}"), LavaErrorLevel::Critical))?;
+    .map_err(|e| {
+        LavaError::new(
+            format!("Unable to write headers because of {e}"),
+            LavaErrorLevel::Critical,
+        )
+    })?;
     for log_file in processed_log_files {
         let error_message = if log_file.errors.is_empty() {
             String::new()
-        } else { // Theoretically there should only ever be one critical error per file, maybe if there is a crit, print out that, if not, print the number of smaller erros
-            format!("There were {} errors during processing. Check errors.csv for detailed errors.", log_file.errors.len())
+        } else {
+            if log_file.errors.len() > 1{
+                format!(
+                    "There were {} errors during processing. Check errors.csv for detailed errors.",
+                    log_file.errors.len()
+                )
+            }else{
+                log_file.errors[0].reason.clone()
+            }
+
         };
         wtr.serialize((
             log_file.filename.as_deref().unwrap_or(""),
@@ -89,11 +106,17 @@ pub fn write_output_to_csv(
             error_message,
         ))
         .map_err(|e| {
-            LavaError::new(format!("Issue writing lines of output file because of {e}"), LavaErrorLevel::Critical)
+            LavaError::new(
+                format!("Issue writing lines of output file because of {e}"),
+                LavaErrorLevel::Critical,
+            )
         })?;
     }
     wtr.flush().map_err(|e| {
-        LavaError::new(format!("Issue flushing to the ouptut file because of {e}"), LavaErrorLevel::Critical)
+        LavaError::new(
+            format!("Issue flushing to the ouptut file because of {e}"),
+            LavaErrorLevel::Critical,
+        )
     })?; //Is this really needed?
     println!("Data written to {}", output_filepath.to_string_lossy());
     Ok(())

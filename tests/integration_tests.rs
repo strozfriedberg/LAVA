@@ -1,6 +1,9 @@
-use LAVA::{basic_objects::{ExecutionSettings, LogFile, LogType, ProcessedLogFile}, process_file};
-use tempfile::NamedTempFile;
+use lava::{
+    basic_objects::{ExecutionSettings, LogFile, LogType, ProcessedLogFile},
+    process_file,
+};
 use std::fs;
+use tempfile::NamedTempFile;
 struct TempInputFile {
     log_file_object: LogFile,
     temp_file: NamedTempFile,
@@ -12,24 +15,25 @@ impl TempInputFile {
         let file_path = temp_file.path();
         fs::write(file_path, content).expect("Failed to write content to temp file.");
         Self {
-            log_file_object: LogFile { log_type: file_type, file_path: file_path.to_path_buf()},
+            log_file_object: LogFile {
+                log_type: file_type,
+                file_path: file_path.to_path_buf(),
+            },
             temp_file: temp_file,
         }
     }
 
-    pub fn get_log_file_object(&self) -> &LogFile{
+    pub fn get_log_file_object(&self) -> &LogFile {
         &self.log_file_object
     }
 
     pub fn delete_temp_file(self) {
         self.temp_file.close().expect("Failed to delet demp file");
     }
-
 }
 
-
 #[test]
-fn integration_test_successful_run_no_errors(){
+fn integration_test_successful_run_no_errors() {
     let data = "\
     id,name,date\n\
     1,John,2025-05-09 10:00:00\n\
@@ -46,10 +50,8 @@ fn integration_test_successful_run_no_errors(){
     temp_log_file.delete_temp_file();
 }
 
-
-
 #[test]
-fn integration_test_successful_run_duplicates_and_redactions(){
+fn integration_test_successful_run_duplicates_and_redactions() {
     let data = "\
     id,name,date\n\
     1,John,2025-05-09 10:00:00\n\
@@ -71,7 +73,7 @@ fn integration_test_successful_run_duplicates_and_redactions(){
 }
 
 #[test]
-fn integration_test_successful_run_duplicates_and_redactions_quick_mode(){
+fn integration_test_successful_run_duplicates_and_redactions_quick_mode() {
     let data = "\
     id,name,date\n\
     1,John,2025-05-09 10:00:00\n\
@@ -87,14 +89,14 @@ fn integration_test_successful_run_duplicates_and_redactions_quick_mode(){
     let output = process_file(log_file, &settings);
     let processed = output.expect("Failed to get Proceesed Log File");
     assert_eq!(0, processed.errors.len());
-    assert_eq!("0", processed.num_dupes.unwrap());
-    assert_eq!("0", processed.num_redactions.unwrap());
+    assert_eq!(None, processed.num_dupes);
+    assert_eq!(None, processed.num_redactions);
     assert_eq!(None, processed.sha256hash);
     temp_log_file.delete_temp_file();
 }
 
 #[test]
-fn integration_test_out_of_order_time_run_duplicates_and_redactions_1(){
+fn integration_test_out_of_order_time_run_duplicates_and_redactions_1() {
     let data = "\
     id,name,date\n\
     1,John,2025-05-09 10:00:00\n\
@@ -116,7 +118,7 @@ fn integration_test_out_of_order_time_run_duplicates_and_redactions_1(){
 }
 
 #[test]
-fn integration_test_out_of_order_time_run_duplicates_and_redactions_2(){
+fn integration_test_out_of_order_time_run_duplicates_and_redactions_2() {
     let data = "\
     id,name,date\n\
     1,John,2025-05-09 10:00:00\n\
@@ -133,9 +135,11 @@ fn integration_test_out_of_order_time_run_duplicates_and_redactions_2(){
     let output = process_file(log_file, &settings);
     let processed = output.expect("Failed to get Proceesed Log File");
     assert_eq!(1, processed.errors.len());
-    assert_eq!("File was not sorted on the identified timestamp. Out of order record at index 4", processed.errors[0].reason);
+    assert_eq!(
+        "File was not sorted on the identified timestamp. Out of order record at index 4",
+        processed.errors[0].reason
+    );
     assert_eq!("2", processed.num_dupes.unwrap());
     assert_eq!("0", processed.num_redactions.unwrap());
     temp_log_file.delete_temp_file();
 }
-

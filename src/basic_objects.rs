@@ -3,7 +3,6 @@ use crate::errors::LavaError;
 use crate::helpers::*;
 use chrono::{NaiveDateTime, TimeDelta};
 use csv::StringRecord;
-use serde::Serialize;
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
@@ -20,10 +19,12 @@ pub struct ExecutionSettings {
     pub actually_write_to_files: bool,
 }
 
-
-impl ExecutionSettings{
+impl ExecutionSettings {
     // #[cfg(test)]
-    pub fn create_integration_test_object(timestamp_field: Option<String>, quick_mode: bool) -> Self{
+    pub fn create_integration_test_object(
+        timestamp_field: Option<String>,
+        quick_mode: bool,
+    ) -> Self {
         use crate::PREBUILT_DATE_REGEXES;
         Self {
             timestamp_field: timestamp_field,
@@ -33,7 +34,6 @@ impl ExecutionSettings{
             ..Default::default()
         }
     }
-
 }
 
 #[derive(PartialEq, Debug)]
@@ -91,7 +91,6 @@ pub struct TimeStatisticsFields {
     pub largest_gap_duration: Option<String>,
     pub num_dupes: Option<String>,
     pub num_redactions: Option<String>,
-    pub errors: Vec<LavaError>,
 }
 
 #[derive(PartialEq, Debug)]
@@ -125,7 +124,6 @@ impl LogFileRecord {
         base_record
     }
 }
-
 
 #[derive(PartialEq, Debug)]
 pub struct FlaggedLogFileRecord {

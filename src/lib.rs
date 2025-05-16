@@ -40,7 +40,10 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
             Ok(path) => {
                 let metadata = std::fs::metadata(&path)
                     .map_err(|e| {
-                        LavaError::new(format!("Failed to read metadata of file becase of {e}"), LavaErrorLevel::Critical)
+                        LavaError::new(
+                            format!("Failed to read metadata of file becase of {e}"),
+                            LavaErrorLevel::Critical,
+                        )
                     })
                     .unwrap();
                 if metadata.is_file() {
@@ -101,23 +104,32 @@ pub fn process_file(
 ) -> Result<ProcessedLogFile> {
     let mut base_processed_file = ProcessedLogFile::default();
 
-    //get hash and metadata. Does not matter what kind of file it is for this function
-    let (hash, size, file_name, file_path) = match get_metadata_and_hash(&log_file.file_path)
-    {
+    //get metadata. Does not matter what kind of file it is for this function
+    let (size, file_name, file_path) = match get_metadata(&log_file.file_path) {
         Ok(result) => result,
         Err(e) => {
             base_processed_file.errors.push(e);
             return Ok(base_processed_file);
         }
     };
-    base_processed_file.sha256hash = Some(hash);
     base_processed_file.size = Some(size);
     base_processed_file.filename = Some(file_name);
     base_processed_file.file_path = Some(file_path);
 
+    //Get hash if not quick mode
+    if !execution_settings.quick_mode {
+        let hash = match get_hash(&log_file.file_path) {
+            Ok(result) => result,
+            Err(e) => {
+                base_processed_file.errors.push(e);
+                return Ok(base_processed_file);
+            }
+        };
+        base_processed_file.sha256hash = Some(hash);
+    }
+
     // get the timestamp field. will do this for all of them, but there will just be some fields that only get filled in for structured datatypes
-    let mut timestamp_hit = match try_to_get_timestamp_hit(log_file, execution_settings)
-    {
+    let mut timestamp_hit = match try_to_get_timestamp_hit(log_file, execution_settings) {
         Ok(result) => result,
         Err(e) => {
             base_processed_file.errors.push(e);
@@ -129,8 +141,7 @@ pub fn process_file(
     base_processed_file.time_format = Some(timestamp_hit.regex_info.pretty_format.clone());
 
     // Get the direction of time in the file
-    match set_time_direction_by_scanning_file(log_file, &mut timestamp_hit)
-    {
+    match set_time_direction_by_scanning_file(log_file, &mut timestamp_hit) {
         Ok(_) => {}
         Err(e) => {
             base_processed_file.errors.push(e);
@@ -140,8 +151,7 @@ pub fn process_file(
 
     // Stream the file to find statistics on time and other stuff
     let completed_statistics_object =
-        match stream_file(log_file, &timestamp_hit, execution_settings)
-        {
+        match stream_file(log_file, &timestamp_hit, execution_settings) {
             Ok(result) => result,
             Err(e) => {
                 base_processed_file.errors.push(e);
@@ -150,9 +160,7 @@ pub fn process_file(
         };
 
     // Get the formatted stats from the stats object
-    let formatted_statistics = match completed_statistics_object
-        .get_statistics()
-    {
+    let formatted_statistics = match completed_statistics_object.get_statistics() {
         Ok(result) => result,
         Err(e) => {
             base_processed_file.errors.push(e);
@@ -167,33 +175,60 @@ pub fn process_file(
     base_processed_file.num_records = formatted_statistics.num_records;
     base_processed_file.num_dupes = formatted_statistics.num_dupes;
     base_processed_file.num_redactions = formatted_statistics.num_redactions;
-    base_processed_file.errors.extend(formatted_statistics.errors);
+    base_processed_file
+        .errors
+        .extend(completed_statistics_object.errors);
 
     Ok(base_processed_file)
 }
 
-fn get_metadata_and_hash(file_path: &PathBuf) -> Result<(String, u64, String, String)> {
-    let mut file = File::open(file_path)
-        .map_err(|e| LavaError::new(format!("Unable to open file because of {e}"), LavaErrorLevel::Critical))?;
+fn get_metadata(file_path: &PathBuf) -> Result<(u64, String, String)> {
+    let file = File::open(file_path).map_err(|e| {
+        LavaError::new(
+            format!("Unable to open file because of {e}"),
+            LavaErrorLevel::Critical,
+        )
+    })?;
     let size = file
         .metadata()
-        .map_err(|e| LavaError::new(format!("Unable to get file metadata because of {e}"), LavaErrorLevel::Critical))?
+        .map_err(|e| {
+            LavaError::new(
+                format!("Unable to get file metadata because of {e}"),
+                LavaErrorLevel::Critical,
+            )
+        })?
         .len();
     let file_name = file_path
         .file_name()
         .ok_or("Error getting filename")
-        .map_err(|e| LavaError::new(format!("Unable to open file because of {e}"), LavaErrorLevel::Critical))?
+        .map_err(|e| {
+            LavaError::new(
+                format!("Unable to open file because of {e}"),
+                LavaErrorLevel::Critical,
+            )
+        })?
         .to_string_lossy()
         .to_string();
+    Ok((size, file_name, file_path.to_string_lossy().to_string()))
+}
+
+fn get_hash(file_path: &PathBuf) -> Result<String> {
+    let mut file = File::open(file_path).map_err(|e| {
+        LavaError::new(
+            format!("Unable to open file because of {e}"),
+            LavaErrorLevel::Critical,
+        )
+    })?;
 
     let mut hasher = Sha256::new();
 
     let mut buffer = [0u8; 4096];
     loop {
         let bytes_read = file.read(&mut buffer).map_err(|e| {
-            LavaError::new(format!(
-                "Unable to read bytes during hashing because of {e}"
-            ), LavaErrorLevel::Critical)
+            LavaError::new(
+                format!("Unable to read bytes during hashing because of {e}"),
+                LavaErrorLevel::Critical,
+            )
         })?;
         if bytes_read == 0 {
             break;
@@ -204,12 +239,7 @@ fn get_metadata_and_hash(file_path: &PathBuf) -> Result<(String, u64, String, St
     let result = hasher.finalize();
     let hash_hex = format!("{:x}", result);
 
-    Ok((
-        hash_hex,
-        size,
-        file_name,
-        file_path.to_string_lossy().to_string(),
-    ))
+    Ok(hash_hex)
 }
 
 fn try_to_get_timestamp_hit(
@@ -222,7 +252,8 @@ fn try_to_get_timestamp_hit(
         return try_to_get_timestamp_hit_for_unstructured(log_file, execution_settings);
     }
     Err(LavaError::new(
-        "Have not implemented scanning for timestamp for this file type yet",LavaErrorLevel::Critical
+        "Have not implemented scanning for timestamp for this file type yet",
+        LavaErrorLevel::Critical,
     ))
 }
 
@@ -237,7 +268,8 @@ fn set_time_direction_by_scanning_file(
         return set_time_direction_by_scanning_unstructured_file(log_file, timestamp_hit);
     }
     Err(LavaError::new(
-        "Have not implemented scanning for directions for this file type yet.",LavaErrorLevel::Critical
+        "Have not implemented scanning for directions for this file type yet.",
+        LavaErrorLevel::Critical,
     ))
 }
 
@@ -253,7 +285,8 @@ fn stream_file(
         return stream_unstructured_file(log_file, timestamp_hit, execution_settings);
     }
     Err(LavaError::new(
-        "Have not implemented streaming for this file type yet",LavaErrorLevel::Critical
+        "Have not implemented streaming for this file type yet",
+        LavaErrorLevel::Critical,
     ))
 }
 

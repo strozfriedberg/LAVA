@@ -22,21 +22,21 @@ pub enum LavaErrorLevel {
     High,
     Medium,
     Low,
-    Info
+    Info,
 }
 
 #[derive(Debug, Error, Clone)]
 #[error("{reason}")]
 pub struct LavaError {
     pub reason: String,
-    pub level: LavaErrorLevel
+    pub level: LavaErrorLevel,
 }
 
 impl LavaError {
-    pub fn new(reason: impl Into<String>, level: LavaErrorLevel ) -> Self {
+    pub fn new(reason: impl Into<String>, level: LavaErrorLevel) -> Self {
         Self {
             reason: reason.into(),
-            level: level
+            level: level,
         }
     }
 }
