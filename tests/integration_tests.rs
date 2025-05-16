@@ -8,9 +8,9 @@ struct TempInputFile {
 
 impl TempInputFile {
     pub fn new(file_type: LogType, content: &str) -> Self {
-        let mut temp_file = NamedTempFile::new().expect("failed to create temp file");
+        let temp_file = NamedTempFile::new().expect("failed to create temp file");
         let file_path = temp_file.path();
-        fs::write(file_path, content);
+        fs::write(file_path, content).expect("Failed to write content to temp file.");
         Self {
             log_file_object: LogFile { log_type: file_type, file_path: file_path.to_path_buf()},
             temp_file: temp_file,
@@ -29,7 +29,7 @@ impl TempInputFile {
 
 
 #[test]
-fn integration_test(){
+fn integration_test_successful_run_no_errors(){
     let data = "\
     id,name,date\n\
     1,John,2025-05-09 10:00:00\n\
@@ -42,9 +42,27 @@ fn integration_test(){
 
     let output = process_file(log_file, &settings);
 
-    println!("Largest Time Gap: {}", output.expect("Failed to get Proceesed Log File").largest_gap.unwrap())
+    assert_eq!(None, output.expect("Failed to get Proceesed Log File").error);
+    temp_log_file.delete_temp_file();
+}
 
 
+#[test]
+fn integration_test_successful_run_duplicates(){
+    let data = "\
+    id,name,date\n\
+    1,John,2025-05-09 10:00:00\n\
+    2,Jane,2025-05-10 11:00:00\n\
+    2,Jane,2025-05-10 11:00:00\n\
+    4,James,2025-06-01 13:00:00\n";
 
+    let temp_log_file = TempInputFile::new(LogType::Csv, data);
+    let log_file = temp_log_file.get_log_file_object();
+    let settings = ExecutionSettings::create_integration_test_object(None, false);
 
+    let output = process_file(log_file, &settings);
+    let processed = output.expect("Failed to get Proceesed Log File");
+    assert_eq!(None, processed.error);
+    assert_eq!("1", processed.num_dupes.unwrap());
+    temp_log_file.delete_temp_file();
 }
