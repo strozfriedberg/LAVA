@@ -5,6 +5,7 @@ use std::time::Instant;
 
 fn main() {
     let start = Instant::now();
+    print_ascii_art();
     let matches = Command::new("LogCheck")
         .version("1.0")
         .about("Tool to check the validity and completeness of a given log set.")
@@ -25,4 +26,20 @@ fn main() {
     let minutes = duration.as_secs_f64() / 60.0;
 
     println!("Finished in {:.2} minutes", minutes);
+}
+
+pub fn print_ascii_art() {
+    let art = r#"
+██╗      █████╗ ██╗   ██╗ █████╗ 
+██║     ██╔══██╗██║   ██║██╔══██╗
+██║     ███████║██║   ██║███████║
+██║     ██╔══██║╚██╗ ██╔╝██╔══██║
+███████╗██║  ██║ ╚████╔╝ ██║  ██║
+╚══════╝╚═╝  ╚═╝  ╚═══╝  ╚═╝  ╚═╝
+
+Log Anomaly and Validity Analyzer
+By: Colin Meek
+"#;
+
+    println!("{}", art);
 }
