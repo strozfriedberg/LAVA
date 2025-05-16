@@ -182,9 +182,10 @@ fn detects_out_of_order_in_ascending() {
         StringRecord::from(vec!["test"]),
     ));
 
-    assert!(result.is_err());
+    assert!(processor.errors.len() == 1);
+
     assert_eq!(
-        result.unwrap_err().to_string(),
+        processor.errors[0].reason.to_string(),
         "File was not sorted on the identified timestamp. Out of order record at index 1"
     );
 }
@@ -212,9 +213,10 @@ fn detects_out_of_order_in_descending() {
         StringRecord::from(vec!["test"]),
     ));
 
-    assert!(result.is_err());
+    assert!(processor.errors.len() == 1);
+
     assert_eq!(
-        result.unwrap_err().to_string(),
+        processor.errors[0].reason.to_string(),
         "File was not sorted on the identified timestamp. Out of order record at index 1"
     );
 }

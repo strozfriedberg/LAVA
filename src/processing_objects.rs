@@ -55,6 +55,7 @@ pub struct LogRecordProcessor {
     pub num_dupes: usize,
     pub num_redactions: usize,
     pub errors: Vec<LavaError>,
+    process_timestamps: bool,
 }
 
 impl LogRecordProcessor {
@@ -73,6 +74,7 @@ impl LogRecordProcessor {
             execution_settings: execution_settings.clone(),
             file_name: log_file_stem,
             data_field_headers: data_field_headers,
+            process_timestamps: true,
             ..Default::default()
         }
     }
@@ -83,7 +85,9 @@ impl LogRecordProcessor {
             self.process_record_for_redactions(&record)?;
         }
         //Update earliest and latest timestamp
-        self.process_timestamp(&record)?;
+        if self.process_timestamps {
+            self.process_timestamp(&record)?;
+        }
 
         Ok(())
     }
@@ -96,7 +100,7 @@ impl LogRecordProcessor {
             .duplicate_checker_set
             .insert(record.hash_of_entire_record);
         if is_duplicate {
-            // println!("Found duplicate record at index {}", record.index);
+            println!("Found duplicate record at index {}", record.index);
             self.num_dupes += 1;
             if self.execution_settings.actually_write_to_files {
                 let _ = self.write_hit_to_file(record, AlertOutputType::Duplicate)?;
@@ -189,18 +193,20 @@ impl LogRecordProcessor {
             // This is where all logic is done if it isn't the first record
             if self.order == Some(TimeDirection::Ascending) {
                 if previous_datetime > record.timestamp {
-                    return Err(LavaError::new(format!(
+                    self.process_timestamps = false;
+                    self.errors.push(LavaError::new(format!(
                         "File was not sorted on the identified timestamp. Out of order record at index {}",
                         record.index
-                    ), LavaErrorLevel::Critical));
+                    ), LavaErrorLevel::Medium));
                 }
                 self.max_timestamp = Some(record.timestamp)
             } else if self.order == Some(TimeDirection::Descending) {
                 if previous_datetime < record.timestamp {
-                    return Err(LavaError::new(format!(
+                    self.process_timestamps = false;
+                    self.errors.push(LavaError::new(format!(
                         "File was not sorted on the identified timestamp. Out of order record at index {}",
                         record.index
-                    ), LavaErrorLevel::Critical));
+                    ), LavaErrorLevel::Medium));
                 }
                 self.min_timestamp = Some(record.timestamp)
             }
@@ -263,6 +269,7 @@ impl LogRecordProcessor {
         statistics_fields.largest_gap_duration = Some(format_timedelta(largest_time_gap.gap));
         statistics_fields.num_dupes = Some(self.num_dupes.to_string());
         statistics_fields.num_redactions = Some(self.num_redactions.to_string());
+        statistics_fields.errors = self.errors.clone();
         Ok(statistics_fields)
     }
 }

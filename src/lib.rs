@@ -167,6 +167,7 @@ pub fn process_file(
     base_processed_file.num_records = formatted_statistics.num_records;
     base_processed_file.num_dupes = formatted_statistics.num_dupes;
     base_processed_file.num_redactions = formatted_statistics.num_redactions;
+    base_processed_file.errors.extend(formatted_statistics.errors);
 
     Ok(base_processed_file)
 }
