@@ -102,7 +102,7 @@ impl LogRecordProcessor {
             // println!("Found duplicate record at index {}", record.index);
             self.num_dupes += 1;
             if self.execution_settings.actually_write_to_files {
-                match self.write_hit_to_file(record, AlertOutputType::Duplicate) {
+                match self.write_hit_to_file(record, AlertOutputType::Duplicate, None) {
                     Ok(()) => (),
                     Err(e) => self.errors.push(e),
                 }
@@ -116,7 +116,7 @@ impl LogRecordProcessor {
                 self.num_redactions += 1;
                 // println!("Found redaction in record {:?}", record.raw_record);
                 if self.execution_settings.actually_write_to_files {
-                    match self.write_hit_to_file(record, AlertOutputType::Redaction) {
+                    match self.write_hit_to_file(record, AlertOutputType::Redaction, Some(redaction.name.clone())) {
                         Ok(()) => (),
                         Err(e) => self.errors.push(e),
                     }
@@ -130,6 +130,7 @@ impl LogRecordProcessor {
         &mut self,
         record: &LogFileRecord,
         alert_type: AlertOutputType,
+        rule_name: Option<String>,
     ) -> Result<()> {
         let output_file = self.build_file_path(&alert_type)?;
         let file_existed_before = output_file.exists();
@@ -159,7 +160,7 @@ impl LogRecordProcessor {
                 })?;
         }
         writer
-            .write_record(&record.get_record_to_output(&alert_type))
+            .write_record(&record.get_record_to_output(&alert_type, rule_name))
             .map_err(|e| {
                 LavaError::new(
                     format!("Unable to write record because of {e}"),
@@ -178,7 +179,7 @@ impl LogRecordProcessor {
                 StringRecord::from(vec!["Index of Hit", "Hash of Record"])
             }
             AlertOutputType::Redaction => {
-                StringRecord::from(vec!["Index of Hit"]) // Maybe in the future add the name of the rule that hit in the second column
+                StringRecord::from(vec!["Index of Hit", "Rule Name"]) // Maybe in the future add the name of the rule that hit in the second column
             }
         };
 
