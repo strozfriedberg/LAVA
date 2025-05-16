@@ -77,15 +77,14 @@ pub fn write_output_to_csv(
         let error_message = if log_file.errors.is_empty() {
             String::new()
         } else {
-            if log_file.errors.len() > 1{
+            if log_file.errors.len() > 1 {
                 format!(
                     "There were {} errors during processing. Check errors.csv for detailed errors.",
                     log_file.errors.len()
                 )
-            }else{
+            } else {
                 log_file.errors[0].reason.clone()
             }
-
         };
         wtr.serialize((
             log_file.filename.as_deref().unwrap_or(""),

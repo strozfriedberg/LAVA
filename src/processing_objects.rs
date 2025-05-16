@@ -2,9 +2,9 @@ use crate::basic_objects::*;
 use crate::errors::*;
 use crate::helpers::*;
 use chrono::NaiveDateTime;
+use core::time;
 use csv::StringRecord;
 use csv::WriterBuilder;
-use core::time;
 use std::collections::HashSet;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
@@ -80,7 +80,7 @@ impl LogRecordProcessor {
         }
     }
     pub fn process_record(&mut self, record: LogFileRecord) -> Result<()> {
-        self.num_records+=1;
+        self.num_records += 1;
         //Check for duplicates
         if !self.execution_settings.quick_mode {
             self.process_record_for_dupes(&record)?;
@@ -102,9 +102,9 @@ impl LogRecordProcessor {
             // println!("Found duplicate record at index {}", record.index);
             self.num_dupes += 1;
             if self.execution_settings.actually_write_to_files {
-                match self.write_hit_to_file(record, AlertOutputType::Duplicate){
+                match self.write_hit_to_file(record, AlertOutputType::Duplicate) {
                     Ok(()) => (),
-                    Err(e) => self.errors.push(e)
+                    Err(e) => self.errors.push(e),
                 }
             }
         }
@@ -116,9 +116,9 @@ impl LogRecordProcessor {
                 self.num_redactions += 1;
                 // println!("Found redaction in record {:?}", record.raw_record);
                 if self.execution_settings.actually_write_to_files {
-                    match self.write_hit_to_file(record, AlertOutputType::Redaction){
+                    match self.write_hit_to_file(record, AlertOutputType::Redaction) {
                         Ok(()) => (),
-                        Err(e) => self.errors.push(e)
+                        Err(e) => self.errors.push(e),
                     }
                 }
             }
@@ -126,7 +126,11 @@ impl LogRecordProcessor {
 
         Ok(())
     }
-    pub fn write_hit_to_file(&mut self, record: &LogFileRecord, alert_type: AlertOutputType) -> Result<()> {
+    pub fn write_hit_to_file(
+        &mut self,
+        record: &LogFileRecord,
+        alert_type: AlertOutputType,
+    ) -> Result<()> {
         let output_file = self.build_file_path(&alert_type)?;
         let file_existed_before = output_file.exists();
         let file = OpenOptions::new()
@@ -134,7 +138,10 @@ impl LogRecordProcessor {
             .append(true)
             .open(output_file)
             .map_err(|e| {
-                LavaError::new(format!("Unable to create output file because of {e}"), LavaErrorLevel::Medium)
+                LavaError::new(
+                    format!("Unable to create output file because of {e}"),
+                    LavaErrorLevel::Medium,
+                )
             })?;
 
         let mut writer = WriterBuilder::new()
@@ -194,15 +201,18 @@ impl LogRecordProcessor {
             .join(output_subfolder_and_filename))
     }
 
-    fn handle_first_out_of_order_timestamp(&mut self, record: &LogFileRecord){
+    fn handle_first_out_of_order_timestamp(&mut self, record: &LogFileRecord) {
         self.process_timestamps = false;
         self.min_timestamp = None;
         self.max_timestamp = None;
         self.largest_time_gap = None;
-        self.errors.push(LavaError::new(format!(
-            "File was not sorted on the identified timestamp. Out of order record at index {}",
-            record.index
-        ), LavaErrorLevel::Medium));
+        self.errors.push(LavaError::new(
+            format!(
+                "File was not sorted on the identified timestamp. Out of order record at index {}",
+                record.index
+            ),
+            LavaErrorLevel::Medium,
+        ));
     }
 
     pub fn process_timestamp(&mut self, record: &LogFileRecord) -> Result<()> {
@@ -211,13 +221,13 @@ impl LogRecordProcessor {
             if self.order == Some(TimeDirection::Ascending) {
                 if previous_datetime > record.timestamp {
                     self.handle_first_out_of_order_timestamp(record);
-                    return Ok(())
+                    return Ok(());
                 }
                 self.max_timestamp = Some(record.timestamp)
             } else if self.order == Some(TimeDirection::Descending) {
                 if previous_datetime < record.timestamp {
                     self.handle_first_out_of_order_timestamp(record);
-                    return Ok(())
+                    return Ok(());
                 }
                 self.min_timestamp = Some(record.timestamp)
             }
@@ -248,18 +258,20 @@ impl LogRecordProcessor {
         statistics_fields.num_records = Some(self.num_records.to_string());
 
         if let Some(min_timestamp) = self.min_timestamp {
-            statistics_fields.min_timestamp = Some(min_timestamp.format("%Y-%m-%d %H:%M:%S").to_string())
+            statistics_fields.min_timestamp =
+                Some(min_timestamp.format("%Y-%m-%d %H:%M:%S").to_string())
         }
         if let Some(max_timestamp) = self.max_timestamp {
-            statistics_fields.max_timestamp = Some(max_timestamp.format("%Y-%m-%d %H:%M:%S").to_string());
+            statistics_fields.max_timestamp =
+                Some(max_timestamp.format("%Y-%m-%d %H:%M:%S").to_string());
         }
 
-        if self.min_timestamp.is_some() && self.max_timestamp.is_some(){
+        if self.min_timestamp.is_some() && self.max_timestamp.is_some() {
             let min_max_gap = self
-            .max_timestamp.unwrap()
-            .signed_duration_since(self.min_timestamp.unwrap());
+                .max_timestamp
+                .unwrap()
+                .signed_duration_since(self.min_timestamp.unwrap());
             statistics_fields.min_max_duration = Some(format_timedelta(min_max_gap));
-            
         }
 
         if let Some(largest_time_gap) = self.largest_time_gap {
@@ -271,7 +283,7 @@ impl LogRecordProcessor {
             statistics_fields.largest_gap_duration = Some(format_timedelta(largest_time_gap.gap));
         }
 
-        if !self.execution_settings.quick_mode{
+        if !self.execution_settings.quick_mode {
             statistics_fields.num_dupes = Some(self.num_dupes.to_string());
             statistics_fields.num_redactions = Some(self.num_redactions.to_string());
         }
