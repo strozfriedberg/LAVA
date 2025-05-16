@@ -119,6 +119,7 @@ fn get_csv_timestamp_hit_finds_valid_timestamp() {
         }],
         timestamp_field: None,
         quick_mode: false,
+        actually_write_to_files: false,
     };
     let result =
         try_to_get_timestamp_hit_for_csv_functionality(headers.clone(), record.clone(), &test_args)
@@ -144,6 +145,7 @@ fn get_csv_timestamp_hit_does_not_find_valid_timestamp() {
         }],
         timestamp_field: None,
         quick_mode: false,
+        actually_write_to_files: false,
     };
     let result =
         try_to_get_timestamp_hit_for_csv_functionality(headers.clone(), record.clone(), &test_args);
@@ -173,6 +175,7 @@ fn get_csv_timestamp_hit_finds_valid_different_timestamp() {
         }],
         timestamp_field: Some("second_timestamp".to_string()),
         quick_mode: false,
+        actually_write_to_files: false,
     };
     let result =
         try_to_get_timestamp_hit_for_csv_functionality(headers.clone(), record.clone(), &test_args)

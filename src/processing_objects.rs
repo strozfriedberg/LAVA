@@ -78,8 +78,8 @@ impl LogRecordProcessor {
     pub fn process_record(&mut self, record: LogFileRecord) -> Result<()> {
         //Check for duplicates
         if !self.execution_settings.quick_mode {
-            self.process_record_for_dupes(&record, true)?;
-            self.process_record_for_redactions(&record, true)?;
+            self.process_record_for_dupes(&record)?;
+            self.process_record_for_redactions(&record)?;
         }
         //Update earliest and latest timestamp
         self.process_timestamp(&record)?;
@@ -90,7 +90,6 @@ impl LogRecordProcessor {
     pub fn process_record_for_dupes(
         &mut self,
         record: &LogFileRecord,
-        write_hits_to_file: bool,
     ) -> Result<()> {
         let is_duplicate = !self
             .duplicate_checker_set
@@ -98,7 +97,7 @@ impl LogRecordProcessor {
         if is_duplicate {
             // println!("Found duplicate record at index {}", record.index);
             self.num_dupes += 1;
-            if write_hits_to_file {
+            if self.execution_settings.actually_write_to_files {
                 let _ = self.write_hit_to_file(record, AlertOutputType::Duplicate)?;
             }
         }
@@ -107,14 +106,13 @@ impl LogRecordProcessor {
     pub fn process_record_for_redactions(
         &mut self,
         record: &LogFileRecord,
-        write_hits_to_file: bool,
     ) -> Result<()> {
         for redaction in PREBUILT_REDACTION_REGEXES.iter(){
             if redaction.string_record_contains_match(&record.raw_record) {
                 // println!("Found duplicate record at index {}", record.index);
                 self.num_redactions += 1;
                 println!("Found redaction in record {:?}", record.raw_record);
-                if write_hits_to_file {
+                if self.execution_settings.actually_write_to_files {
                     let _ = self.write_hit_to_file(record, AlertOutputType::Redaction)?;
                 }
             }

@@ -16,6 +16,7 @@ pub struct ExecutionSettings {
     pub regexes: Vec<DateRegex>,
     pub timestamp_field: Option<String>,
     pub quick_mode: bool,
+    pub actually_write_to_files: bool,
 }
 
 
@@ -27,6 +28,7 @@ impl ExecutionSettings{
             timestamp_field: timestamp_field,
             quick_mode: quick_mode,
             regexes: PREBUILT_DATE_REGEXES.clone(),
+            actually_write_to_files: false,
             ..Default::default()
         }
     }
