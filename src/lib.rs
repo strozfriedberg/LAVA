@@ -15,7 +15,7 @@ use handlers::unstructured_handlers::*;
 mod date_regex;
 mod helpers;
 use helpers::*;
-mod basic_objects;
+pub mod basic_objects;
 use basic_objects::*;
 mod processing_objects;
 use processing_objects::*;
@@ -95,7 +95,7 @@ fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile> {
     supported_files
 }
 
-fn process_file(
+pub fn process_file(
     log_file: &LogFile,
     execution_settings: &ExecutionSettings,
 ) -> Result<ProcessedLogFile> {

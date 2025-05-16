@@ -1,0 +1,50 @@
+use LAVA::{basic_objects::{ExecutionSettings, LogFile, LogType, ProcessedLogFile}, process_file};
+use tempfile::NamedTempFile;
+use std::fs;
+struct TempInputFile {
+    log_file_object: LogFile,
+    temp_file: NamedTempFile,
+}
+
+impl TempInputFile {
+    pub fn new(file_type: LogType, content: &str) -> Self {
+        let mut temp_file = NamedTempFile::new().expect("failed to create temp file");
+        let file_path = temp_file.path();
+        fs::write(file_path, content);
+        Self {
+            log_file_object: LogFile { log_type: file_type, file_path: file_path.to_path_buf()},
+            temp_file: temp_file,
+        }
+    }
+
+    pub fn get_log_file_object(&self) -> &LogFile{
+        &self.log_file_object
+    }
+
+    pub fn delete_temp_file(self) {
+        self.temp_file.close().expect("Failed to delet demp file");
+    }
+
+}
+
+
+#[test]
+fn integration_test(){
+    let data = "\
+    id,name,date\n\
+    1,John,2025-05-09 10:00:00\n\
+    2,Jane,2025-05-10 11:00:00\n\
+    4,James,2025-06-01 13:00:00\n";
+
+    let temp_log_file = TempInputFile::new(LogType::Csv, data);
+    let log_file = temp_log_file.get_log_file_object();
+    let settings = ExecutionSettings::create_integration_test_object(None, false);
+
+    let output = process_file(log_file, &settings);
+
+    println!("Largest Time Gap: {}", output.expect("Failed to get Proceesed Log File").largest_gap.unwrap())
+
+
+
+
+}

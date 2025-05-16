@@ -18,6 +18,21 @@ pub struct ExecutionSettings {
     pub quick_mode: bool,
 }
 
+
+impl ExecutionSettings{
+    // #[cfg(test)]
+    pub fn create_integration_test_object(timestamp_field: Option<String>, quick_mode: bool) -> Self{
+        use crate::PREBUILT_DATE_REGEXES;
+        Self {
+            timestamp_field: timestamp_field,
+            quick_mode: quick_mode,
+            regexes: PREBUILT_DATE_REGEXES.clone(),
+            ..Default::default()
+        }
+    }
+
+}
+
 #[derive(PartialEq, Debug)]
 pub enum LogType {
     Csv,
