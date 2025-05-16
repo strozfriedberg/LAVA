@@ -80,7 +80,7 @@ impl LogRecordProcessor {
         }
     }
     pub fn process_record(&mut self, record: LogFileRecord) -> Result<()> {
-        
+        self.num_records+=1;
         //Check for duplicates
         if !self.execution_settings.quick_mode {
             self.process_record_for_dupes(&record)?;

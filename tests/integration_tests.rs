@@ -112,6 +112,11 @@ fn integration_test_out_of_order_time_run_duplicates_and_redactions_1() {
     let output = process_file(log_file, &settings);
     let processed = output.expect("Failed to get Proceesed Log File");
     assert_eq!(1, processed.errors.len());
+    assert_eq!(None, processed.min_timestamp);
+    assert_eq!(None, processed.max_timestamp);
+    assert_eq!(None, processed.min_max_duration);
+    assert_eq!(None, processed.largest_gap);
+    assert_eq!(None, processed.largest_gap_duration);
     assert_eq!("0", processed.num_dupes.unwrap());
     assert_eq!("1", processed.num_redactions.unwrap());
     temp_log_file.delete_temp_file();
@@ -135,10 +140,17 @@ fn integration_test_out_of_order_time_run_duplicates_and_redactions_2() {
     let output = process_file(log_file, &settings);
     let processed = output.expect("Failed to get Proceesed Log File");
     assert_eq!(1, processed.errors.len());
+    // println!("{:?}", processed.errors);
     assert_eq!(
         "File was not sorted on the identified timestamp. Out of order record at index 4",
         processed.errors[0].reason
     );
+    assert_eq!("6", processed.num_records.unwrap());
+    assert_eq!(None, processed.min_timestamp);
+    assert_eq!(None, processed.max_timestamp);
+    assert_eq!(None, processed.min_max_duration);
+    assert_eq!(None, processed.largest_gap);
+    assert_eq!(None, processed.largest_gap_duration);
     assert_eq!("2", processed.num_dupes.unwrap());
     assert_eq!("0", processed.num_redactions.unwrap());
     temp_log_file.delete_temp_file();
