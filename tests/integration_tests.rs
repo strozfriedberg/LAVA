@@ -41,8 +41,8 @@ fn integration_test_successful_run_no_errors(){
     let settings = ExecutionSettings::create_integration_test_object(None, false);
 
     let output = process_file(log_file, &settings);
-
-    assert_eq!(None, output.expect("Failed to get Proceesed Log File").error);
+    let processed = output.expect("Failed to get Proceesed Log File");
+    assert_eq!(0, processed.errors.len());
     temp_log_file.delete_temp_file();
 }
 
@@ -64,7 +64,7 @@ fn integration_test_successful_run_duplicates_and_redactions(){
 
     let output = process_file(log_file, &settings);
     let processed = output.expect("Failed to get Proceesed Log File");
-    assert_eq!(None, processed.error);
+    assert_eq!(0, processed.errors.len());
     assert_eq!("1", processed.num_dupes.unwrap());
     assert_eq!("1", processed.num_redactions.unwrap());
     temp_log_file.delete_temp_file();
@@ -86,7 +86,7 @@ fn integration_test_successful_run_duplicates_and_redactions_quick_mode(){
 
     let output = process_file(log_file, &settings);
     let processed = output.expect("Failed to get Proceesed Log File");
-    assert_eq!(None, processed.error);
+    assert_eq!(0, processed.errors.len());
     assert_eq!("0", processed.num_dupes.unwrap());
     assert_eq!("0", processed.num_redactions.unwrap());
     assert_eq!(None, processed.sha256hash);
@@ -109,7 +109,7 @@ fn integration_test_out_of_order_time_run_duplicates_and_redactions_1(){
 
     let output = process_file(log_file, &settings);
     let processed = output.expect("Failed to get Proceesed Log File");
-    assert_ne!(None, processed.error);
+    assert_eq!(0, processed.errors.len());
     assert_eq!("1", processed.num_dupes.unwrap());
     assert_eq!("1", processed.num_redactions.unwrap());
     temp_log_file.delete_temp_file();
@@ -131,7 +131,7 @@ fn integration_test_out_of_order_time_run_duplicates_and_redactions_2(){
 
     let output = process_file(log_file, &settings);
     let processed = output.expect("Failed to get Proceesed Log File");
-    assert_ne!(None, processed.error);
+    assert_eq!(0, processed.errors.len());
     assert_eq!("1", processed.num_dupes.unwrap());
     assert_eq!("1", processed.num_redactions.unwrap());
     temp_log_file.delete_temp_file();

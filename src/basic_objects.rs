@@ -1,4 +1,5 @@
 use crate::date_regex::*;
+use crate::errors::LavaError;
 use crate::helpers::*;
 use chrono::{NaiveDateTime, TimeDelta};
 use csv::StringRecord;
@@ -60,7 +61,7 @@ pub struct LogFile {
     pub file_path: PathBuf,
 }
 
-#[derive(PartialEq, Debug, Serialize, Default)]
+#[derive(Debug, Default)]
 pub struct ProcessedLogFile {
     pub sha256hash: Option<String>,
     pub filename: Option<String>,
@@ -75,9 +76,10 @@ pub struct ProcessedLogFile {
     pub largest_gap: Option<String>,
     pub largest_gap_duration: Option<String>,
     pub num_records: Option<String>,
-    pub error: Option<String>,
+    // pub error: Option<String>,
     pub num_dupes: Option<String>,
     pub num_redactions: Option<String>,
+    pub errors: Vec<LavaError>,
 }
 
 #[derive(PartialEq, Debug)]
@@ -112,7 +114,7 @@ impl LogFileRecord {
     }
 }
 
-#[derive(PartialEq, Debug, Default)]
+#[derive(Debug, Default)]
 pub struct TimeStatisticsFields {
     pub num_records: Option<String>,
     pub min_timestamp: Option<String>,
@@ -122,6 +124,7 @@ pub struct TimeStatisticsFields {
     pub largest_gap_duration: Option<String>,
     pub num_dupes: Option<String>,
     pub num_redactions: Option<String>,
+    pub errors: Vec<LavaError>,
 }
 
 #[derive(PartialEq, Debug)]

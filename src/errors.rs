@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-pub type Result<T> = std::result::Result<T, LogCheckError>;
+pub type Result<T> = std::result::Result<T, LavaError>;
 
 #[derive(Debug, Clone, Error)]
 pub enum PhaseError {
@@ -16,14 +16,23 @@ pub enum PhaseError {
     Formatting(String),
 }
 
+#[derive(PartialEq, Debug)]
+pub enum LavaErrorLevel {
+    Critical, // This is going to mean you stop processing, anythign else will get propogated at the end, but it will still attempt to keep doing other processsing
+    High,
+    Medium,
+    Low,
+    Info
+}
+
 #[derive(Debug, Error)]
 #[error("{reason}")]
-pub struct LogCheckError {
+pub struct LavaError {
     pub reason: String,
 }
 
-impl LogCheckError {
-    pub fn new(reason: impl Into<String>) -> Self {
+impl LavaError {
+    pub fn new(reason: impl Into<String>, level: LavaErrorLevel ) -> Self {
         Self {
             reason: reason.into(),
         }

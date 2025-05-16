@@ -54,6 +54,7 @@ pub struct LogRecordProcessor {
     pub duplicate_checker_set: HashSet<u64>,
     pub num_dupes: usize,
     pub num_redactions: usize,
+    pub errors: Vec<LavaError>,
 }
 
 impl LogRecordProcessor {
@@ -128,7 +129,7 @@ impl LogRecordProcessor {
             .append(true)
             .open(output_file)
             .map_err(|e| {
-                LogCheckError::new(format!("Unable to create output file because of {e}"))
+                LavaError::new(format!("Unable to create output file because of {e}"), LavaErrorLevel::Critical)
             })?;
 
         let mut writer = WriterBuilder::new()
@@ -141,13 +142,13 @@ impl LogRecordProcessor {
                     &self.get_full_output_headers_based_on_alert_type(&alert_type),
                 )
                 .map_err(|e| {
-                    LogCheckError::new(format!("Unable to write headers to file because of {e}"))
+                    LavaError::new(format!("Unable to write headers to file because of {e}"), LavaErrorLevel::Critical)
                 })?;
         }
 
         writer
             .write_record(&record.get_record_to_output(&alert_type))
-            .map_err(|e| LogCheckError::new(format!("Unable to write record because of {e}")))?;
+            .map_err(|e| LavaError::new(format!("Unable to write record because of {e}"), LavaErrorLevel::Critical))?;
         Ok(())
     }
 
@@ -188,18 +189,18 @@ impl LogRecordProcessor {
             // This is where all logic is done if it isn't the first record
             if self.order == Some(TimeDirection::Ascending) {
                 if previous_datetime > record.timestamp {
-                    return Err(LogCheckError::new(format!(
+                    return Err(LavaError::new(format!(
                         "File was not sorted on the identified timestamp. Out of order record at index {}",
                         record.index
-                    )));
+                    ), LavaErrorLevel::Critical));
                 }
                 self.max_timestamp = Some(record.timestamp)
             } else if self.order == Some(TimeDirection::Descending) {
                 if previous_datetime < record.timestamp {
-                    return Err(LogCheckError::new(format!(
+                    return Err(LavaError::new(format!(
                         "File was not sorted on the identified timestamp. Out of order record at index {}",
                         record.index
-                    )));
+                    ), LavaErrorLevel::Critical));
                 }
                 self.min_timestamp = Some(record.timestamp)
             }
@@ -231,28 +232,28 @@ impl LogRecordProcessor {
         statistics_fields.num_records = Some(self.num_records.to_string());
         statistics_fields.min_timestamp = Some(
             self.min_timestamp
-                .ok_or_else(|| LogCheckError::new("No min timestamp found"))?
+                .ok_or_else(|| LavaError::new("No min timestamp found", LavaErrorLevel::Critical))?
                 .format("%Y-%m-%d %H:%M:%S")
                 .to_string(),
         );
         statistics_fields.max_timestamp = Some(
             self.max_timestamp
-                .ok_or_else(|| LogCheckError::new("No max timestamp found"))?
+                .ok_or_else(|| LavaError::new("No max timestamp found", LavaErrorLevel::Critical))?
                 .format("%Y-%m-%d %H:%M:%S")
                 .to_string(),
         );
         let min_max_gap = self
             .max_timestamp
-            .ok_or_else(|| LogCheckError::new("No max timestamp found"))?
+            .ok_or_else(|| LavaError::new("No max timestamp found", LavaErrorLevel::Critical))?
             .signed_duration_since(
                 self.min_timestamp
-                    .ok_or_else(|| LogCheckError::new("No min timestamp found"))?,
+                    .ok_or_else(|| LavaError::new("No min timestamp found", LavaErrorLevel::Critical))?,
             );
         statistics_fields.min_max_duration = Some(format_timedelta(min_max_gap));
 
         let largest_time_gap = self
             .largest_time_gap
-            .ok_or_else(|| LogCheckError::new("No largest time gap found"))?;
+            .ok_or_else(|| LavaError::new("No largest time gap found", LavaErrorLevel::Critical))?;
 
         statistics_fields.largest_gap = Some(format!(
             "{} to {}",

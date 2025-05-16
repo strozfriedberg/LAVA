@@ -11,12 +11,12 @@ pub fn try_to_get_timestamp_hit_for_unstructured(
     execution_settings: &ExecutionSettings,
 ) -> Result<IdentifiedTimeInformation> {
     let file = File::open(&log_file.file_path)
-        .map_err(|e| LogCheckError::new(format!("Unable to read log file because of {e}")))?;
+        .map_err(|e| LavaError::new(format!("Unable to read log file because of {e}"), LavaErrorLevel::Critical))?;
     let reader = BufReader::new(file);
 
     for line_result in reader.lines() {
         let line = line_result
-            .map_err(|e| LogCheckError::new(format!("Error reading line because of {}", e)))?;
+            .map_err(|e| LavaError::new(format!("Error reading line because of {}", e), LavaErrorLevel::Critical))?;
         for date_regex in execution_settings.regexes.iter() {
             if date_regex.string_contains_date(&line) {
                 println!(
@@ -35,8 +35,8 @@ pub fn try_to_get_timestamp_hit_for_unstructured(
             }
         }
     }
-    return Err(LogCheckError::new(
-        "No regex match found in the log file, try providing your own custom regex",
+    return Err(LavaError::new(
+        "No regex match found in the log file, try providing your own custom regex",LavaErrorLevel::Critical
     ));
 }
 
@@ -45,12 +45,12 @@ pub fn set_time_direction_by_scanning_unstructured_file(
     timestamp_hit: &mut IdentifiedTimeInformation,
 ) -> Result<()> {
     let file = File::open(&log_file.file_path)
-        .map_err(|e| LogCheckError::new(format!("Unable to open the log file because of {e}")))?;
+        .map_err(|e| LavaError::new(format!("Unable to open the log file because of {e}"), LavaErrorLevel::Critical))?;
     let reader = BufReader::new(file);
     let mut direction_checker = TimeDirectionChecker::default();
     for line_result in reader.lines() {
         let line = line_result
-            .map_err(|e| LogCheckError::new(format!("Error reading line because of {}", e)))?;
+            .map_err(|e| LavaError::new(format!("Error reading line because of {}", e), LavaErrorLevel::Critical))?;
         if let Some(current_datetime) = timestamp_hit
             .regex_info
             .get_timestamp_object_from_string_contianing_date(line)?
@@ -76,11 +76,11 @@ pub fn stream_unstructured_file(
         None,
     );
     let file = File::open(&log_file.file_path)
-        .map_err(|e| LogCheckError::new(format!("Unable to open log file because of {e}")))?;
+        .map_err(|e| LavaError::new(format!("Unable to open log file because of {e}"), LavaErrorLevel::Critical))?;
     let reader = BufReader::new(file);
     for (index, line_result) in reader.lines().enumerate() {
         let line = line_result
-            .map_err(|e| LogCheckError::new(format!("Error reading line because of {}", e)))?;
+            .map_err(|e| LavaError::new(format!("Error reading line because of {}", e), LavaErrorLevel::Critical))?;
         // let hash_of_record = hash_string(&line);
         if let Some(current_datetime) = timestamp_hit
             .regex_info
