@@ -4,6 +4,7 @@ use crate::helpers::*;
 use chrono::NaiveDateTime;
 use csv::StringRecord;
 use csv::WriterBuilder;
+use core::time;
 use std::collections::HashSet;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
@@ -79,6 +80,7 @@ impl LogRecordProcessor {
         }
     }
     pub fn process_record(&mut self, record: LogFileRecord) -> Result<()> {
+        
         //Check for duplicates
         if !self.execution_settings.quick_mode {
             self.process_record_for_dupes(&record)?;
@@ -192,25 +194,30 @@ impl LogRecordProcessor {
             .join(output_subfolder_and_filename))
     }
 
+    fn handle_first_out_of_order_timestamp(&mut self, record: &LogFileRecord){
+        self.process_timestamps = false;
+        self.min_timestamp = None;
+        self.max_timestamp = None;
+        self.largest_time_gap = None;
+        self.errors.push(LavaError::new(format!(
+            "File was not sorted on the identified timestamp. Out of order record at index {}",
+            record.index
+        ), LavaErrorLevel::Medium));
+    }
+
     pub fn process_timestamp(&mut self, record: &LogFileRecord) -> Result<()> {
         if let Some(previous_datetime) = self.previous_timestamp {
             // This is where all logic is done if it isn't the first record
             if self.order == Some(TimeDirection::Ascending) {
                 if previous_datetime > record.timestamp {
-                    self.process_timestamps = false;
-                    self.errors.push(LavaError::new(format!(
-                        "File was not sorted on the identified timestamp. Out of order record at index {}",
-                        record.index
-                    ), LavaErrorLevel::Medium));
+                    self.handle_first_out_of_order_timestamp(record);
+                    return Ok(())
                 }
                 self.max_timestamp = Some(record.timestamp)
             } else if self.order == Some(TimeDirection::Descending) {
                 if previous_datetime < record.timestamp {
-                    self.process_timestamps = false;
-                    self.errors.push(LavaError::new(format!(
-                        "File was not sorted on the identified timestamp. Out of order record at index {}",
-                        record.index
-                    ), LavaErrorLevel::Medium));
+                    self.handle_first_out_of_order_timestamp(record);
+                    return Ok(())
                 }
                 self.min_timestamp = Some(record.timestamp)
             }
@@ -231,7 +238,6 @@ impl LogRecordProcessor {
                 self.max_timestamp = Some(record.timestamp)
             }
         }
-        self.num_records = self.num_records + 1;
         self.previous_timestamp = Some(record.timestamp);
         Ok(())
     }
@@ -240,36 +246,31 @@ impl LogRecordProcessor {
         let mut statistics_fields = TimeStatisticsFields::default();
 
         statistics_fields.num_records = Some(self.num_records.to_string());
-        statistics_fields.min_timestamp = Some(
-            self.min_timestamp
-                .ok_or_else(|| LavaError::new("No min timestamp found", LavaErrorLevel::Critical))?
-                .format("%Y-%m-%d %H:%M:%S")
-                .to_string(),
-        );
-        statistics_fields.max_timestamp = Some(
-            self.max_timestamp
-                .ok_or_else(|| LavaError::new("No max timestamp found", LavaErrorLevel::Critical))?
-                .format("%Y-%m-%d %H:%M:%S")
-                .to_string(),
-        );
-        let min_max_gap = self
-            .max_timestamp
-            .ok_or_else(|| LavaError::new("No max timestamp found", LavaErrorLevel::Critical))?
-            .signed_duration_since(self.min_timestamp.ok_or_else(|| {
-                LavaError::new("No min timestamp found", LavaErrorLevel::Critical)
-            })?);
-        statistics_fields.min_max_duration = Some(format_timedelta(min_max_gap));
 
-        let largest_time_gap = self
-            .largest_time_gap
-            .ok_or_else(|| LavaError::new("No largest time gap found", LavaErrorLevel::Critical))?;
+        if let Some(min_timestamp) = self.min_timestamp {
+            statistics_fields.min_timestamp = Some(min_timestamp.format("%Y-%m-%d %H:%M:%S").to_string())
+        }
+        if let Some(max_timestamp) = self.max_timestamp {
+            statistics_fields.max_timestamp = Some(max_timestamp.format("%Y-%m-%d %H:%M:%S").to_string());
+        }
 
-        statistics_fields.largest_gap = Some(format!(
-            "{} to {}",
-            largest_time_gap.beginning_time.format("%Y-%m-%d %H:%M:%S"),
-            largest_time_gap.end_time.format("%Y-%m-%d %H:%M:%S")
-        ));
-        statistics_fields.largest_gap_duration = Some(format_timedelta(largest_time_gap.gap));
+        if self.min_timestamp.is_some() && self.max_timestamp.is_some(){
+            let min_max_gap = self
+            .max_timestamp.unwrap()
+            .signed_duration_since(self.min_timestamp.unwrap());
+            statistics_fields.min_max_duration = Some(format_timedelta(min_max_gap));
+            
+        }
+
+        if let Some(largest_time_gap) = self.largest_time_gap {
+            statistics_fields.largest_gap = Some(format!(
+                "{} to {}",
+                largest_time_gap.beginning_time.format("%Y-%m-%d %H:%M:%S"),
+                largest_time_gap.end_time.format("%Y-%m-%d %H:%M:%S")
+            ));
+            statistics_fields.largest_gap_duration = Some(format_timedelta(largest_time_gap.gap));
+        }
+
         if !self.execution_settings.quick_mode{
             statistics_fields.num_dupes = Some(self.num_dupes.to_string());
             statistics_fields.num_redactions = Some(self.num_redactions.to_string());

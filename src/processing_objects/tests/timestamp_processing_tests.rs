@@ -44,7 +44,6 @@ fn processes_ascending_records_correctly() {
         results.max_timestamp.unwrap().to_string(),
         "2024-05-01 15:00:00"
     );
-    assert_eq!(processor.num_records, 3);
     assert_eq!(
         results.largest_gap_duration.unwrap(),
         "02:00:00".to_string()
@@ -96,7 +95,6 @@ fn processes_ascending_records_same_time_gap_correctly() {
         results.max_timestamp.unwrap().to_string(),
         "2024-05-01 14:00:00"
     );
-    assert_eq!(processor.num_records, 3);
     assert_eq!(
         results.largest_gap_duration.unwrap(),
         "01:00:00".to_string()
@@ -148,7 +146,6 @@ fn processes_descending_records_correctly() {
         results.max_timestamp.unwrap().to_string(),
         "2024-05-01 14:00:00"
     );
-    assert_eq!(processor.num_records, 3);
     assert_eq!(
         results.largest_gap_duration.unwrap(),
         "02:00:00".to_string()
