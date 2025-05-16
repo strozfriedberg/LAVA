@@ -60,7 +60,7 @@ pub struct LogRecordProcessor {
 }
 
 impl LogRecordProcessor {
-    pub fn new_with_order(
+    pub fn new(
         order: Option<TimeDirection>,
         execution_settings: &ExecutionSettings,
         log_file_stem: String,

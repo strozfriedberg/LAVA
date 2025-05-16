@@ -86,7 +86,7 @@ pub fn stream_unstructured_file(
     timestamp_hit: &IdentifiedTimeInformation,
     execution_settings: &ExecutionSettings,
 ) -> Result<LogRecordProcessor> {
-    let mut processing_object = LogRecordProcessor::new_with_order(
+    let mut processing_object = LogRecordProcessor::new(
         timestamp_hit.direction.clone(),
         execution_settings,
         get_file_stem(log_file)?,

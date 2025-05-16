@@ -6,7 +6,7 @@ use csv::StringRecord;
 #[test]
 fn test_process_record_contains_redaction() {
     let settings = ExecutionSettings::default();
-    let mut processor = LogRecordProcessor::new_with_order(
+    let mut processor = LogRecordProcessor::new(
         Some(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
@@ -33,7 +33,7 @@ fn test_process_record_contains_redaction() {
 #[test]
 fn test_process_record_contains_redactions_multiple_columns() {
     let settings = ExecutionSettings::default();
-    let mut processor = LogRecordProcessor::new_with_order(
+    let mut processor = LogRecordProcessor::new(
         Some(TimeDirection::Descending),
         &settings,
         "Test".to_string(),

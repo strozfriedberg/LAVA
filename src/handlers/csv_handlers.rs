@@ -229,7 +229,7 @@ pub fn stream_csv_file(
     execution_settings: &ExecutionSettings,
 ) -> Result<LogRecordProcessor> {
     // not sure we want to include the whole hashset in this? Maybe only inlcude results
-    let mut processing_object = LogRecordProcessor::new_with_order(
+    let mut processing_object = LogRecordProcessor::new(
         timestamp_hit.direction.clone(),
         execution_settings,
         get_file_stem(log_file)?,

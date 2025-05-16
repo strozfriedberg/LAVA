@@ -8,7 +8,7 @@ fn test_build_file_path_duplicate() {
         output_dir: PathBuf::from("/tmp/output"),
         ..Default::default()
     };
-    let processor = LogRecordProcessor::new_with_order(
+    let processor = LogRecordProcessor::new(
         Some(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
@@ -30,7 +30,7 @@ fn test_build_file_path_duplicate_weird_path() {
         output_dir: PathBuf::from("/tmp/\\output//"),
         ..Default::default()
     };
-    let processor = LogRecordProcessor::new_with_order(
+    let processor = LogRecordProcessor::new(
         Some(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
@@ -52,7 +52,7 @@ fn test_build_file_path_redaction() {
         output_dir: PathBuf::from("/tmp/output"),
         ..Default::default()
     };
-    let processor = LogRecordProcessor::new_with_order(
+    let processor = LogRecordProcessor::new(
         Some(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
