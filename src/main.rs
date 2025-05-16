@@ -1,8 +1,10 @@
 use clap::{Command, arg};
 use lava::main_helpers::get_full_execution_settings;
 use lava::process_all_files;
+use std::time::Instant;
 
 fn main() {
+    let start = Instant::now();
     let matches = Command::new("LogCheck")
         .version("1.0")
         .about("Tool to check the validity and completeness of a given log set.")
@@ -17,5 +19,10 @@ fn main() {
 
     println!("Input directory: {:?}", execution_settings.input_dir);
     println!("Output directory: {:?}", execution_settings.output_dir);
-    process_all_files(execution_settings)
+    process_all_files(execution_settings);
+    
+    let duration = start.elapsed();
+    let minutes = duration.as_secs_f64() / 60.0;
+
+    println!("Finished in {:.2} minutes", minutes);
 }
