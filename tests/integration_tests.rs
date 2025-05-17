@@ -155,3 +155,33 @@ fn integration_test_out_of_order_time_run_duplicates_and_redactions_2() {
     assert_eq!("0", processed.num_redactions.unwrap());
     temp_log_file.delete_temp_file();
 }
+
+
+#[test]
+fn integration_test_no_timestamps_duplicates_and_redactions() {
+    let data = "\
+    id,name,date\n\
+    1,John,test1\n\
+    2,Jane,test32\n\
+    2,Jane,test32\n\
+    4,James,test32\n\
+    1,John,test\n";
+
+    let temp_log_file = TempInputFile::new(LogType::Csv, data);
+    let log_file = temp_log_file.get_log_file_object();
+    let settings = ExecutionSettings::create_integration_test_object(None, false);
+
+    let output = process_file(log_file, &settings);
+    let processed = output.expect("Failed to get Proceesed Log File");
+    assert_eq!(1, processed.errors.len());
+    // println!("{:?}", processed.errors);
+    assert_eq!("5", processed.num_records.unwrap());
+    assert_eq!(None, processed.min_timestamp);
+    assert_eq!(None, processed.max_timestamp);
+    assert_eq!(None, processed.min_max_duration);
+    assert_eq!(None, processed.largest_gap);
+    assert_eq!(None, processed.largest_gap_duration);
+    assert_eq!("2", processed.num_dupes.unwrap());
+    assert_eq!("0", processed.num_redactions.unwrap());
+    temp_log_file.delete_temp_file();
+}
