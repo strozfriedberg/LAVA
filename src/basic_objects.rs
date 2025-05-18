@@ -67,7 +67,7 @@ pub struct ProcessedLogFile {
     pub filename: Option<String>,
     pub file_path: Option<String>,
     pub size: Option<u64>,
-    pub header_index_used: Option<String>,
+    pub first_data_row_used: Option<String>,
     pub time_header: Option<String>,
     pub time_format: Option<String>,
     pub min_timestamp: Option<String>,
@@ -168,11 +168,18 @@ impl TimeGap {
 
 #[derive(Debug, Clone)]
 pub struct IdentifiedTimeInformation {
-    // Maybe add a date format pretty. and then also the date format that gets used by chrono
-    pub header_row: Option<u64>,
-    pub headers: Option<StringRecord>,
+    // pub header_row: Option<u64>,
+    // pub headers: Option<StringRecord>,
     pub column_name: Option<String>,
     pub column_index: Option<usize>,
     pub regex_info: DateRegex,
     pub direction: Option<TimeDirection>,
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct HeaderInfo {
+    pub first_data_row: usize,
+    pub headers: StringRecord
+}
+
+

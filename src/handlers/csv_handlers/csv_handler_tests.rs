@@ -4,8 +4,10 @@ use csv::StringRecord;
 use regex::Regex;
 use std::io::Cursor;
 use std::path::PathBuf;
+use crate::basic_objects::HeaderInfo;
+
 #[test]
-fn test_get_index_of_header_on_row_0() {
+fn test_get_header_info_on_row_0() {
     let data = "\
         id,name,date\n\
         1,John,2025-05-09 10:00:00\n\
@@ -15,13 +17,18 @@ fn test_get_index_of_header_on_row_0() {
     let cursor = Cursor::new(data);
     let reader = BufReader::new(cursor);
 
-    let result = get_index_of_header_functionality(reader);
+    let result = get_header_info_functionality(reader);
 
-    assert_eq!(result.unwrap(), 0);
+    let expected = HeaderInfo{
+        first_data_row: 1,
+        headers: StringRecord::from(vec!["id", "name", "date"]),
+    };
+    
+    assert_eq!(expected, result.unwrap());
 }
 
 #[test]
-fn test_get_index_of_header_on_row_1() {
+fn test_get_header_info_on_row_1() {
     let data = "\
         garbage\n\
         id,name,date\n\
@@ -32,13 +39,18 @@ fn test_get_index_of_header_on_row_1() {
     let cursor = Cursor::new(data);
     let reader = BufReader::new(cursor);
 
-    let result = get_index_of_header_functionality(reader);
+    let result = get_header_info_functionality(reader);
 
-    assert_eq!(result.unwrap(), 1);
+    let expected = HeaderInfo{
+        first_data_row: 2,
+        headers: StringRecord::from(vec!["id", "name", "date"]),
+    };
+    
+    assert_eq!(expected, result.unwrap());
 }
 
 #[test]
-fn test_get_index_of_header_on_row_2() {
+fn test_get_header_info_on_row_2() {
     let data = "\
         garbage\n\
         more,garbage\n\
@@ -50,13 +62,18 @@ fn test_get_index_of_header_on_row_2() {
     let cursor = Cursor::new(data);
     let reader = BufReader::new(cursor);
 
-    let result = get_index_of_header_functionality(reader);
+    let result = get_header_info_functionality(reader);
 
-    assert_eq!(result.unwrap(), 2);
+    let expected = HeaderInfo{
+        first_data_row: 3,
+        headers: StringRecord::from(vec!["id", "name", "date"]),
+    };
+    
+    assert_eq!(expected, result.unwrap());
 }
 
 #[test]
-fn test_get_index_of_header_no_timestamp() {
+fn test_get_header_info_no_timestamp() {
     let data = "\
         garbage\n\
         id,name\n\
@@ -67,13 +84,18 @@ fn test_get_index_of_header_no_timestamp() {
     let cursor = Cursor::new(data);
     let reader = BufReader::new(cursor);
 
-    let result = get_index_of_header_functionality(reader);
+    let result = get_header_info_functionality(reader);
 
-    assert_eq!(result.unwrap(), 1);
+    let expected = HeaderInfo{
+        first_data_row: 2,
+        headers: StringRecord::from(vec!["id", "name"]),
+    };
+    
+    assert_eq!(expected, result.unwrap());
 }
 
 #[test]
-fn test_get_index_of_header_timestamp_but_not_consistent() {
+fn test_get_header_info_timestamp_but_not_consistent() {
     let data = "\
         garbage\n\
         id,name,irrelevant_date\n\
@@ -84,13 +106,18 @@ fn test_get_index_of_header_timestamp_but_not_consistent() {
     let cursor = Cursor::new(data);
     let reader = BufReader::new(cursor);
 
-    let result = get_index_of_header_functionality(reader);
+    let result = get_header_info_functionality(reader);
 
-    assert_eq!(result.unwrap(), 1);
+    let expected = HeaderInfo{
+        first_data_row: 2,
+        headers: StringRecord::from(vec!["id", "name", "irrelevant_date"]),
+    };
+    
+    assert_eq!(expected, result.unwrap());
 }
 
 #[test]
-fn test_get_index_of_header_less_than_5_rows() {
+fn test_get_header_info_less_than_5_rows() {
     let data = "\
         id,name,irrelevant_date\n\
         1,John,\n\
@@ -99,9 +126,14 @@ fn test_get_index_of_header_less_than_5_rows() {
     let cursor = Cursor::new(data);
     let reader = BufReader::new(cursor);
 
-    let result = get_index_of_header_functionality(reader);
+    let result = get_header_info_functionality(reader);
 
-    assert_eq!(result.unwrap(), 0);
+    let expected = HeaderInfo{
+        first_data_row: 1,
+        headers: StringRecord::from(vec!["id", "name", "irrelevant_date"]),
+    };
+    
+    assert_eq!(expected, result.unwrap());
 }
 
 #[test]

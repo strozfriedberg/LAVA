@@ -6,11 +6,12 @@ use chrono::NaiveDateTime;
 use csv::Reader;
 use csv::ReaderBuilder;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Seek, SeekFrom, Cursor};
 #[cfg(test)]
 mod csv_handler_tests;
 
-pub fn get_index_of_header(log_file: &LogFile) -> Result<usize> {
+
+pub fn get_header_info(log_file: &LogFile) -> Result<HeaderInfo> {
     let file = File::open(&log_file.file_path).map_err(|e| {
         LavaError::new(
             format!("Unable to read csv file because of {e}"),
@@ -19,10 +20,34 @@ pub fn get_index_of_header(log_file: &LogFile) -> Result<usize> {
     })?;
     let reader = BufReader::new(file);
 
-    get_index_of_header_functionality(reader)
+    get_header_info_functionality(reader)
 }
 
-pub fn get_index_of_header_functionality<R: BufRead>(reader: R) -> Result<usize> {
+pub fn get_header_info_functionality<R: BufRead + Seek>(mut reader: R) -> Result<HeaderInfo> {
+    let header_row = get_index_of_header(reader)?;
+    reader.seek(SeekFrom::Start(0)).map_err(|e| LavaError::new(format!("Could not seek back to file header because of {}", e), LavaErrorLevel::Critical))?;
+
+    let mut csv_reader = csv::ReaderBuilder::new()
+    .has_headers(false)
+    .from_reader(reader);
+
+    let record = csv_reader
+    .records()
+    .nth(header_row)
+    .ok_or_else(|| LavaError::new("No input parameter found.", LavaErrorLevel::Critical))?        .map_err(|e| {
+        LavaError::new(
+            format!("Failed to parse CSV record at header row"),
+            LavaErrorLevel::Critical,
+        )
+    })?;
+    Ok(HeaderInfo{
+        first_data_row: header_row +1,
+        headers: record,
+    })
+
+}
+
+pub fn get_index_of_header<R: BufRead>(reader: R) -> Result<usize> {
     let mut comma_counts: Vec<(usize, usize)> = Vec::new();
 
     for (index, line_result) in reader.lines().enumerate().take(7) {
@@ -50,7 +75,7 @@ pub fn get_index_of_header_functionality<R: BufRead>(reader: R) -> Result<usize>
     Ok(0)
 }
 
-pub fn get_reader_from_certain_header_index(
+pub fn get_reader_from_certain_index(
     header_index: usize,
     log_file: &LogFile,
 ) -> Result<Reader<BufReader<File>>> {
@@ -71,7 +96,7 @@ pub fn get_reader_from_certain_header_index(
         })?;
     }
     let reader = ReaderBuilder::new()
-        .has_headers(true) // Set to false if there's no header
+        .has_headers(false) // Set to false if there's no header
         .from_reader(buf_reader);
     Ok(reader)
 }
@@ -80,9 +105,9 @@ pub fn try_to_get_timestamp_hit_for_csv(
     log_file: &LogFile,
     execution_settings: &ExecutionSettings,
 ) -> Result<IdentifiedTimeInformation> {
-    let header_row = get_index_of_header(log_file)?;
+    let header_row = get_header_info(log_file)?;
     // println!("Using header index {}", header_row);
-    let mut reader = get_reader_from_certain_header_index(header_row, log_file)?;
+    let mut reader = get_reader_from_certain_index(header_row, log_file)?;
     let headers: csv::StringRecord = reader
         .headers()
         .map_err(|e| {
@@ -186,7 +211,7 @@ pub fn set_time_direction_by_scanning_csv_file(
     let header_row = timestamp_hit
         .header_row
         .ok_or_else(|| LavaError::new("No header row found.", LavaErrorLevel::Critical))?;
-    let mut rdr = get_reader_from_certain_header_index(header_row as usize, log_file)?;
+    let mut rdr = get_reader_from_certain_index(header_row as usize, log_file)?;
     let mut direction_checker = TimeDirectionChecker::default();
     for result in rdr.records() {
         // I think I should just include the index in the timestamp hit
@@ -239,7 +264,7 @@ pub fn stream_csv_file(
     let header_row = timestamp_hit
         .header_row
         .ok_or_else(|| LavaError::new("No header row found.", LavaErrorLevel::Critical))?;
-    let mut rdr = get_reader_from_certain_header_index(header_row as usize, log_file)?;
+    let mut rdr = get_reader_from_certain_index(header_row as usize, log_file)?;
     for (index, result) in rdr.records().enumerate() {
         // I think I should just include the index in the timestamp hit
         let record = result.map_err(|e| {

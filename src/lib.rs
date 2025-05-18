@@ -128,6 +128,16 @@ pub fn process_file(
         base_processed_file.sha256hash = Some(hash);
     }
 
+    
+    // Get Header Row
+    let header_row = match get_header_info(log_file){
+        Ok(result) => result,
+        Err(e) => {
+            base_processed_file.errors.push(e);
+            return Ok(base_processed_file);
+        }
+    };
+    base_processed_file.first_data_row_used = header_row.map(|n| n.first_data_row.to_string());
     // get the timestamp field. will do this for all of them, but there will just be some fields that only get filled in for structured datatypes
     let mut timestamp_hit = match try_to_get_timestamp_hit(log_file, execution_settings) {
         Ok(result) => result,
@@ -136,7 +146,6 @@ pub fn process_file(
             return Ok(base_processed_file);
         }
     };
-    base_processed_file.header_index_used = timestamp_hit.header_row.clone().map(|n| n.to_string());
     base_processed_file.time_header = timestamp_hit.column_name.clone();
     base_processed_file.time_format = Some(timestamp_hit.regex_info.pretty_format.clone());
 
@@ -240,6 +249,15 @@ fn get_hash(file_path: &PathBuf) -> Result<String> {
     let hash_hex = format!("{:x}", result);
 
     Ok(hash_hex)
+}
+
+fn get_header_info(log_file: &LogFile) -> Result<Option<HeaderInfo>>{
+    if log_file.log_type == LogType::Csv {
+        let header_info = crate::handlers::csv_handlers::get_header_info(log_file)?;
+        return Ok(Some(header_info));
+    } else {
+        return Ok(None);
+    }
 }
 
 fn try_to_get_timestamp_hit(
