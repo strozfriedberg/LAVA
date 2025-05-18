@@ -18,16 +18,17 @@ pub fn get_header_info(log_file: &LogFile) -> Result<HeaderInfo> {
             LavaErrorLevel::Critical,
         )
     })?;
-    let reader = BufReader::new(file);
+    let mut reader = BufReader::new(file);
 
-    get_header_info_functionality(reader)
+    get_header_info_functionality(&mut reader)
 }
 
-pub fn get_header_info_functionality<R: BufRead + Seek>(mut reader: R) -> Result<HeaderInfo> {
-    let header_row = get_index_of_header(&reader)?;
+pub fn get_header_info_functionality<R: BufRead + Seek>(reader: &mut R) -> Result<HeaderInfo> {
+    let header_row = get_index_of_header(reader)?;
     reader.seek(SeekFrom::Start(0)).map_err(|e| LavaError::new(format!("Could not seek back to file header because of {}", e), LavaErrorLevel::Critical))?;
 
     let mut csv_reader = csv::ReaderBuilder::new()
+    .flexible(true)
     .has_headers(false)
     .from_reader(reader);
 
@@ -36,7 +37,7 @@ pub fn get_header_info_functionality<R: BufRead + Seek>(mut reader: R) -> Result
     .nth(header_row)
     .ok_or_else(|| LavaError::new("No input parameter found.", LavaErrorLevel::Critical))?        .map_err(|e| {
         LavaError::new(
-            format!("Failed to parse CSV record at header row"),
+            format!("Failed to parse CSV record at header row because of {}", e),
             LavaErrorLevel::Critical,
         )
     })?;
@@ -47,7 +48,7 @@ pub fn get_header_info_functionality<R: BufRead + Seek>(mut reader: R) -> Result
 
 }
 
-pub fn get_index_of_header<R: BufRead>(reader: &R) -> Result<usize> {
+pub fn get_index_of_header<R: BufRead>(reader: &mut R) -> Result<usize> {
     let mut comma_counts: Vec<(usize, usize)> = Vec::new();
 
     for (index, line_result) in reader.lines().enumerate().take(7) {

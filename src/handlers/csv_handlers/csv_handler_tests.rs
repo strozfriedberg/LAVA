@@ -15,9 +15,9 @@ fn test_get_header_info_on_row_0() {
         4,James,2025-06-01 13:00:00\n";
 
     let cursor = Cursor::new(data);
-    let reader = BufReader::new(cursor);
+    let mut reader = BufReader::new(cursor);
 
-    let result = get_header_info_functionality(reader);
+    let result = get_header_info_functionality(&mut reader);
 
     let expected = HeaderInfo{
         first_data_row: 1,
@@ -37,9 +37,9 @@ fn test_get_header_info_on_row_1() {
         4,James,2025-06-01 13:00:00\n";
 
     let cursor = Cursor::new(data);
-    let reader = BufReader::new(cursor);
+    let mut reader = BufReader::new(cursor);
 
-    let result = get_header_info_functionality(reader);
+    let result = get_header_info_functionality(&mut reader);
 
     let expected = HeaderInfo{
         first_data_row: 2,
@@ -60,9 +60,9 @@ fn test_get_header_info_on_row_2() {
         4,James,2025-06-01 13:00:00\n";
 
     let cursor = Cursor::new(data);
-    let reader = BufReader::new(cursor);
+    let mut reader = BufReader::new(cursor);
 
-    let result = get_header_info_functionality(reader);
+    let result = get_header_info_functionality(&mut reader);
 
     let expected = HeaderInfo{
         first_data_row: 3,
@@ -82,9 +82,9 @@ fn test_get_header_info_no_timestamp() {
         4,James\n";
 
     let cursor = Cursor::new(data);
-    let reader = BufReader::new(cursor);
+    let mut reader = BufReader::new(cursor);
 
-    let result = get_header_info_functionality(reader);
+    let result = get_header_info_functionality(&mut reader);
 
     let expected = HeaderInfo{
         first_data_row: 2,
@@ -104,9 +104,9 @@ fn test_get_header_info_timestamp_but_not_consistent() {
         4,James,2025-06-01 13:00:00\n";
 
     let cursor = Cursor::new(data);
-    let reader = BufReader::new(cursor);
+    let mut reader = BufReader::new(cursor);
 
-    let result = get_header_info_functionality(reader);
+    let result = get_header_info_functionality(&mut reader);
 
     let expected = HeaderInfo{
         first_data_row: 2,
@@ -124,9 +124,9 @@ fn test_get_header_info_less_than_5_rows() {
         4,James,2025-06-01 13:00:00\n";
 
     let cursor = Cursor::new(data);
-    let reader = BufReader::new(cursor);
+    let mut reader = BufReader::new(cursor);
 
-    let result = get_header_info_functionality(reader);
+    let result = get_header_info_functionality(&mut reader);
 
     let expected = HeaderInfo{
         first_data_row: 1,
