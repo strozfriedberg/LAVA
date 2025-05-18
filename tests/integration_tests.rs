@@ -47,6 +47,50 @@ fn integration_test_successful_run_no_errors() {
     let output = process_file(log_file, &settings);
     let processed = output.expect("Failed to get Proceesed Log File");
     assert_eq!(0, processed.errors.len());
+    assert_eq!("2025-05-09 10:00:00", processed.min_timestamp.unwrap());
+    assert_eq!("2025-06-01 13:00:00", processed.max_timestamp.unwrap());
+    temp_log_file.delete_temp_file();
+}
+
+#[test]
+fn integration_test_successful_run_no_errors_junk_value() {
+    let data = "\
+    garbage\n\
+    id,name,date\n\
+    1,John,2025-05-09 10:00:00\n\
+    2,Jane,2025-05-10 11:00:00\n\
+    4,James,2025-06-01 13:00:00\n";
+
+    let temp_log_file = TempInputFile::new(LogType::Csv, data);
+    let log_file = temp_log_file.get_log_file_object();
+    let settings = ExecutionSettings::create_integration_test_object(None, false);
+
+    let output = process_file(log_file, &settings);
+    let processed = output.expect("Failed to get Proceesed Log File");
+    assert_eq!(0, processed.errors.len());
+    assert_eq!("2025-05-09 10:00:00", processed.min_timestamp.unwrap());
+    assert_eq!("2025-06-01 13:00:00", processed.max_timestamp.unwrap());
+    temp_log_file.delete_temp_file();
+}
+
+#[test]
+fn integration_test_successful_run_no_errors_junk_value_descending() {
+    let data = "\
+    garbage\n\
+    id,name,date\n\
+    4,James,2025-06-01 13:00:00\n\
+    2,Jane,2025-05-10 11:00:00\n\
+    1,John,2025-05-09 10:00:00\n";
+
+    let temp_log_file = TempInputFile::new(LogType::Csv, data);
+    let log_file = temp_log_file.get_log_file_object();
+    let settings = ExecutionSettings::create_integration_test_object(None, false);
+
+    let output = process_file(log_file, &settings);
+    let processed = output.expect("Failed to get Proceesed Log File");
+    assert_eq!(0, processed.errors.len());
+    assert_eq!("2025-05-09 10:00:00", processed.min_timestamp.unwrap());
+    assert_eq!("2025-06-01 13:00:00", processed.max_timestamp.unwrap());
     temp_log_file.delete_temp_file();
 }
 
