@@ -24,7 +24,7 @@ pub fn get_header_info(log_file: &LogFile) -> Result<HeaderInfo> {
 }
 
 pub fn get_header_info_functionality<R: BufRead + Seek>(mut reader: R) -> Result<HeaderInfo> {
-    let header_row = get_index_of_header(reader)?;
+    let header_row = get_index_of_header(&reader)?;
     reader.seek(SeekFrom::Start(0)).map_err(|e| LavaError::new(format!("Could not seek back to file header because of {}", e), LavaErrorLevel::Critical))?;
 
     let mut csv_reader = csv::ReaderBuilder::new()
@@ -41,13 +41,13 @@ pub fn get_header_info_functionality<R: BufRead + Seek>(mut reader: R) -> Result
         )
     })?;
     Ok(HeaderInfo{
-        first_data_row: header_row +1,
+        first_data_row: header_row + 1,
         headers: record,
     })
 
 }
 
-pub fn get_index_of_header<R: BufRead>(reader: R) -> Result<usize> {
+pub fn get_index_of_header<R: BufRead>(reader: &R) -> Result<usize> {
     let mut comma_counts: Vec<(usize, usize)> = Vec::new();
 
     for (index, line_result) in reader.lines().enumerate().take(7) {
@@ -104,19 +104,10 @@ pub fn get_reader_from_certain_index(
 pub fn try_to_get_timestamp_hit_for_csv(
     log_file: &LogFile,
     execution_settings: &ExecutionSettings,
+    header_info: HeaderInfo,
 ) -> Result<IdentifiedTimeInformation> {
-    let header_row = get_header_info(log_file)?;
     // println!("Using header index {}", header_row);
-    let mut reader = get_reader_from_certain_index(header_row, log_file)?;
-    let headers: csv::StringRecord = reader
-        .headers()
-        .map_err(|e| {
-            LavaError::new(
-                format!("Unable to get headers because of {e}"),
-                LavaErrorLevel::Critical,
-            )
-        })?
-        .clone(); // this returns a &StringRecord
+    let mut reader = get_reader_from_certain_index(header_info.first_data_row, log_file)?;
 
     let record: csv::StringRecord = reader.records().next().unwrap().map_err(|e| {
         LavaError::new(
@@ -126,10 +117,9 @@ pub fn try_to_get_timestamp_hit_for_csv(
     })?; // This is returning a result, that is why I had to use the question mark below before the iter()
 
     let mut response =
-        try_to_get_timestamp_hit_for_csv_functionality(headers, record, execution_settings);
+        try_to_get_timestamp_hit_for_csv_functionality(header_info.headers, record, execution_settings);
     match response {
         Ok(ref mut partial) => {
-            partial.header_row = Some(header_row as u64);
             println!(
                 "Found match for '{}' time format in the '{}' column of {}",
                 partial.regex_info.pretty_format,
@@ -166,9 +156,7 @@ pub fn try_to_get_timestamp_hit_for_csv_functionality(
                         )
                     })?) {
                         return Ok(IdentifiedTimeInformation {
-                            header_row: None,
                             column_name: Some(headers.get(i).unwrap().to_string()),
-                            headers: Some(headers),
                             column_index: Some(i),
                             direction: None,
                             regex_info: date_regex.clone(),
@@ -186,9 +174,7 @@ pub fn try_to_get_timestamp_hit_for_csv_functionality(
             for date_regex in execution_settings.regexes.iter() {
                 if date_regex.string_contains_date(field) {
                     return Ok(IdentifiedTimeInformation {
-                        header_row: None,
                         column_name: Some(headers.get(i).unwrap().to_string()),
-                        headers: Some(headers),
                         column_index: Some(i),
                         direction: None,
                         regex_info: date_regex.clone(),
@@ -207,11 +193,9 @@ pub fn try_to_get_timestamp_hit_for_csv_functionality(
 pub fn set_time_direction_by_scanning_csv_file(
     log_file: &LogFile,
     timestamp_hit: &mut IdentifiedTimeInformation,
+    header_info: HeaderInfo,
 ) -> Result<()> {
-    let header_row = timestamp_hit
-        .header_row
-        .ok_or_else(|| LavaError::new("No header row found.", LavaErrorLevel::Critical))?;
-    let mut rdr = get_reader_from_certain_index(header_row as usize, log_file)?;
+    let mut rdr = get_reader_from_certain_index(header_info.first_data_row, log_file)?;
     let mut direction_checker = TimeDirectionChecker::default();
     for result in rdr.records() {
         // I think I should just include the index in the timestamp hit
@@ -252,19 +236,17 @@ pub fn stream_csv_file(
     log_file: &LogFile,
     timestamp_hit: &IdentifiedTimeInformation,
     execution_settings: &ExecutionSettings,
+    header_info: HeaderInfo,
 ) -> Result<LogRecordProcessor> {
     // not sure we want to include the whole hashset in this? Maybe only inlcude results
     let mut processing_object = LogRecordProcessor::new(
         timestamp_hit.direction.clone(),
         execution_settings,
         get_file_stem(log_file)?,
-        timestamp_hit.headers.clone(),
+        Some(header_info.headers),
     );
 
-    let header_row = timestamp_hit
-        .header_row
-        .ok_or_else(|| LavaError::new("No header row found.", LavaErrorLevel::Critical))?;
-    let mut rdr = get_reader_from_certain_index(header_row as usize, log_file)?;
+    let mut rdr = get_reader_from_certain_index(header_info.first_data_row, log_file)?;
     for (index, result) in rdr.records().enumerate() {
         // I think I should just include the index in the timestamp hit
         let record = result.map_err(|e| {
