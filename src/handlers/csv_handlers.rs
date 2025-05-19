@@ -262,8 +262,10 @@ pub fn stream_csv_file(
                         .ok_or_else(|| {
                             LavaError::new(
                                 format!(
-                                    "No supported timestamp found timestamp column at index {}",
-                                    index
+                                    "The identified timestamp format {} could not be parsed from {} at index {}",
+                                    timestamp_hit.regex_info.pretty_format,
+                                    value,
+                                    index,
                                 ),
                                 LavaErrorLevel::Critical,
                             )

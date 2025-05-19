@@ -1,3 +1,12 @@
+- pretty_format: "YYYY-MM-DDTHH:MM:SS.SSSZ"
+  regex: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?Z"
+  strftime_format: "%Y-%m-%dT%H:%M:%S%.3fZ"
+  should_match: 
+    - "2023-01-01T01:00:00Z"
+    - "2023-01-01T01:00:00.000Z"
+  should_not_match:
+    - "2023-01-01T01:00:00"
+
 - pretty_format: "Mon D, YYYY h:MM:SS AM/PM"
   regex: "[A-Za-z]{3} \\d{1,2}, \\d{4} \\d{1,2}:\\d{2}:\\d{2} [AP]M"
   strftime_format: "%b %e, %Y %l:%M:%S %p"
@@ -29,11 +38,3 @@
   should_match: 
     - "2023-01-01 01:00:00"
   should_not_match:
-
-- pretty_format: "YYYY-MM-DDTHH:MM:SSZ"
-  regex: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z"
-  strftime_format: "%Y-%m-%dT%H:%M:%SZ"
-  should_match: 
-    - "2023-01-01T01:00:00Z"
-  should_not_match:
-    - "2023-01-01T01:00:00"
