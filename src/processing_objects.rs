@@ -60,7 +60,7 @@ pub struct LogRecordProcessor {
 
 impl LogRecordProcessor {
     pub fn new(
-        order: Option<TimeDirection>,
+        timestamp_hit: &Option<IdentifiedTimeInformation>,
         execution_settings: &ExecutionSettings,
         log_file_stem: String,
         headers: Option<StringRecord>,
@@ -69,12 +69,20 @@ impl LogRecordProcessor {
             Some(csv_headers) => csv_headers,
             None => StringRecord::from(vec!["Record"]),
         };
+        let process_timestamps = match timestamp_hit {
+            Some(_) => true,
+            None => false,
+        };
+        let order = match timestamp_hit {
+            Some(hit) => hit.direction.clone(),
+            None => None,
+        };
         Self {
             order,
             execution_settings: execution_settings.clone(),
             file_name: log_file_stem,
             data_field_headers: data_field_headers,
-            process_timestamps: true,
+            process_timestamps: process_timestamps,
             ..Default::default()
         }
     }
@@ -220,39 +228,46 @@ impl LogRecordProcessor {
     }
 
     pub fn process_timestamp(&mut self, record: &LogFileRecord) -> Result<()> {
+        let current_timestamp = record.timestamp.ok_or_else(|| {
+            LavaError::new(
+                "No timestamp field in a given record when processing for time analysis",
+                LavaErrorLevel::Critical,
+            )
+        })?;
         if let Some(previous_datetime) = self.previous_timestamp {
             // This is where all logic is done if it isn't the first record
             if self.order == Some(TimeDirection::Ascending) {
-                if previous_datetime > record.timestamp {
+                if previous_datetime > current_timestamp {
                     self.handle_first_out_of_order_timestamp(record);
                     return Ok(());
                 }
-                self.max_timestamp = Some(record.timestamp)
+                self.max_timestamp = Some(current_timestamp)
             } else if self.order == Some(TimeDirection::Descending) {
-                if previous_datetime < record.timestamp {
+                if previous_datetime < current_timestamp {
                     self.handle_first_out_of_order_timestamp(record);
                     return Ok(());
                 }
-                self.min_timestamp = Some(record.timestamp)
+                self.min_timestamp = Some(current_timestamp)
             }
-            let current_time_gap = TimeGap::new(previous_datetime, record.timestamp);
+            let current_time_gap = TimeGap::new(previous_datetime, current_timestamp);
             if let Some(largest_time_gap) = self.largest_time_gap {
                 if current_time_gap > largest_time_gap {
-                    self.largest_time_gap = Some(TimeGap::new(previous_datetime, record.timestamp));
+                    self.largest_time_gap =
+                        Some(TimeGap::new(previous_datetime, current_timestamp));
                 }
             } else {
                 // This is the second row, intialize the time gap
-                self.largest_time_gap = Some(TimeGap::new(previous_datetime, record.timestamp));
+                self.largest_time_gap = Some(TimeGap::new(previous_datetime, current_timestamp));
             }
         } else {
             // This is the first row, inialize either the min or max timestamp
             if self.order == Some(TimeDirection::Ascending) {
-                self.min_timestamp = Some(record.timestamp)
+                self.min_timestamp = Some(current_timestamp)
             } else if self.order == Some(TimeDirection::Descending) {
-                self.max_timestamp = Some(record.timestamp)
+                self.max_timestamp = Some(current_timestamp)
             }
         }
-        self.previous_timestamp = Some(record.timestamp);
+        self.previous_timestamp = Some(current_timestamp);
         Ok(())
     }
 

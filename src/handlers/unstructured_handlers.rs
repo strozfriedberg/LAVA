@@ -78,11 +78,11 @@ pub fn set_time_direction_by_scanning_unstructured_file(
 
 pub fn stream_unstructured_file(
     log_file: &LogFile,
-    timestamp_hit: &IdentifiedTimeInformation,
+    timestamp_hit: &Option<IdentifiedTimeInformation>,
     execution_settings: &ExecutionSettings,
 ) -> Result<LogRecordProcessor> {
     let mut processing_object = LogRecordProcessor::new(
-        timestamp_hit.direction.clone(),
+        timestamp_hit,
         execution_settings,
         get_file_stem(log_file)?,
         None,
@@ -101,17 +101,17 @@ pub fn stream_unstructured_file(
                 LavaErrorLevel::Critical,
             )
         })?;
-        // let hash_of_record = hash_string(&line);
-        if let Some(current_datetime) = timestamp_hit
-            .regex_info
-            .get_timestamp_object_from_string_contianing_date(line.clone())?
-        {
-            processing_object.process_record(LogFileRecord::new(
-                index,
-                current_datetime,
-                StringRecord::from(vec![line]),
-            ))?;
-        }
+        let current_datetime = match timestamp_hit {
+            None => None,
+            Some(timestamp_hit) => timestamp_hit
+                .regex_info
+                .get_timestamp_object_from_string_contianing_date(line.clone())?,
+        };
+        processing_object.process_record(LogFileRecord::new(
+            index,
+            current_datetime,
+            StringRecord::from(vec![line]),
+        ))?;
     }
     Ok(processing_object)
 }

@@ -97,12 +97,12 @@ pub struct TimeStatisticsFields {
 pub struct LogFileRecord {
     pub hash_of_entire_record: u64,
     pub raw_record: StringRecord,
-    pub timestamp: NaiveDateTime,
+    pub timestamp: Option<NaiveDateTime>,
     pub index: usize,
 }
 
 impl LogFileRecord {
-    pub fn new(index: usize, timestamp: NaiveDateTime, record: StringRecord) -> Self {
+    pub fn new(index: usize, timestamp: Option<NaiveDateTime>, record: StringRecord) -> Self {
         let mut record_to_output = StringRecord::from(vec![index.to_string()]);
         record_to_output.extend(record.iter());
         Self {
@@ -174,8 +174,6 @@ impl TimeGap {
 
 #[derive(Debug, Clone)]
 pub struct IdentifiedTimeInformation {
-    // pub header_row: Option<u64>,
-    // pub headers: Option<StringRecord>,
     pub column_name: Option<String>,
     pub column_index: Option<usize>,
     pub regex_info: DateRegex,

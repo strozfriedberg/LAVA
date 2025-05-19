@@ -226,13 +226,13 @@ pub fn set_time_direction_by_scanning_csv_file(
 
 pub fn stream_csv_file(
     log_file: &LogFile,
-    timestamp_hit: &IdentifiedTimeInformation,
+    timestamp_hit: &Option<IdentifiedTimeInformation>,
     execution_settings: &ExecutionSettings,
     header_info: HeaderInfo,
 ) -> Result<LogRecordProcessor> {
     // not sure we want to include the whole hashset in this? Maybe only inlcude results
     let mut processing_object = LogRecordProcessor::new(
-        timestamp_hit.direction.clone(),
+        timestamp_hit,
         execution_settings,
         get_file_stem(log_file)?,
         Some(header_info.headers),
@@ -247,23 +247,31 @@ pub fn stream_csv_file(
                 LavaErrorLevel::Critical,
             )
         })?;
-        let value = record
-            .get(timestamp_hit.column_index.unwrap())
-            .ok_or_else(|| {
-                LavaError::new("Index of date field not found", LavaErrorLevel::Critical)
-            })?;
-        let current_datetime: NaiveDateTime = timestamp_hit
-            .regex_info
-            .get_timestamp_object_from_string_contianing_date(value.to_string())?
-            .ok_or_else(|| {
-                LavaError::new(
-                    format!(
-                        "No supported timestamp found timestamp column at index {}",
-                        index
-                    ),
-                    LavaErrorLevel::Critical,
+        let current_datetime = match timestamp_hit {
+            None => None,
+            Some(timestamp_hit) => {
+                let value = record
+                    .get(timestamp_hit.column_index.unwrap())
+                    .ok_or_else(|| {
+                        LavaError::new("Index of date field not found", LavaErrorLevel::Critical)
+                    })?;
+                Some(
+                    timestamp_hit
+                        .regex_info
+                        .get_timestamp_object_from_string_contianing_date(value.to_string())?
+                        .ok_or_else(|| {
+                            LavaError::new(
+                                format!(
+                                    "No supported timestamp found timestamp column at index {}",
+                                    index
+                                ),
+                                LavaErrorLevel::Critical,
+                            )
+                        })?,
                 )
-            })?;
+            }
+        };
+
         processing_object.process_record(LogFileRecord::new(index, current_datetime, record))?
     }
     Ok(processing_object)

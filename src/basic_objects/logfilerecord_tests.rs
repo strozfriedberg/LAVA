@@ -4,10 +4,12 @@ use chrono::NaiveDate;
 #[test]
 fn test_log_file_record_new() {
     let index = 1;
-    let timestamp = NaiveDate::from_ymd_opt(2023, 5, 1)
-        .unwrap()
-        .and_hms_opt(12, 0, 0)
-        .unwrap();
+    let timestamp = Some(
+        NaiveDate::from_ymd_opt(2023, 5, 1)
+            .unwrap()
+            .and_hms_opt(12, 0, 0)
+            .unwrap(),
+    );
     let raw = StringRecord::from(vec!["value1", "value2"]);
 
     let record = LogFileRecord::new(index, timestamp, raw.clone());
@@ -26,7 +28,7 @@ fn test_get_record_to_output_duplicate() {
         .and_hms_opt(10, 30, 0)
         .unwrap();
     let raw = StringRecord::from(vec!["foo", "bar"]);
-    let record = LogFileRecord::new(index, timestamp, raw.clone());
+    let record = LogFileRecord::new(index, Some(timestamp), raw.clone());
 
     let output = record.get_record_to_output(&AlertOutputType::Duplicate, None);
     let expected = {
@@ -49,7 +51,7 @@ fn test_get_record_to_output_redaction() {
         .and_hms_opt(9, 0, 0)
         .unwrap();
     let raw = StringRecord::from(vec!["redact", "this"]);
-    let record = LogFileRecord::new(index, timestamp, raw.clone());
+    let record = LogFileRecord::new(index, Some(timestamp), raw.clone());
 
     let output =
         record.get_record_to_output(&AlertOutputType::Redaction, Some("Test Rule".to_string()));

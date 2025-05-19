@@ -315,7 +315,11 @@ fn set_time_direction_by_scanning_file(
                 LavaErrorLevel::Critical,
             )
         })?;
-        return set_time_direction_by_scanning_csv_file(log_file, timestamp_hit, header_info_unwrapped);
+        return set_time_direction_by_scanning_csv_file(
+            log_file,
+            timestamp_hit,
+            header_info_unwrapped,
+        );
     }
     if log_file.log_type == LogType::Unstructured {
         return set_time_direction_by_scanning_unstructured_file(log_file, timestamp_hit);

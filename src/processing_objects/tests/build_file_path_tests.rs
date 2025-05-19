@@ -1,5 +1,5 @@
 use super::super::*;
-use crate::basic_objects::{AlertOutputType, ExecutionSettings, TimeDirection};
+use crate::{basic_objects::{AlertOutputType, ExecutionSettings, TimeDirection}, test_helpers::build_fake_timestamp_hit_from_direction};
 use std::path::PathBuf;
 
 #[test]
@@ -9,7 +9,7 @@ fn test_build_file_path_duplicate() {
         ..Default::default()
     };
     let processor = LogRecordProcessor::new(
-        Some(TimeDirection::Descending),
+        &build_fake_timestamp_hit_from_direction(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
         None,
@@ -31,7 +31,7 @@ fn test_build_file_path_duplicate_weird_path() {
         ..Default::default()
     };
     let processor = LogRecordProcessor::new(
-        Some(TimeDirection::Descending),
+        &build_fake_timestamp_hit_from_direction(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
         None,
@@ -53,7 +53,7 @@ fn test_build_file_path_redaction() {
         ..Default::default()
     };
     let processor = LogRecordProcessor::new(
-        Some(TimeDirection::Descending),
+        &build_fake_timestamp_hit_from_direction(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
         None,

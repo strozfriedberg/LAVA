@@ -183,9 +183,7 @@ fn get_csv_timestamp_hit_does_not_find_valid_timestamp() {
     let result =
         try_to_get_timestamp_hit_for_csv_functionality(headers.clone(), record.clone(), &test_args);
 
-    assert!(result.is_err());
-    let error = result.unwrap_err();
-    assert_eq!(error.to_string(), "Could not find a supported timestamp.");
+    assert!(result.unwrap().is_none());
 }
 
 #[test]

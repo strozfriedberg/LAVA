@@ -7,7 +7,7 @@ use csv::StringRecord;
 fn test_process_record_contains_redaction() {
     let settings = ExecutionSettings::default();
     let mut processor = LogRecordProcessor::new(
-        Some(TimeDirection::Descending),
+        &build_fake_timestamp_hit_from_direction(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
         None,
@@ -34,7 +34,7 @@ fn test_process_record_contains_redaction() {
 fn test_process_record_contains_redactions_multiple_columns() {
     let settings = ExecutionSettings::default();
     let mut processor = LogRecordProcessor::new(
-        Some(TimeDirection::Descending),
+        &build_fake_timestamp_hit_from_direction(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
         None,

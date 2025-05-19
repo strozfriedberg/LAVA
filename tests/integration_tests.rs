@@ -224,7 +224,7 @@ fn integration_test_no_timestamps_duplicates_and_redactions() {
     assert_eq!(None, processed.min_max_duration);
     assert_eq!(None, processed.largest_gap);
     assert_eq!(None, processed.largest_gap_duration);
-    assert_eq!("2", processed.num_dupes.unwrap());
+    assert_eq!("1", processed.num_dupes.unwrap());
     assert_eq!("0", processed.num_redactions.unwrap());
     temp_log_file.delete_temp_file();
 }

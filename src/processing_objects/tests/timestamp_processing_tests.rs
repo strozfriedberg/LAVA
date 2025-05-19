@@ -7,7 +7,7 @@ use csv::StringRecord;
 fn processes_ascending_records_correctly() {
     let settings = ExecutionSettings::default();
     let mut processor = LogRecordProcessor::new(
-        Some(TimeDirection::Ascending),
+        &build_fake_timestamp_hit_from_direction(TimeDirection::Ascending),
         &settings,
         "Test".to_string(),
         None,
@@ -58,7 +58,7 @@ fn processes_ascending_records_correctly() {
 fn processes_ascending_records_same_time_gap_correctly() {
     let settings = ExecutionSettings::default();
     let mut processor = LogRecordProcessor::new(
-        Some(TimeDirection::Ascending),
+        &build_fake_timestamp_hit_from_direction(TimeDirection::Ascending),
         &settings,
         "Test".to_string(),
         None,
@@ -109,7 +109,7 @@ fn processes_ascending_records_same_time_gap_correctly() {
 fn processes_descending_records_correctly() {
     let settings = ExecutionSettings::default();
     let mut processor = LogRecordProcessor::new(
-        Some(TimeDirection::Descending),
+        &build_fake_timestamp_hit_from_direction(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
         None,
@@ -160,7 +160,7 @@ fn processes_descending_records_correctly() {
 fn detects_out_of_order_in_ascending() {
     let settings = ExecutionSettings::default();
     let mut processor = LogRecordProcessor::new(
-        Some(TimeDirection::Ascending),
+        &build_fake_timestamp_hit_from_direction(TimeDirection::Ascending),
         &settings,
         "Test".to_string(),
         None,
@@ -191,7 +191,7 @@ fn detects_out_of_order_in_ascending() {
 fn detects_out_of_order_in_descending() {
     let settings = ExecutionSettings::default();
     let mut processor = LogRecordProcessor::new(
-        Some(TimeDirection::Descending),
+        &build_fake_timestamp_hit_from_direction(TimeDirection::Descending),
         &settings,
         "Test".to_string(),
         None,
