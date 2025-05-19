@@ -1,5 +1,8 @@
 use super::super::*;
-use crate::{basic_objects::{AlertOutputType, ExecutionSettings, TimeDirection}, test_helpers::build_fake_timestamp_hit_from_direction};
+use crate::{
+    basic_objects::{AlertOutputType, ExecutionSettings, TimeDirection},
+    test_helpers::build_fake_timestamp_hit_from_direction,
+};
 use std::path::PathBuf;
 
 #[test]

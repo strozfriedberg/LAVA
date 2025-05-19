@@ -116,15 +116,15 @@ fn integration_test_successful_run_duplicates_and_redactions() {
     temp_log_file.delete_temp_file();
 }
 
-
 #[test]
-fn integration_test_successful_run_one_weird_timestamp() {
+fn integration_test_successful_run_one_weird_timestamp_in_middle() {
     let data = "\
     id,name,date\n\
     1,John,2025-05-09 10:00:00\n\
     2,Jane,2025-05-10 11:00:00\n\
     2,Jane,2025-05-10 11:30:00\n\
     2,Jane,2025-05-10 1da1:30:00\n\
+    2,Jane,2025-05-10 1da1:3sdsd:00\n\
     4,James,2025-06-01 13:00:00\n";
 
     let temp_log_file = TempInputFile::new(LogType::Csv, data);
@@ -133,7 +133,8 @@ fn integration_test_successful_run_one_weird_timestamp() {
 
     let output = process_file(log_file, &settings);
     let processed = output.expect("Failed to get Proceesed Log File");
-    assert_eq!(1, processed.errors.len());
+    assert_eq!(2, processed.errors.len());
+    println!("{:?}", processed.errors[0]);
     assert_eq!("2025-06-01 13:00:00", processed.max_timestamp.unwrap());
     assert_eq!("2025-05-09 10:00:00", processed.min_timestamp.unwrap());
     temp_log_file.delete_temp_file();

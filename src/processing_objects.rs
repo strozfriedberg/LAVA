@@ -228,12 +228,19 @@ impl LogRecordProcessor {
     }
 
     pub fn process_timestamp(&mut self, record: &LogFileRecord) -> Result<()> {
-        let current_timestamp = record.timestamp.ok_or_else(|| {
-            LavaError::new(
-                "No timestamp field in a given record when processing for time analysis",
-                LavaErrorLevel::Critical,
-            )
-        })?;
+        let current_timestamp = match record.timestamp {
+            Some(timestamp) => timestamp,
+            None => {
+                self.errors.push(LavaError::new(
+                    format!(
+                        "The identified timestamp format could not be parsed from the timestamp field at index {}",
+                        record.index,
+                    ),
+                    LavaErrorLevel::Critical,
+                ));
+                return Ok(());
+            }
+        };
         if let Some(previous_datetime) = self.previous_timestamp {
             // This is where all logic is done if it isn't the first record
             if self.order == Some(TimeDirection::Ascending) {

@@ -12,7 +12,9 @@ pub fn make_fake_record(index: usize, timestamp_str: &str, record: StringRecord)
     )
 }
 
-pub fn build_fake_timestamp_hit_from_direction(direction: TimeDirection) -> Option<IdentifiedTimeInformation>{
+pub fn build_fake_timestamp_hit_from_direction(
+    direction: TimeDirection,
+) -> Option<IdentifiedTimeInformation> {
     let regex = Regex::new(".*").ok()?; // Match anything
 
     let fake_regex_info = DateRegex {
@@ -26,7 +28,6 @@ pub fn build_fake_timestamp_hit_from_direction(direction: TimeDirection) -> Opti
         regex_info: fake_regex_info, // Assumes DateRegex implements Default
         direction: Some(direction),
     })
-
 }
 pub fn dt(s: &str) -> NaiveDateTime {
     NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S").unwrap()

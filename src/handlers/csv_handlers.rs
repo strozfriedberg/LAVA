@@ -255,22 +255,9 @@ pub fn stream_csv_file(
                     .ok_or_else(|| {
                         LavaError::new("Index of date field not found", LavaErrorLevel::Critical)
                     })?;
-                Some(
-                    timestamp_hit
-                        .regex_info
-                        .get_timestamp_object_from_string_contianing_date(value.to_string())?
-                        .ok_or_else(|| {
-                            LavaError::new(
-                                format!(
-                                    "The identified timestamp format {} could not be parsed from {} at index {}",
-                                    timestamp_hit.regex_info.pretty_format,
-                                    value,
-                                    index,
-                                ),
-                                LavaErrorLevel::Critical,
-                            )
-                        })?,
-                )
+                timestamp_hit
+                    .regex_info
+                    .get_timestamp_object_from_string_contianing_date(value.to_string())?
             }
         };
 
