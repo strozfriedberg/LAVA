@@ -1,6 +1,7 @@
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, LavaError>;
+use std::fmt;
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum LavaErrorLevel {
@@ -9,6 +10,17 @@ pub enum LavaErrorLevel {
     Medium,
     Low,
     Info,
+}
+impl fmt::Display for LavaErrorLevel {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            LavaErrorLevel::Critical => write!(f, "CRITICAL"),
+            LavaErrorLevel::High => write!(f, "HIGH"),
+            LavaErrorLevel::Medium => write!(f, "MEDIUM"),
+            LavaErrorLevel::Low => write!(f, "LOW"),
+            LavaErrorLevel::Info => write!(f, "INFO"),
+        }
+    }
 }
 
 #[derive(Debug, Error, Clone)]

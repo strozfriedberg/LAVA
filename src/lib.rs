@@ -61,7 +61,11 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
         .par_iter()
         .map(|path| process_file(path, &execution_settings).expect("Error processing file"))
         .collect();
+
     // Make a line here to go through each ProcessedLogFile, and write that to the error log
+    if let Err(e) = write_errors_to_error_log(&results, &execution_settings) {
+        eprintln!("Failed to write errors to error log {}", e);
+    }
     if let Err(e) = write_output_to_csv(&results, &execution_settings) {
         eprintln!("Failed to write to CSV: {}", e);
     }
@@ -138,7 +142,7 @@ pub fn process_file(
         }
     };
 
-    // get the timestamp field. will do this for all of them, but there will just be some fields that only get filled in for structured datatypes
+    // get the timestamp field, if it doesn't find one the file will still be processed for dupes and redactions
     let potential_timestamp_hit =
         match try_to_get_timestamp_hit(log_file, execution_settings, header_info.clone()) {
             Ok(Some(mut timestamp_hit)) => {
