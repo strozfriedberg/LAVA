@@ -10,7 +10,7 @@ use std::io::{BufWriter, Write};
 
 pub fn generate_log_filename() -> String {
     let now = Utc::now();
-    let formatted = now.format("%Y-%m-%d_%H-%M-%S_LogCheck_Output.csv");
+    let formatted = now.format("%Y-%m-%d_%H-%M-%S_LAVA_Output.csv");
     formatted.to_string()
 }
 
