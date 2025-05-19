@@ -88,12 +88,12 @@ impl LogRecordProcessor {
     }
     pub fn process_record(&mut self, record: LogFileRecord) -> Result<()> {
         self.num_records += 1;
-        //Check for duplicates
+
         if !self.execution_settings.quick_mode {
             self.process_record_for_dupes(&record)?;
             self.process_record_for_redactions(&record)?;
         }
-        //Update earliest and latest timestamp
+
         if self.process_timestamps {
             self.process_timestamp(&record)?;
         }
@@ -236,7 +236,7 @@ impl LogRecordProcessor {
                         "The identified timestamp format could not be parsed from the timestamp field at index {}",
                         record.index,
                     ),
-                    LavaErrorLevel::Critical,
+                    LavaErrorLevel::Medium,
                 ));
                 return Ok(());
             }
