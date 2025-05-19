@@ -6,7 +6,7 @@ use chrono::NaiveDateTime;
 use csv::Reader;
 use csv::ReaderBuilder;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Cursor, Seek, SeekFrom};
+use std::io::{BufRead, BufReader, Seek, SeekFrom};
 #[cfg(test)]
 mod csv_handler_tests;
 

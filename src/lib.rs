@@ -1,4 +1,3 @@
-use core::time;
 use glob::glob;
 use rayon::prelude::*;
 use sha2::{Digest, Sha256};

@@ -1,5 +1,5 @@
 use lava::{
-    basic_objects::{ExecutionSettings, LogFile, LogType, ProcessedLogFile},
+    basic_objects::{ExecutionSettings, LogFile, LogType},
     process_file,
 };
 use std::fs;
