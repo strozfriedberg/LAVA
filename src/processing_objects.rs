@@ -115,7 +115,11 @@ impl LogRecordProcessor {
                 self.num_redactions += 1;
                 // println!("Found redaction in record {:?}", record.raw_record);
                 if self.execution_settings.actually_write_to_files {
-                    match self.write_hit_to_file(record, AlertOutputType::Redaction, Some(redaction.name.clone())) {
+                    match self.write_hit_to_file(
+                        record,
+                        AlertOutputType::Redaction,
+                        Some(redaction.name.clone()),
+                    ) {
                         Ok(()) => (),
                         Err(e) => self.errors.push(e),
                     }

@@ -9,7 +9,7 @@ use std::io::{BufRead, BufReader};
 pub fn try_to_get_timestamp_hit_for_unstructured(
     log_file: &LogFile,
     execution_settings: &ExecutionSettings,
-) -> Result<IdentifiedTimeInformation> {
+) -> Result<Option<IdentifiedTimeInformation>> {
     let file = File::open(&log_file.file_path).map_err(|e| {
         LavaError::new(
             format!("Unable to read log file because of {e}"),
@@ -32,19 +32,16 @@ pub fn try_to_get_timestamp_hit_for_unstructured(
                     date_regex.pretty_format,
                     log_file.file_path.to_string_lossy().to_string()
                 );
-                return Ok(IdentifiedTimeInformation {
+                return Ok(Some(IdentifiedTimeInformation {
                     column_name: None,
                     column_index: None,
                     direction: None,
                     regex_info: date_regex.clone(),
-                });
+                }));
             }
         }
     }
-    return Err(LavaError::new(
-        "No regex match found in the log file, try providing your own custom regex",
-        LavaErrorLevel::Critical,
-    ));
+    return Ok(None);
 }
 
 pub fn set_time_direction_by_scanning_unstructured_file(

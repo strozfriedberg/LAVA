@@ -21,7 +21,7 @@ fn main() {
     println!("Input directory: {:?}", execution_settings.input_dir);
     println!("Output directory: {:?}", execution_settings.output_dir);
     process_all_files(execution_settings);
-    
+
     let duration = start.elapsed();
     let minutes = duration.as_secs_f64() / 60.0;
 

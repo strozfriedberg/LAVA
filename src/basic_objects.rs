@@ -112,13 +112,19 @@ impl LogFileRecord {
             index: index,
         }
     }
-    pub fn get_record_to_output(&self, alert_type: &AlertOutputType, rule_name: Option<String>) -> StringRecord {
+    pub fn get_record_to_output(
+        &self,
+        alert_type: &AlertOutputType,
+        rule_name: Option<String>,
+    ) -> StringRecord {
         let mut base_record = match alert_type {
             AlertOutputType::Duplicate => StringRecord::from(vec![
                 self.index.to_string(),
                 format!("{:x}", self.hash_of_entire_record),
             ]),
-            AlertOutputType::Redaction => StringRecord::from(vec![self.index.to_string(), rule_name.unwrap()]),
+            AlertOutputType::Redaction => {
+                StringRecord::from(vec![self.index.to_string(), rule_name.unwrap()])
+            }
         };
         base_record.extend(self.raw_record.iter());
         base_record
@@ -179,7 +185,5 @@ pub struct IdentifiedTimeInformation {
 #[derive(Debug, Clone, PartialEq)]
 pub struct HeaderInfo {
     pub first_data_row: usize,
-    pub headers: StringRecord
+    pub headers: StringRecord,
 }
-
-

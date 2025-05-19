@@ -6,10 +6,9 @@ use chrono::NaiveDateTime;
 use csv::Reader;
 use csv::ReaderBuilder;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Seek, SeekFrom, Cursor};
+use std::io::{BufRead, BufReader, Cursor, Seek, SeekFrom};
 #[cfg(test)]
 mod csv_handler_tests;
-
 
 pub fn get_header_info(log_file: &LogFile) -> Result<HeaderInfo> {
     let file = File::open(&log_file.file_path).map_err(|e| {
@@ -25,27 +24,32 @@ pub fn get_header_info(log_file: &LogFile) -> Result<HeaderInfo> {
 
 pub fn get_header_info_functionality<R: BufRead + Seek>(reader: &mut R) -> Result<HeaderInfo> {
     let header_row = get_index_of_header(reader)?;
-    reader.seek(SeekFrom::Start(0)).map_err(|e| LavaError::new(format!("Could not seek back to file header because of {}", e), LavaErrorLevel::Critical))?;
-
-    let mut csv_reader = csv::ReaderBuilder::new()
-    .flexible(true)
-    .has_headers(false)
-    .from_reader(reader);
-
-    let record = csv_reader
-    .records()
-    .nth(header_row)
-    .ok_or_else(|| LavaError::new("No input parameter found.", LavaErrorLevel::Critical))?        .map_err(|e| {
+    reader.seek(SeekFrom::Start(0)).map_err(|e| {
         LavaError::new(
-            format!("Failed to parse CSV record at header row because of {}", e),
+            format!("Could not seek back to file header because of {}", e),
             LavaErrorLevel::Critical,
         )
     })?;
-    Ok(HeaderInfo{
+
+    let mut csv_reader = csv::ReaderBuilder::new()
+        .flexible(true)
+        .has_headers(false)
+        .from_reader(reader);
+
+    let record = csv_reader
+        .records()
+        .nth(header_row)
+        .ok_or_else(|| LavaError::new("No input parameter found.", LavaErrorLevel::Critical))?
+        .map_err(|e| {
+            LavaError::new(
+                format!("Failed to parse CSV record at header row because of {}", e),
+                LavaErrorLevel::Critical,
+            )
+        })?;
+    Ok(HeaderInfo {
         first_data_row: header_row + 1,
         headers: record,
     })
-
 }
 
 pub fn get_index_of_header<R: BufRead>(reader: &mut R) -> Result<usize> {
@@ -106,7 +110,7 @@ pub fn try_to_get_timestamp_hit_for_csv(
     log_file: &LogFile,
     execution_settings: &ExecutionSettings,
     header_info: HeaderInfo,
-) -> Result<IdentifiedTimeInformation> {
+) -> Result<Option<IdentifiedTimeInformation>> {
     // println!("Using header index {}", header_row);
     let mut reader = get_reader_from_certain_index(header_info.first_data_row, log_file)?;
 
@@ -117,35 +121,30 @@ pub fn try_to_get_timestamp_hit_for_csv(
         )
     })?; // This is returning a result, that is why I had to use the question mark below before the iter()
 
-    let mut response =
-        try_to_get_timestamp_hit_for_csv_functionality(header_info.headers, record, execution_settings);
-    match response {
-        Ok(ref mut partial) => {
-            println!(
-                "Found match for '{}' time format in the '{}' column of {}",
-                partial.regex_info.pretty_format,
-                partial.column_name.as_ref().ok_or_else(|| LavaError::new(
-                    "No column name found.",
-                    LavaErrorLevel::Critical
-                ))?,
-                log_file.file_path.to_string_lossy().to_string()
-            );
-        }
-        Err(ref _e) => {
-            println!(
-                "Could not find a supported timestamp in {}",
-                log_file.file_path.to_string_lossy().to_string()
-            );
-        }
+    let response = try_to_get_timestamp_hit_for_csv_functionality(
+        header_info.headers,
+        record,
+        execution_settings,
+    )?;
+    if let Some(identified_timestamp) = &response {
+        println!(
+            "Found match for '{}' time format in the '{}' column of {}",
+            identified_timestamp.regex_info.pretty_format,
+            identified_timestamp
+                .column_name
+                .as_ref()
+                .ok_or_else(|| LavaError::new("No column name found.", LavaErrorLevel::Critical))?,
+            log_file.file_path.to_string_lossy().to_string()
+        );
     }
-    response
+    Ok(response)
 }
 
 pub fn try_to_get_timestamp_hit_for_csv_functionality(
     headers: csv::StringRecord,
     record: csv::StringRecord,
     execution_settings: &ExecutionSettings,
-) -> Result<IdentifiedTimeInformation> {
+) -> Result<Option<IdentifiedTimeInformation>> {
     if let Some(field_to_use) = &execution_settings.timestamp_field {
         for (i, field) in headers.iter().enumerate() {
             if field.trim() == field_to_use {
@@ -156,39 +155,31 @@ pub fn try_to_get_timestamp_hit_for_csv_functionality(
                             LavaErrorLevel::Critical,
                         )
                     })?) {
-                        return Ok(IdentifiedTimeInformation {
+                        return Ok(Some(IdentifiedTimeInformation {
                             column_name: Some(headers.get(i).unwrap().to_string()),
                             column_index: Some(i),
                             direction: None,
                             regex_info: date_regex.clone(),
-                        });
+                        }));
                     }
                 }
             }
         }
-        return Err(LavaError::new(
-            "Could not find the specified column in the header.",
-            LavaErrorLevel::Critical,
-        ));
     } else {
         for (i, field) in record.iter().enumerate() {
             for date_regex in execution_settings.regexes.iter() {
                 if date_regex.string_contains_date(field) {
-                    return Ok(IdentifiedTimeInformation {
+                    return Ok(Some(IdentifiedTimeInformation {
                         column_name: Some(headers.get(i).unwrap().to_string()),
                         column_index: Some(i),
                         direction: None,
                         regex_info: date_regex.clone(),
-                    });
+                    }));
                 }
             }
         }
     }
-
-    Err(LavaError::new(
-        "Could not find a supported timestamp.",
-        LavaErrorLevel::Critical,
-    ))
+    Ok(None)
 }
 
 pub fn set_time_direction_by_scanning_csv_file(

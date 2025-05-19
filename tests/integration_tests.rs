@@ -200,7 +200,6 @@ fn integration_test_out_of_order_time_run_duplicates_and_redactions_2() {
     temp_log_file.delete_temp_file();
 }
 
-
 #[test]
 fn integration_test_no_timestamps_duplicates_and_redactions() {
     let data = "\

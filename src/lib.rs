@@ -1,3 +1,4 @@
+use core::time;
 use glob::glob;
 use rayon::prelude::*;
 use sha2::{Digest, Sha256};
@@ -129,7 +130,7 @@ pub fn process_file(
     }
 
     // Get Header Row
-    let header_info = match get_header_info(log_file){
+    let header_info = match get_header_info(log_file) {
         Ok(result) => result,
         Err(e) => {
             base_processed_file.errors.push(e);
@@ -138,35 +139,50 @@ pub fn process_file(
     };
 
     // get the timestamp field. will do this for all of them, but there will just be some fields that only get filled in for structured datatypes
-    let mut timestamp_hit = match try_to_get_timestamp_hit(log_file, execution_settings, header_info.clone()) {
+    let potential_timestamp_hit =
+        match try_to_get_timestamp_hit(log_file, execution_settings, header_info.clone()) {
+            Ok(Some(mut timestamp_hit)) => {
+                base_processed_file.time_header = timestamp_hit.column_name.clone();
+                base_processed_file.time_format =
+                    Some(timestamp_hit.regex_info.pretty_format.clone());
+
+                if let Err(e) = set_time_direction_by_scanning_file(
+                    log_file,
+                    &mut timestamp_hit,
+                    header_info.clone(),
+                ) {
+                    base_processed_file.errors.push(e);
+                    return Ok(base_processed_file);
+                }
+
+                Some(timestamp_hit)
+            }
+            Ok(None) => {
+                base_processed_file.errors.push(LavaError::new(
+                    "Could not find a supported timestamp, try providing your own custom regex.",
+                    LavaErrorLevel::Medium,
+                ));
+                None
+            }
+            Err(e) => {
+                base_processed_file.errors.push(e);
+                return Ok(base_processed_file);
+            }
+        };
+
+    // Stream the file to find statistics on time and other stuff
+    let completed_statistics_object = match stream_file(
+        log_file,
+        &potential_timestamp_hit,
+        execution_settings,
+        header_info.clone(),
+    ) {
         Ok(result) => result,
         Err(e) => {
             base_processed_file.errors.push(e);
             return Ok(base_processed_file);
         }
     };
-
-    base_processed_file.time_header = timestamp_hit.column_name.clone();
-    base_processed_file.time_format = Some(timestamp_hit.regex_info.pretty_format.clone());
-
-    // Get the direction of time in the file
-    match set_time_direction_by_scanning_file(log_file, &mut timestamp_hit, header_info.clone()) {
-        Ok(_) => {}
-        Err(e) => {
-            base_processed_file.errors.push(e);
-            return Ok(base_processed_file);
-        }
-    };
-
-    // Stream the file to find statistics on time and other stuff
-    let completed_statistics_object =
-        match stream_file(log_file, &timestamp_hit, execution_settings, header_info.clone()) {
-            Ok(result) => result,
-            Err(e) => {
-                base_processed_file.errors.push(e);
-                return Ok(base_processed_file);
-            }
-        };
 
     // Get the formatted stats from the stats object
     let formatted_statistics = match completed_statistics_object.get_statistics() {
@@ -252,7 +268,7 @@ fn get_hash(file_path: &PathBuf) -> Result<String> {
     Ok(hash_hex)
 }
 
-fn get_header_info(log_file: &LogFile) -> Result<Option<HeaderInfo>>{
+fn get_header_info(log_file: &LogFile) -> Result<Option<HeaderInfo>> {
     if log_file.log_type == LogType::Csv {
         let header_info = crate::handlers::csv_handlers::get_header_info(log_file)?;
         return Ok(Some(header_info));
@@ -265,14 +281,19 @@ fn try_to_get_timestamp_hit(
     log_file: &LogFile,
     execution_settings: &ExecutionSettings,
     header_info: Option<HeaderInfo>,
-) -> Result<IdentifiedTimeInformation> {
+) -> Result<Option<IdentifiedTimeInformation>> {
     if log_file.log_type == LogType::Csv {
-        if let Some(header_info_unwrapped) = header_info{
-            return try_to_get_timestamp_hit_for_csv(log_file, execution_settings, header_info_unwrapped);
-        }else {
-            return Err(LavaError::new("Did Not reveice header info for a CSV", LavaErrorLevel::Critical));
-        }
-
+        let header_info_unwrapped = header_info.ok_or_else(|| {
+            LavaError::new(
+                "Did not receive header info for a CSV",
+                LavaErrorLevel::Critical,
+            )
+        })?;
+        return try_to_get_timestamp_hit_for_csv(
+            log_file,
+            execution_settings,
+            header_info_unwrapped,
+        );
     } else if log_file.log_type == LogType::Unstructured {
         return try_to_get_timestamp_hit_for_unstructured(log_file, execution_settings);
     }
@@ -288,11 +309,13 @@ fn set_time_direction_by_scanning_file(
     header_info: Option<HeaderInfo>,
 ) -> Result<()> {
     if log_file.log_type == LogType::Csv {
-        if let Some(header_info_unwrapped) = header_info{
-            return set_time_direction_by_scanning_csv_file(log_file, timestamp_hit, header_info_unwrapped);
-        }else {
-            return Err(LavaError::new("Did Not reveice header info for a CSV", LavaErrorLevel::Critical));
-        }
+        let header_info_unwrapped = header_info.ok_or_else(|| {
+            LavaError::new(
+                "Did not receive header info for a CSV",
+                LavaErrorLevel::Critical,
+            )
+        })?;
+        return set_time_direction_by_scanning_csv_file(log_file, timestamp_hit, header_info_unwrapped);
     }
     if log_file.log_type == LogType::Unstructured {
         return set_time_direction_by_scanning_unstructured_file(log_file, timestamp_hit);
@@ -305,15 +328,23 @@ fn set_time_direction_by_scanning_file(
 
 fn stream_file(
     log_file: &LogFile,
-    timestamp_hit: &IdentifiedTimeInformation,
+    timestamp_hit: &Option<IdentifiedTimeInformation>,
     execution_settings: &ExecutionSettings,
     header_info: Option<HeaderInfo>,
 ) -> Result<LogRecordProcessor> {
     if log_file.log_type == LogType::Csv {
-        if let Some(header_info_unwrapped) = header_info{
-            return stream_csv_file(log_file, timestamp_hit, execution_settings, header_info_unwrapped);
-        }else {
-            return Err(LavaError::new("Did Not reveice header info for a CSV", LavaErrorLevel::Critical));
+        if let Some(header_info_unwrapped) = header_info {
+            return stream_csv_file(
+                log_file,
+                timestamp_hit,
+                execution_settings,
+                header_info_unwrapped,
+            );
+        } else {
+            return Err(LavaError::new(
+                "Did Not reveice header info for a CSV",
+                LavaErrorLevel::Critical,
+            ));
         }
     }
     if log_file.log_type == LogType::Unstructured {

@@ -51,7 +51,8 @@ fn test_get_record_to_output_redaction() {
     let raw = StringRecord::from(vec!["redact", "this"]);
     let record = LogFileRecord::new(index, timestamp, raw.clone());
 
-    let output = record.get_record_to_output(&AlertOutputType::Redaction, Some("Test Rule".to_string()));
+    let output =
+        record.get_record_to_output(&AlertOutputType::Redaction, Some("Test Rule".to_string()));
     let expected = {
         let mut sr = StringRecord::from(vec![index.to_string(), "Test Rule".to_string()]);
         sr.extend(raw.iter());

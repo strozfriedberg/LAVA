@@ -1,10 +1,10 @@
 use super::*;
+use crate::basic_objects::HeaderInfo;
 use crate::date_regex::DateRegex;
 use csv::StringRecord;
 use regex::Regex;
 use std::io::Cursor;
 use std::path::PathBuf;
-use crate::basic_objects::HeaderInfo;
 
 #[test]
 fn test_get_header_info_on_row_0() {
@@ -19,11 +19,11 @@ fn test_get_header_info_on_row_0() {
 
     let result = get_header_info_functionality(&mut reader);
 
-    let expected = HeaderInfo{
+    let expected = HeaderInfo {
         first_data_row: 1,
         headers: StringRecord::from(vec!["id", "name", "date"]),
     };
-    
+
     assert_eq!(expected, result.unwrap());
 }
 
@@ -41,11 +41,11 @@ fn test_get_header_info_on_row_1() {
 
     let result = get_header_info_functionality(&mut reader);
 
-    let expected = HeaderInfo{
+    let expected = HeaderInfo {
         first_data_row: 2,
         headers: StringRecord::from(vec!["id", "name", "date"]),
     };
-    
+
     assert_eq!(expected, result.unwrap());
 }
 
@@ -64,11 +64,11 @@ fn test_get_header_info_on_row_2() {
 
     let result = get_header_info_functionality(&mut reader);
 
-    let expected = HeaderInfo{
+    let expected = HeaderInfo {
         first_data_row: 3,
         headers: StringRecord::from(vec!["id", "name", "date"]),
     };
-    
+
     assert_eq!(expected, result.unwrap());
 }
 
@@ -86,11 +86,11 @@ fn test_get_header_info_no_timestamp() {
 
     let result = get_header_info_functionality(&mut reader);
 
-    let expected = HeaderInfo{
+    let expected = HeaderInfo {
         first_data_row: 2,
         headers: StringRecord::from(vec!["id", "name"]),
     };
-    
+
     assert_eq!(expected, result.unwrap());
 }
 
@@ -108,11 +108,11 @@ fn test_get_header_info_timestamp_but_not_consistent() {
 
     let result = get_header_info_functionality(&mut reader);
 
-    let expected = HeaderInfo{
+    let expected = HeaderInfo {
         first_data_row: 2,
         headers: StringRecord::from(vec!["id", "name", "irrelevant_date"]),
     };
-    
+
     assert_eq!(expected, result.unwrap());
 }
 
@@ -128,11 +128,11 @@ fn test_get_header_info_less_than_5_rows() {
 
     let result = get_header_info_functionality(&mut reader);
 
-    let expected = HeaderInfo{
+    let expected = HeaderInfo {
         first_data_row: 1,
         headers: StringRecord::from(vec!["id", "name", "irrelevant_date"]),
     };
-    
+
     assert_eq!(expected, result.unwrap());
 }
 
@@ -155,6 +155,7 @@ fn get_csv_timestamp_hit_finds_valid_timestamp() {
     };
     let result =
         try_to_get_timestamp_hit_for_csv_functionality(headers.clone(), record.clone(), &test_args)
+            .unwrap()
             .unwrap();
 
     assert_eq!(result.column_name, Some("timestamp".to_string()));
@@ -211,6 +212,7 @@ fn get_csv_timestamp_hit_finds_valid_different_timestamp() {
     };
     let result =
         try_to_get_timestamp_hit_for_csv_functionality(headers.clone(), record.clone(), &test_args)
+            .unwrap()
             .unwrap();
 
     assert_eq!(result.column_name, Some("second_timestamp".to_string()));
