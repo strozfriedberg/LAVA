@@ -172,3 +172,10 @@ pub fn write_errors_to_error_log(
 
     Ok(())
 }
+
+pub fn print_pretty_alerts_and_write_to_output_file(
+    results: &Vec<ProcessedLogFile>,
+    settings: &ExecutionSettings,
+) -> Result<()> {
+    Ok(())
+}
