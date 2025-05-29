@@ -1,6 +1,7 @@
 use crate::date_regex::*;
 use crate::errors::LavaError;
 use crate::helpers::*;
+use crate::alerts::Alert;
 use chrono::{NaiveDateTime, TimeDelta};
 use csv::StringRecord;
 use std::cmp::Ordering;
@@ -79,6 +80,7 @@ pub struct ProcessedLogFile {
     pub num_dupes: Option<String>,
     pub num_redactions: Option<String>,
     pub errors: Vec<LavaError>,
+    pub alerts: Option<Vec<Alert>>,
 }
 
 #[derive(Debug, Default)]

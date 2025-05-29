@@ -4,8 +4,8 @@ use chrono::{TimeDelta, Utc};
 use csv::StringRecord;
 use csv::Writer;
 use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
 use std::fs::OpenOptions;
+use std::hash::{Hash, Hasher};
 use std::io::{BufWriter, Write};
 
 pub fn generate_log_filename() -> String {
@@ -123,36 +123,52 @@ pub fn write_output_to_csv(
     Ok(())
 }
 
-
-pub fn write_errors_to_error_log(results: &Vec<ProcessedLogFile>, settings: &ExecutionSettings) -> Result<()>{
-
+pub fn write_errors_to_error_log(
+    results: &Vec<ProcessedLogFile>,
+    settings: &ExecutionSettings,
+) -> Result<()> {
     let error_log_path = settings.output_dir.join("LAVA_Errors.log");
 
     // Open the file in append mode, create it if it doesn't exist
     let file = OpenOptions::new()
         .create(true)
         .append(true)
-        .open(&error_log_path).map_err(|e| LavaError::new(format!("Unable to open error log because of {}", e), LavaErrorLevel::Critical))?;
+        .open(&error_log_path)
+        .map_err(|e| {
+            LavaError::new(
+                format!("Unable to open error log because of {}", e),
+                LavaErrorLevel::Critical,
+            )
+        })?;
 
     let mut writer = BufWriter::new(file);
 
     let timestamp = Utc::now().format("%Y-%m-%dT%H:%M:%SZ");
 
     for processed_file in results {
-        if let Some(filename) = &processed_file.filename{
-        for error in &processed_file.errors {
-            writeln!(
-                writer,
-                "[{}] [{}] [{}]{}",
-                timestamp,
-                error.level,
-                filename,
-                error.reason
-            ).map_err(|e| LavaError::new(format!("Unable to write to error log because of {}", e), LavaErrorLevel::Critical))?;
-        }}
+        if let Some(filename) = &processed_file.filename {
+            for error in &processed_file.errors {
+                writeln!(
+                    writer,
+                    "[{}] [{}] [{}]{}",
+                    timestamp, error.level, filename, error.reason
+                )
+                .map_err(|e| {
+                    LavaError::new(
+                        format!("Unable to write to error log because of {}", e),
+                        LavaErrorLevel::Critical,
+                    )
+                })?;
+            }
+        }
     }
 
-    writer.flush().map_err(|e| LavaError::new(format!("Unable to write to error log because of {}", e), LavaErrorLevel::Critical))?; // Ensure all writes are flushed
+    writer.flush().map_err(|e| {
+        LavaError::new(
+            format!("Unable to write to error log because of {}", e),
+            LavaErrorLevel::Critical,
+        )
+    })?; // Ensure all writes are flushed
 
     Ok(())
 }

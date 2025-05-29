@@ -316,4 +316,23 @@ impl LogRecordProcessor {
 
         Ok(statistics_fields)
     }
+
+    pub fn get_possible_alert_values(&self) -> PossibleAlertValues {
+        PossibleAlertValues {
+            num_records: self.num_records,
+            num_dupes: self.num_dupes,
+            num_redactions: self.num_redactions,
+            largest_time_gap: self.largest_time_gap,
+            errors: self.errors.clone(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct PossibleAlertValues {
+    pub num_records: usize,
+    pub num_dupes: usize,
+    pub num_redactions: usize,
+    pub largest_time_gap: Option<TimeGap>,
+    pub errors: Vec<LavaError>,
 }
