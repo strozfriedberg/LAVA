@@ -31,6 +31,54 @@ impl Alert {
             alert_type,
         }
     }
+
+    // pub fn message(&self) -> String {
+    //     match (&self.alert_type, &self.alert_level) {
+    //         (AlertType::SusTimeGap(gap), AlertLevel::High) => {
+    //             format!("CRITICAL: Time gap of {:?} exceeds 24 hours", gap)
+    //         }
+    //         (AlertType::SusTimeGap(gap), AlertLevel::Medium) => {
+    //             format!("WARNING: Time gap of {:?} exceeds 1 hour", gap)
+    //         }
+    //         (AlertType::SusTimeGap(gap), AlertLevel::Low) => {
+    //             format!("Notice: Time gap of {:?} exceeds 5 minutes", gap)
+    //         }
+
+    //         (AlertType::SusEventCount(n), AlertLevel::High) => {
+    //             format!("High volume of suspicious events: {}", n)
+    //         }
+    //         (AlertType::SusEventCount(n), AlertLevel::Medium) => {
+    //             format!("Moderate number of suspicious events: {}", n)
+    //         }
+    //         (AlertType::SusEventCount(n), AlertLevel::Low) => {
+    //             format!("Suspicious events detected: {}", n)
+    //         }
+
+    //         (AlertType::DupeEvents(n), AlertLevel::High) => {
+    //             format!("Critical: {} duplicate events detected", n)
+    //         }
+    //         (AlertType::DupeEvents(n), AlertLevel::Medium) => {
+    //             format!("Multiple duplicate events detected: {}", n)
+    //         }
+    //         (AlertType::DupeEvents(n), AlertLevel::Low) => {
+    //             format!("Some duplicate events found: {}", n)
+    //         }
+
+    //         (AlertType::RedactionEvents(n), AlertLevel::High) => {
+    //             format!("Excessive redactions: {}", n)
+    //         }
+    //         (AlertType::RedactionEvents(n), AlertLevel::Medium) => {
+    //             format!("Noticeable redactions: {}", n)
+    //         }
+    //         (AlertType::RedactionEvents(n), AlertLevel::Low) => {
+    //             format!("Redactions detected: {}", n)
+    //         }
+
+    //         (AlertType::JsonError, _) => {
+    //             format!("JSON parsing error detected ({:?} severity)", self.alert_level)
+    //         }
+    //     }
+    // }
 }
 
 

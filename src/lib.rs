@@ -22,7 +22,7 @@ use processing_objects::*;
 pub mod main_helpers;
 mod redaction_regex;
 pub mod alerts;
-use alerts::*;
+use alerts::generate_alerts;
 include!(concat!(env!("OUT_DIR"), "/generated_date_regexes.rs"));
 
 #[cfg(test)]
@@ -190,7 +190,8 @@ pub fn process_file(
     };
 
     let values_to_alert_on = completed_statistics_object.get_possible_alert_values();
-
+    let alerts = generate_alerts(values_to_alert_on);
+    base_processed_file.alerts = Some(alerts);
 
     // Get the formatted stats from the stats object
     let formatted_statistics = match completed_statistics_object.get_statistics() {
