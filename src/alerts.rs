@@ -1,14 +1,14 @@
 use chrono::TimeDelta;
 use crate::processing_objects::PossibleAlertValues;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum AlertLevel {
     High,
     Medium,
     Low,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum AlertType {
     SusTimeGap(TimeDelta),
     SusEventCount(usize),
@@ -18,7 +18,7 @@ pub enum AlertType {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Alert {
     alert_level: AlertLevel,
     alert_type: AlertType,

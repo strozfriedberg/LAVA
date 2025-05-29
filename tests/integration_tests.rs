@@ -70,6 +70,7 @@ fn integration_test_successful_run_no_errors_junk_value() {
     assert_eq!(0, processed.errors.len());
     assert_eq!("2025-05-09 10:00:00", processed.min_timestamp.unwrap());
     assert_eq!("2025-06-01 13:00:00", processed.max_timestamp.unwrap());
+    assert_eq!(1, processed.alerts.unwrap().clone().len());
     temp_log_file.delete_temp_file();
 }
 
