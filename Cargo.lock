@@ -380,6 +380,7 @@ dependencies = [
  "sha2",
  "tempfile",
  "thiserror",
+ "welford",
 ]
 
 [[package]]
@@ -714,6 +715,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a05d73b933a847d6cccdda8f838a22ff101ad9bf93e33684f39c1f5f0eece3d"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "welford"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4877961340c782e124d39f2664ac037964e499f065caebce7baed9f78e10e3b2"
+dependencies = [
+ "num-traits",
 ]
 
 [[package]]

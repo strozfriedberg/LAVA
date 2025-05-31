@@ -7,6 +7,7 @@ use csv::WriterBuilder;
 use std::collections::HashSet;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
+use welford::Welford;
 include!(concat!(env!("OUT_DIR"), "/generated_redaction_regexes.rs"));
 
 #[cfg(test)]
@@ -40,7 +41,7 @@ impl TimeDirectionChecker {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct LogRecordProcessor {
     pub order: Option<TimeDirection>,
     pub execution_settings: ExecutionSettings,
@@ -55,6 +56,7 @@ pub struct LogRecordProcessor {
     pub num_dupes: usize,
     pub num_redactions: usize,
     pub errors: Vec<LavaError>,
+    pub welford_calculator: Welford<i64>,
     process_timestamps: bool,
 }
 
@@ -257,6 +259,7 @@ impl LogRecordProcessor {
                 self.min_timestamp = Some(current_timestamp)
             }
             let current_time_gap = TimeGap::new(previous_datetime, current_timestamp);
+            self.welford_calculator.push(current_time_gap.gap.num_milliseconds()); // Will this get too big with milliseconds??
             if let Some(largest_time_gap) = self.largest_time_gap {
                 if current_time_gap > largest_time_gap {
                     self.largest_time_gap =
@@ -324,15 +327,19 @@ impl LogRecordProcessor {
             num_redactions: self.num_redactions,
             largest_time_gap: self.largest_time_gap,
             errors: self.errors.clone(),
+            mean: self.welford_calculator.mean(),
+            variance: self.welford_calculator.var(),
         }
     }
 }
 
-#[derive(Debug)]
+
 pub struct PossibleAlertValues {
     pub num_records: usize,
     pub num_dupes: usize,
     pub num_redactions: usize,
     pub largest_time_gap: Option<TimeGap>,
     pub errors: Vec<LavaError>,
+    pub mean: Option<i64>,
+    pub variance: Option<i64>,
 }
