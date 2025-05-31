@@ -1,6 +1,7 @@
 use lava::{
     basic_objects::{ExecutionSettings, LogFile, LogType},
     process_file,
+    helpers::print_pretty_alerts_and_write_to_output_file
 };
 use std::fs;
 use tempfile::NamedTempFile;
@@ -251,5 +252,33 @@ fn integration_test_no_timestamps_duplicates_and_redactions() {
     assert_eq!(None, processed.largest_gap_duration);
     assert_eq!("1", processed.num_dupes.unwrap());
     assert_eq!("0", processed.num_redactions.unwrap());
+    temp_log_file.delete_temp_file();
+}
+
+
+#[test]
+fn integration_test_print_alerts() {
+    let data = "\
+    id,name,date\n\
+    1,John,2025-05-10 10:00:00\n\
+    2,Jane,2025-05-10 11:00:00\n\
+    2,Jane,2025-05-10 11:00:00\n\
+    4,James,2025-05-10 13:00:00\n";
+
+    let data2 = "\
+    id,name,date\n\
+    1,John,2025-05-09 10:00:00\n\
+    2,Jane,2025-05-10 11:00:00\n\
+    4,James,2025-06-01 13:00:00\n";
+
+    let temp_log_file = TempInputFile::new(LogType::Csv, data);
+    let log_file = temp_log_file.get_log_file_object();
+    let settings = ExecutionSettings::create_integration_test_object(None, false);
+
+    let output = vec![process_file(log_file, &settings).expect("Failed to get Proceesed Log File")];
+    if let Err(e) = print_pretty_alerts_and_write_to_output_file(&output, &settings){
+        eprintln!("Failed to output alerts: {}", e);
+    }
+
     temp_log_file.delete_temp_file();
 }

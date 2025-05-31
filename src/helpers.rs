@@ -1,12 +1,16 @@
 use crate::basic_objects::*;
 use crate::errors::*;
+use crate::alerts::*;
 use chrono::{TimeDelta, Utc};
+use clap::builder::Str;
 use csv::StringRecord;
 use csv::Writer;
 use std::collections::hash_map::DefaultHasher;
 use std::fs::OpenOptions;
 use std::hash::{Hash, Hasher};
 use std::io::{BufWriter, Write};
+use std::collections::HashMap;
+
 
 pub fn generate_log_filename() -> String {
     let now = Utc::now();
@@ -177,5 +181,21 @@ pub fn print_pretty_alerts_and_write_to_output_file(
     results: &Vec<ProcessedLogFile>,
     settings: &ExecutionSettings,
 ) -> Result<()> {
+    println!("GOT HEREEEE");
+    let mut alert_table_structure: HashMap<AlertLevel, HashMap<AlertType, Vec<&String>>> = HashMap::new();
+    for processed in results.iter(){
+        if let Some(alerts) = &processed.alerts {
+            for alert in alerts.iter(){
+
+            }
+        }
+    }
+    // {High:{
+    //     SusTimeGap:[filename1, filename2],
+    //     NumDupes:[filename1]
+    // },
+    // Low:{
+    //     NumDupes:[filename2]
+    // }}
     Ok(())
 }
