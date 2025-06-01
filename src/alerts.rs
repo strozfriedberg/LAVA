@@ -1,27 +1,27 @@
 use chrono::TimeDelta;
 use crate::processing_objects::PossibleAlertValues;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
 pub enum AlertLevel {
     High,
     Medium,
     Low,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
 pub enum AlertType {
-    SusTimeGap(TimeDelta),
-    SusEventCount(usize),
-    DupeEvents(usize),
-    RedactionEvents(usize),
+    SusTimeGap,
+    SusEventCount,
+    DupeEvents,
+    RedactionEvents,
     JsonError,
 }
 
 
 #[derive(Debug, Clone)]
 pub struct Alert {
-    alert_level: AlertLevel,
-    alert_type: AlertType,
+    pub alert_level: AlertLevel,
+    pub alert_type: AlertType,
 }
 
 impl Alert {
@@ -87,23 +87,23 @@ pub fn generate_alerts(things_to_alert_on: PossibleAlertValues ) -> Vec<Alert> {
 
     //Num records alerts 
     if let Some(level) = get_alert_level_of_num_events(things_to_alert_on.num_records) {
-        alerts.push(Alert::new(level, AlertType::SusEventCount(things_to_alert_on.num_records)));
+        alerts.push(Alert::new(level, AlertType::SusEventCount));
     };
 
     //Num dupes alerts 
     if let Some(level) = get_alert_level_of_num_dupes(things_to_alert_on.num_dupes) {
-        alerts.push(Alert::new(level, AlertType::DupeEvents(things_to_alert_on.num_dupes)));
+        alerts.push(Alert::new(level, AlertType::DupeEvents));
     };
 
     //Num redactions alerts 
     if let Some(level) = get_alert_level_of_num_redactions(things_to_alert_on.num_redactions) {
-        alerts.push(Alert::new(level, AlertType::RedactionEvents(things_to_alert_on.num_redactions)));
+        alerts.push(Alert::new(level, AlertType::RedactionEvents));
     };
 
     //Time gap alerts
     if let Some(time_gap) = things_to_alert_on.largest_time_gap {
         if let Some(level) = get_alert_level_of_time_gap(time_gap.gap) {
-            alerts.push(Alert::new(level, AlertType::SusTimeGap(time_gap.gap)));
+            alerts.push(Alert::new(level, AlertType::SusTimeGap));
         };
     };
     

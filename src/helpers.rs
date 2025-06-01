@@ -2,7 +2,8 @@ use crate::basic_objects::*;
 use crate::errors::*;
 use crate::alerts::*;
 use chrono::{TimeDelta, Utc};
-use clap::builder::Str;
+use comfy_table::modifiers::UTF8_ROUND_CORNERS;
+use comfy_table::presets::UTF8_FULL;
 use csv::StringRecord;
 use csv::Writer;
 use std::collections::hash_map::DefaultHasher;
@@ -10,6 +11,7 @@ use std::fs::OpenOptions;
 use std::hash::{Hash, Hasher};
 use std::io::{BufWriter, Write};
 use std::collections::HashMap;
+use comfy_table::*;
 
 
 pub fn generate_log_filename() -> String {
@@ -181,15 +183,53 @@ pub fn print_pretty_alerts_and_write_to_output_file(
     results: &Vec<ProcessedLogFile>,
     settings: &ExecutionSettings,
 ) -> Result<()> {
-    println!("GOT HEREEEE");
+
     let mut alert_table_structure: HashMap<AlertLevel, HashMap<AlertType, Vec<&String>>> = HashMap::new();
     for processed in results.iter(){
         if let Some(alerts) = &processed.alerts {
             for alert in alerts.iter(){
-
+                alert_table_structure
+                    .entry(alert.alert_level)
+                    .or_insert_with(HashMap::new)
+                    .entry(alert.alert_type)
+                    .or_insert_with(Vec::new)
+                    .push(processed.file_path.as_ref().unwrap());
             }
         }
     }
+    let levels = [AlertLevel::High, AlertLevel::Medium, AlertLevel::Low];
+    println!("{:?}", alert_table_structure);
+
+    let mut output_table = Table::new();
+    output_table.load_preset(UTF8_FULL)
+        .apply_modifier(UTF8_ROUND_CORNERS)
+        .set_style(TableComponent::VerticalLines, ' ');
+    let hlch = output_table.style(TableComponent::HorizontalLines).unwrap();
+    let tbch = output_table.style(TableComponent::TopBorder).unwrap();
+
+    for level in levels.iter(){
+        output_table.add_row(vec![
+            Cell::new(alert_level_to_string(level)).fg(alert_level_color(level)),
+        ])
+        .set_style(TableComponent::MiddleIntersections, hlch)
+        .set_style(TableComponent::TopBorderIntersections, tbch)
+        .set_style(TableComponent::BottomBorderIntersections, hlch);
+
+        if let Some(alerts_of_this_level) = alert_table_structure.get(level){
+            let mut alerts_cell_string = String::new();
+            for alert in alerts_of_this_level.keys(){
+                let num_files_in_this_category = alerts_of_this_level.get(alert).unwrap().len();
+                alerts_cell_string.push_str(&format!("{}: {}\n", alert_type_to_string(alert), num_files_in_this_category));
+            }
+            output_table.add_row(vec![
+                Cell::new(alerts_cell_string)
+                    .fg(alert_level_color(level)),
+            ]);
+        }   
+    }
+    println!("{output_table}");
+
+
     // {High:{
     //     SusTimeGap:[filename1, filename2],
     //     NumDupes:[filename1]
@@ -198,4 +238,30 @@ pub fn print_pretty_alerts_and_write_to_output_file(
     //     NumDupes:[filename2]
     // }}
     Ok(())
+}
+
+fn alert_type_to_string(alert_type: &AlertType) -> &str {
+    match alert_type {
+        AlertType::SusTimeGap => "SusTimeGap",
+        AlertType::DupeEvents => "DupeEvents",
+        AlertType::JsonError => "Json Error",
+        AlertType::RedactionEvents => "Redactions",
+        AlertType::SusEventCount => "SusEventCount"
+    }
+}
+
+fn alert_level_to_string(alert_level: &AlertLevel) -> &str {
+    match alert_level {
+        AlertLevel::High => "HIGH ALERTS",
+        AlertLevel::Medium => "MEDIUM ALERTS",
+        AlertLevel::Low => "LOW ALERTS",
+    }
+}
+
+fn alert_level_color(alert_level: &AlertLevel) -> comfy_table::Color {
+    match alert_level {
+        AlertLevel::High => comfy_table::Color::Red,
+        AlertLevel::Medium => comfy_table::Color::Yellow,
+        AlertLevel::Low => comfy_table::Color::Green,
+    }
 }

@@ -273,13 +273,16 @@ fn integration_test_print_alerts() {
     4,James,2025-06-01 13:00:00\n";
 
     let temp_log_file = TempInputFile::new(LogType::Csv, data);
+    let temp_log_file2 = TempInputFile::new(LogType::Csv, data2);
     let log_file = temp_log_file.get_log_file_object();
+    let log_file2 = temp_log_file2.get_log_file_object();
     let settings = ExecutionSettings::create_integration_test_object(None, false);
 
-    let output = vec![process_file(log_file, &settings).expect("Failed to get Proceesed Log File")];
+    let output = vec![process_file(log_file, &settings).expect("Failed to get Proceesed Log File"), process_file(log_file2, &settings).expect("Failed to get Proceesed Log File")];
     if let Err(e) = print_pretty_alerts_and_write_to_output_file(&output, &settings){
         eprintln!("Failed to output alerts: {}", e);
     }
 
     temp_log_file.delete_temp_file();
+    temp_log_file2.delete_temp_file();
 }
