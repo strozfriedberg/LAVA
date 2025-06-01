@@ -6,6 +6,7 @@ use chrono::{NaiveDateTime, TimeDelta};
 use csv::StringRecord;
 use std::cmp::Ordering;
 use std::path::PathBuf;
+use serde::Serialize;
 
 #[cfg(test)]
 mod logfilerecord_tests;
@@ -67,7 +68,7 @@ pub struct ProcessedLogFile {
     pub sha256hash: Option<String>,
     pub filename: Option<String>,
     pub file_path: Option<String>,
-    pub size: Option<u64>,
+    pub size: Option<String>,
     pub first_data_row_used: Option<String>,
     pub time_header: Option<String>,
     pub time_format: Option<String>,
@@ -76,12 +77,16 @@ pub struct ProcessedLogFile {
     pub min_max_duration: Option<String>,
     pub largest_gap: Option<String>,
     pub largest_gap_duration: Option<String>,
+    pub mean_time_gap: Option<String>,
+    pub std_dev_time_gap: Option<String>,
+    pub number_of_std_devs_above: Option<String>,
     pub num_records: Option<String>,
     pub num_dupes: Option<String>,
     pub num_redactions: Option<String>,
     pub errors: Vec<LavaError>,
     pub alerts: Option<Vec<Alert>>,
 }
+
 
 #[derive(Debug, Default)]
 pub struct TimeStatisticsFields {
@@ -93,6 +98,9 @@ pub struct TimeStatisticsFields {
     pub largest_gap_duration: Option<String>,
     pub num_dupes: Option<String>,
     pub num_redactions: Option<String>,
+    pub mean_time_gap: Option<String>,
+    pub std_dev_time_gap: Option<String>,
+    pub number_of_std_devs_above: Option<String>,
 }
 
 #[derive(PartialEq, Debug)]

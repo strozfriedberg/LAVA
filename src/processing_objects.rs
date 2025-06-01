@@ -311,6 +311,10 @@ impl LogRecordProcessor {
                 largest_time_gap.end_time.format("%Y-%m-%d %H:%M:%S")
             ));
             statistics_fields.largest_gap_duration = Some(format_timedelta(largest_time_gap.gap));
+            let (mean, standard_deviation) = self.get_mean_and_standard_deviation();
+            statistics_fields.mean_time_gap = Some(mean.to_string());
+            statistics_fields.std_dev_time_gap = Some(standard_deviation.to_string());
+            statistics_fields.number_of_std_devs_above = Some(((largest_time_gap.gap.num_seconds() as f64 - mean)/standard_deviation).to_string())
         }
 
         if !self.execution_settings.quick_mode {
@@ -321,8 +325,7 @@ impl LogRecordProcessor {
         Ok(statistics_fields)
     }
 
-    pub fn get_possible_alert_values(&self) -> PossibleAlertValues {
-        
+    fn get_mean_and_standard_deviation(&self) -> (f64, f64){
         let mean = match self.welford_calculator.mean() {
             Some(real_mean) => real_mean as f64,
             None => 0.0,
@@ -331,6 +334,11 @@ impl LogRecordProcessor {
             Some(variance) => (variance as f64).sqrt(),
             None => 0.0,
         };
+        (mean, standard_deviation)
+    }
+    pub fn get_possible_alert_values(&self) -> PossibleAlertValues {
+        
+        let (mean, standard_deviation) = self.get_mean_and_standard_deviation();
         println!("mean: {:?}, standard deviation: {:?}", mean, standard_deviation);
         PossibleAlertValues {
             num_records: self.num_records,

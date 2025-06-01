@@ -71,6 +71,9 @@ pub fn write_output_to_csv(
         "Duration of Entire Log File",
         "Largest Time Gap",
         "Duration of Largest Time Gap",
+        "Mean Seconds of Time Gaps",
+        "Standard Deviation in Seconds",
+        "Largest Time Gap Num Standard Deviations Above",
         "Duplicate Record Count",
         "Possible Redactions Count",
         "Error",
@@ -94,11 +97,11 @@ pub fn write_output_to_csv(
                 log_file.errors[0].reason.clone()
             }
         };
-        wtr.serialize((
+        wtr.serialize(vec![
             log_file.filename.as_deref().unwrap_or(""),
             log_file.file_path.as_deref().unwrap_or(""),
             log_file.sha256hash.as_deref().unwrap_or(""),
-            log_file.size.unwrap_or(0),
+            log_file.size.as_deref().unwrap_or(""),
             log_file.first_data_row_used.as_deref().unwrap_or(""),
             log_file.time_header.as_deref().unwrap_or(""),
             log_file.time_format.as_deref().unwrap_or(""),
@@ -108,10 +111,13 @@ pub fn write_output_to_csv(
             log_file.min_max_duration.as_deref().unwrap_or(""),
             log_file.largest_gap.as_deref().unwrap_or(""),
             log_file.largest_gap_duration.as_deref().unwrap_or(""),
+            log_file.mean_time_gap.as_deref().unwrap_or(""),
+            log_file.std_dev_time_gap.as_deref().unwrap_or(""),
+            log_file.number_of_std_devs_above.as_deref().unwrap_or(""),
             log_file.num_dupes.as_deref().unwrap_or(""),
             log_file.num_redactions.as_deref().unwrap_or(""),
-            error_message,
-        ))
+            &error_message,
+    ])
         .map_err(|e| {
             LavaError::new(
                 format!("Issue writing lines of output file because of {e}"),

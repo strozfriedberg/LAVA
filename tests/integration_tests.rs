@@ -262,9 +262,10 @@ fn integration_test_print_alerts() {
     id,name,date\n\
     1,John,2025-05-10 09:55:00\n\
     1,John,2025-05-10 10:00:00\n\
+    1,John,2025-05-10 10:05:00\n\
+    1,John,2025-05-10 10:10:00\n\
     2,Jane,2025-05-10 11:00:00\n\
-    2,Jane,2025-05-10 11:00:00\n\
-    4,James,2025-05-10 13:00:00\n";
+    4,James,2025-05-10 11:05:00\n";
 
     let data2 = "\
     id,name,date\n\

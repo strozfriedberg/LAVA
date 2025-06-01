@@ -121,7 +121,7 @@ pub fn process_file(
             return Ok(base_processed_file);
         }
     };
-    base_processed_file.size = Some(size);
+    base_processed_file.size = Some(size.to_string());
     base_processed_file.filename = Some(file_name);
     base_processed_file.file_path = Some(file_path);
 
@@ -213,6 +213,9 @@ pub fn process_file(
     base_processed_file.num_records = formatted_statistics.num_records;
     base_processed_file.num_dupes = formatted_statistics.num_dupes;
     base_processed_file.num_redactions = formatted_statistics.num_redactions;
+    base_processed_file.mean_time_gap = formatted_statistics.mean_time_gap;
+    base_processed_file.std_dev_time_gap = formatted_statistics.std_dev_time_gap;
+    base_processed_file.number_of_std_devs_above = formatted_statistics.number_of_std_devs_above;
     base_processed_file
         .errors
         .extend(completed_statistics_object.errors);
