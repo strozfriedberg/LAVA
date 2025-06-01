@@ -99,10 +99,11 @@ pub fn generate_alerts(things_to_alert_on: PossibleAlertValues ) -> Vec<Alert> {
     if let Some(level) = get_alert_level_of_num_redactions(things_to_alert_on.num_redactions) {
         alerts.push(Alert::new(level, AlertType::RedactionEvents));
     };
-
+    
     //Time gap alerts
     if let Some(time_gap) = things_to_alert_on.largest_time_gap {
-        if let Some(level) = get_alert_level_of_time_gap(time_gap.gap) {
+        let standard_deviations_above_the_mean = (time_gap.gap.num_seconds() as f64 - things_to_alert_on.mean)/things_to_alert_on.std;
+        if let Some(level) = get_alert_level_of_time_gap(standard_deviations_above_the_mean) {
             alerts.push(Alert::new(level, AlertType::SusTimeGap));
         };
     };
@@ -112,12 +113,12 @@ pub fn generate_alerts(things_to_alert_on: PossibleAlertValues ) -> Vec<Alert> {
 }
 
 
-fn get_alert_level_of_time_gap(time_gap: TimeDelta )-> Option<AlertLevel> {
-    if time_gap >= TimeDelta::hours(24) {
+fn get_alert_level_of_time_gap(standard_deviations_above_the_mean: f64)-> Option<AlertLevel> {
+    if standard_deviations_above_the_mean >= 100.0 {
         Some(AlertLevel::High)
-    } else if time_gap >= TimeDelta::hours(1) {
+    } else if standard_deviations_above_the_mean >= 30.0 {
         Some(AlertLevel::Medium)
-    } else if time_gap >= TimeDelta::minutes(5) {
+    } else if standard_deviations_above_the_mean >= 10.0 {
         Some(AlertLevel::Low)
     } else {
         None
@@ -182,10 +183,10 @@ mod tests {
     }
     #[test]
     fn test_get_alert_level_of_time_gap() {
-        assert_eq!(get_alert_level_of_time_gap(TimeDelta::hours(25)), Some(AlertLevel::High));
-        assert_eq!(get_alert_level_of_time_gap(TimeDelta::hours(2)), Some(AlertLevel::Medium));
-        assert_eq!(get_alert_level_of_time_gap(TimeDelta::minutes(6)), Some(AlertLevel::Low));
-        assert_eq!(get_alert_level_of_time_gap(TimeDelta::minutes(3)), None);
+        assert_eq!(get_alert_level_of_time_gap(200.0), Some(AlertLevel::High));
+        assert_eq!(get_alert_level_of_time_gap(60.0), Some(AlertLevel::Medium));
+        assert_eq!(get_alert_level_of_time_gap(15.0), Some(AlertLevel::Low));
+        assert_eq!(get_alert_level_of_time_gap(2.0), None);
     }
 
     #[test]
@@ -226,7 +227,7 @@ mod tests {
 
         let alerts = generate_alerts(input);
 
-        assert_eq!(alerts.len(), 3);
+        assert_eq!(alerts.len(), 4);
         assert!(alerts.iter().any(|a| matches!(a.alert_level, AlertLevel::High)));
         assert!(alerts.iter().any(|a| matches!(a.alert_level, AlertLevel::Medium)));
         assert!(alerts.iter().any(|a| matches!(a.alert_level, AlertLevel::Low)));
@@ -240,8 +241,8 @@ mod tests {
             num_redactions: 0,
             largest_time_gap: Some(dummy_timegap(60)),
             errors: Vec::new(),
-            mean: 10.0,
-            std: 4.0,
+            mean: 50.0,
+            std: 10.0,
         };
 
         let alerts = generate_alerts(input);
