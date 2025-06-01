@@ -56,7 +56,7 @@ pub struct LogRecordProcessor {
     pub num_dupes: usize,
     pub num_redactions: usize,
     pub errors: Vec<LavaError>,
-    pub welford_calculator: Welford<u128>,
+    pub welford_calculator: Welford<i128>,
     process_timestamps: bool,
 }
 
@@ -259,7 +259,8 @@ impl LogRecordProcessor {
                 self.min_timestamp = Some(current_timestamp)
             }
             let current_time_gap = TimeGap::new(previous_datetime, current_timestamp);
-            self.welford_calculator.push(current_time_gap.gap.num_seconds() as u128); // Will this get too big with milliseconds??
+            // println!("Seconds - {:?}, milliseconds - {:?}", current_time_gap.gap.num_seconds(), current_time_gap.gap.num_milliseconds());
+            self.welford_calculator.push(current_time_gap.gap.num_seconds() as i128); // Will this get too big with milliseconds??
             if let Some(largest_time_gap) = self.largest_time_gap {
                 if current_time_gap > largest_time_gap {
                     self.largest_time_gap =
