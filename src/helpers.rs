@@ -198,7 +198,7 @@ pub fn print_pretty_alerts_and_write_to_output_file(
         }
     }
     let levels = [AlertLevel::High, AlertLevel::Medium, AlertLevel::Low];
-    println!("{:?}", alert_table_structure);
+    // println!("{:?}", alert_table_structure);
 
     let mut output_table = Table::new();
     output_table.load_preset(UTF8_FULL)
@@ -222,21 +222,13 @@ pub fn print_pretty_alerts_and_write_to_output_file(
                 alerts_cell_string.push_str(&format!("{}: {}\n", alert_type_to_string(alert), num_files_in_this_category));
             }
             output_table.add_row(vec![
-                Cell::new(alerts_cell_string)
+                Cell::new(alerts_cell_string.trim_end())
                     .fg(alert_level_color(level)),
             ]);
         }   
     }
     println!("{output_table}");
 
-
-    // {High:{
-    //     SusTimeGap:[filename1, filename2],
-    //     NumDupes:[filename1]
-    // },
-    // Low:{
-    //     NumDupes:[filename2]
-    // }}
     Ok(())
 }
 
