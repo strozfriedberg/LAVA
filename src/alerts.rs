@@ -220,6 +220,8 @@ mod tests {
             num_redactions: 2,
             largest_time_gap: Some(dummy_timegap(60)),
             errors: Vec::new(),
+            mean: 10.0,
+            std: 4.0,
         };
 
         let alerts = generate_alerts(input);
@@ -238,6 +240,8 @@ mod tests {
             num_redactions: 0,
             largest_time_gap: Some(dummy_timegap(60)),
             errors: Vec::new(),
+            mean: 10.0,
+            std: 4.0,
         };
 
         let alerts = generate_alerts(input);

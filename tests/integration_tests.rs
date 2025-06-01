@@ -260,6 +260,7 @@ fn integration_test_no_timestamps_duplicates_and_redactions() {
 fn integration_test_print_alerts() {
     let data = "\
     id,name,date\n\
+    1,John,2025-05-10 09:55:00\n\
     1,John,2025-05-10 10:00:00\n\
     2,Jane,2025-05-10 11:00:00\n\
     2,Jane,2025-05-10 11:00:00\n\

@@ -56,7 +56,7 @@ pub struct LogRecordProcessor {
     pub num_dupes: usize,
     pub num_redactions: usize,
     pub errors: Vec<LavaError>,
-    pub welford_calculator: Welford<i64>,
+    pub welford_calculator: Welford<u128>,
     process_timestamps: bool,
 }
 
@@ -259,7 +259,7 @@ impl LogRecordProcessor {
                 self.min_timestamp = Some(current_timestamp)
             }
             let current_time_gap = TimeGap::new(previous_datetime, current_timestamp);
-            self.welford_calculator.push(current_time_gap.gap.num_milliseconds()); // Will this get too big with milliseconds??
+            self.welford_calculator.push(current_time_gap.gap.num_seconds() as u128); // Will this get too big with milliseconds??
             if let Some(largest_time_gap) = self.largest_time_gap {
                 if current_time_gap > largest_time_gap {
                     self.largest_time_gap =
@@ -321,25 +321,35 @@ impl LogRecordProcessor {
     }
 
     pub fn get_possible_alert_values(&self) -> PossibleAlertValues {
+        
+        let mean = match self.welford_calculator.mean() {
+            Some(real_mean) => real_mean as f64,
+            None => 0.0,
+        };
+        let standard_deviation = match self.welford_calculator.var(){
+            Some(variance) => (variance as f64).sqrt(),
+            None => 0.0,
+        };
+        println!("mean: {:?}, standard deviation: {:?}", mean, standard_deviation);
         PossibleAlertValues {
             num_records: self.num_records,
             num_dupes: self.num_dupes,
             num_redactions: self.num_redactions,
             largest_time_gap: self.largest_time_gap,
             errors: self.errors.clone(),
-            mean: self.welford_calculator.mean(),
-            variance: self.welford_calculator.var(),
+            mean: mean,
+            std: standard_deviation,
         }
     }
 }
 
-
+#[derive(Debug)]
 pub struct PossibleAlertValues {
     pub num_records: usize,
     pub num_dupes: usize,
     pub num_redactions: usize,
     pub largest_time_gap: Option<TimeGap>,
     pub errors: Vec<LavaError>,
-    pub mean: Option<i64>,
-    pub variance: Option<i64>,
+    pub mean: f64,
+    pub std: f64,
 }
