@@ -339,7 +339,7 @@ impl LogRecordProcessor {
     pub fn get_possible_alert_values(&self) -> PossibleAlertValues {
         
         let (mean, standard_deviation) = self.get_mean_and_standard_deviation();
-        println!("mean: {:?}, standard deviation: {:?}", mean, standard_deviation);
+        // println!("mean: {:?}, standard deviation: {:?}", mean, standard_deviation);
         PossibleAlertValues {
             num_records: self.num_records,
             num_dupes: self.num_dupes,
