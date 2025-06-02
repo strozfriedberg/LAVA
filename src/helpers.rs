@@ -200,7 +200,6 @@ pub fn print_pretty_alerts_and_write_to_output_file(results: &Vec<ProcessedLogFi
         }
     }
     let levels = [AlertLevel::High, AlertLevel::Medium, AlertLevel::Low];
-    // println!("{:?}", alert_table_structure);
 
     let mut output_table = Table::new();
     output_table
@@ -238,7 +237,12 @@ pub fn print_pretty_alerts_and_write_to_output_file(results: &Vec<ProcessedLogFi
             }
         }
     }
-    println!("{output_table}");
+    if output_table.is_empty(){
+        println!("No alerts were generated when processing {} files", results.len());
+    }else{
+        println!("{output_table}");
+    }
+
 
     Ok(())
 }
