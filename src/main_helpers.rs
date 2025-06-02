@@ -45,6 +45,7 @@ pub fn get_full_execution_settings(matches: &ArgMatches) -> Result<ExecutionSett
         regexes: regexes,
         timestamp_field: timestamp_field,
         quick_mode: matches.get_flag("quick"),
+        verbose_mode: matches.get_flag("verbose"),
         actually_write_to_files: true,
     })
 }

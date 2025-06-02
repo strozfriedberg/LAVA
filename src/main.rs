@@ -13,7 +13,8 @@ fn main() {
         .arg(arg!(-o --output <PATH> "Output directory.").default_value("LAVA_Output"))
         .arg(arg!(-r --regexes <PATH> "YML file with custom timestamp parsing to use. See Input_Regexes.yml for an example.").required(false))
         .arg(arg!(-t --tf <PATH> "Timestamp field to use for time analysis. Supports -> for nested keys in JSONL.").required(false))
-        .arg(arg!(-q --quick "Enable quick mode. Skips resource-intensive processing steps such as duplicate detection."))
+        .arg(arg!(-q --quick "Quick mode. Skips resource-intensive processing steps such as duplicate detection."))
+        .arg(arg!(-v --verbose "Verbose mode."))
         .get_matches();
 
     let execution_settings = get_full_execution_settings(&matches).unwrap(); // I think unwrap is fine here because I want to crash the program if I get an error here
