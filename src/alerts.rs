@@ -46,7 +46,7 @@ fn get_alert_threshold_value(alert_level: AlertLevel, alert_type: AlertType) -> 
     }
 }
 
-pub fn get_message_for_alert(
+pub fn get_message_for_alert_comfy_table(
     alert_level: AlertLevel,
     alert_type: AlertType,
     number_of_files: usize,
@@ -73,6 +73,31 @@ pub fn get_message_for_alert(
             get_alert_threshold_value(alert_level, alert_type)
         ),
         AlertType::JsonError => format!("{} files had json syntax errors", number_of_files),
+    }
+}
+
+pub fn get_message_for_alert_output_file(
+    alert_level: AlertLevel,
+    alert_type: AlertType,
+) -> String {
+    match alert_type {
+        AlertType::SusTimeGap => format!(
+            "Largest time gap greater than {} standard deviations above the average",
+            get_alert_threshold_value(alert_level, alert_type)
+        ),
+        AlertType::SusEventCount => format!(
+            "Event count was divisible by {}",
+            get_alert_threshold_value(alert_level, alert_type)
+        ),
+        AlertType::DupeEvents => format!(
+            "Greater than {} duplicate records",
+            get_alert_threshold_value(alert_level, alert_type)
+        ),
+        AlertType::RedactionEvents => format!(
+            "Greater than {} records with potential redactions",
+            get_alert_threshold_value(alert_level, alert_type)
+        ),
+        AlertType::JsonError => format!(" had json syntax errors"),
     }
 }
 

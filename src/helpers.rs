@@ -213,10 +213,11 @@ pub fn print_pretty_alerts_and_write_to_output_file(
                 if let Some(writer) = writer.as_mut() {
                     writeln!(
                         writer,
-                        "File Path:{} | Level: {:?} | Type {:?}",
+                        "File Path:{} | Level: {:?} | Type {:?} | Message: {}",
                         processed.file_path.as_ref().unwrap(),
                         alert.alert_level,
                         alert.alert_type,
+                        get_message_for_alert_output_file(alert.alert_level, alert.alert_type)
                     ).expect("Failed to write to alert output file");
                 }
                 alert_table_structure
@@ -253,7 +254,7 @@ pub fn print_pretty_alerts_and_write_to_output_file(
                     let num_files_in_this_category = alerts_of_this_level.get(alert).unwrap().len();
                     alerts_cell_string.push_str(&format!(
                         "{}\n",
-                        get_message_for_alert(
+                        get_message_for_alert_comfy_table(
                             level.clone(),
                             alert.clone(),
                             num_files_in_this_category
