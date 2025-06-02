@@ -224,9 +224,8 @@ pub fn print_pretty_alerts_and_write_to_output_file(results: &Vec<ProcessedLogFi
             for alert in alerts_of_this_level.keys() {
                 let num_files_in_this_category = alerts_of_this_level.get(alert).unwrap().len();
                 alerts_cell_string.push_str(&format!(
-                    "{}: {}\n",
-                    alert_type_to_string(alert),
-                    num_files_in_this_category
+                    "{}\n",
+                    get_message_for_alert(level.clone(), alert.clone(), num_files_in_this_category)
                 ));
             }
             output_table.add_row(vec![

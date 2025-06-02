@@ -16,6 +16,47 @@ pub enum AlertType {
     JsonError,
 }
 
+fn get_alert_threshold_value(alert_level: AlertLevel, alert_type: AlertType) -> usize {
+    match alert_type {
+        AlertType::SusTimeGap => match alert_level {
+            AlertLevel::High => 100,
+            AlertLevel::Medium => 30,
+            AlertLevel::Low => 10,
+        },
+        AlertType::SusEventCount => match alert_level {
+            AlertLevel::High => 1000,
+            AlertLevel::Medium => 100,
+            AlertLevel::Low => 10,
+        },
+        AlertType::DupeEvents => match alert_level {
+            AlertLevel::High => 100,
+            AlertLevel::Medium => 10,
+            AlertLevel::Low => 0,
+        },
+        AlertType::RedactionEvents => match alert_level {
+            AlertLevel::High => 100,
+            AlertLevel::Medium => 10,
+            AlertLevel::Low => 0,
+        },
+        AlertType::JsonError => match alert_level {
+            AlertLevel::High => 100,
+            AlertLevel::Medium => 30,
+            AlertLevel::Low => 10,
+        },
+    }
+}
+
+pub fn get_message_for_alert(alert_level: AlertLevel, alert_type: AlertType, number_of_files: usize) -> String {
+    match alert_type {
+        AlertType::SusTimeGap => format!("{} files had a largest time gap greater than {} standard deviations above the average", number_of_files, get_alert_threshold_value(alert_level, alert_type)),
+        AlertType::SusEventCount => format!("{} files had an event count divisible by {}", number_of_files, get_alert_threshold_value(alert_level, alert_type)),
+        AlertType::DupeEvents => format!("{} files had greater than {} duplicate records", number_of_files, get_alert_threshold_value(alert_level, alert_type)),
+        AlertType::RedactionEvents => format!("{} files had greater than {} records with potential redactions", number_of_files, get_alert_threshold_value(alert_level, alert_type)),
+        AlertType::JsonError => format!("{} files had json syntax errors", number_of_files)
+    }
+
+}
+
 #[derive(Debug, Clone)]
 pub struct Alert {
     pub alert_level: AlertLevel,
@@ -29,54 +70,6 @@ impl Alert {
             alert_type,
         }
     }
-
-    // pub fn message(&self) -> String {
-    //     match (&self.alert_type, &self.alert_level) {
-    //         (AlertType::SusTimeGap(gap), AlertLevel::High) => {
-    //             format!("CRITICAL: Time gap of {:?} exceeds 24 hours", gap)
-    //         }
-    //         (AlertType::SusTimeGap(gap), AlertLevel::Medium) => {
-    //             format!("WARNING: Time gap of {:?} exceeds 1 hour", gap)
-    //         }
-    //         (AlertType::SusTimeGap(gap), AlertLevel::Low) => {
-    //             format!("Notice: Time gap of {:?} exceeds 5 minutes", gap)
-    //         }
-
-    //         (AlertType::SusEventCount(n), AlertLevel::High) => {
-    //             format!("High volume of suspicious events: {}", n)
-    //         }
-    //         (AlertType::SusEventCount(n), AlertLevel::Medium) => {
-    //             format!("Moderate number of suspicious events: {}", n)
-    //         }
-    //         (AlertType::SusEventCount(n), AlertLevel::Low) => {
-    //             format!("Suspicious events detected: {}", n)
-    //         }
-
-    //         (AlertType::DupeEvents(n), AlertLevel::High) => {
-    //             format!("Critical: {} duplicate events detected", n)
-    //         }
-    //         (AlertType::DupeEvents(n), AlertLevel::Medium) => {
-    //             format!("Multiple duplicate events detected: {}", n)
-    //         }
-    //         (AlertType::DupeEvents(n), AlertLevel::Low) => {
-    //             format!("Some duplicate events found: {}", n)
-    //         }
-
-    //         (AlertType::RedactionEvents(n), AlertLevel::High) => {
-    //             format!("Excessive redactions: {}", n)
-    //         }
-    //         (AlertType::RedactionEvents(n), AlertLevel::Medium) => {
-    //             format!("Noticeable redactions: {}", n)
-    //         }
-    //         (AlertType::RedactionEvents(n), AlertLevel::Low) => {
-    //             format!("Redactions detected: {}", n)
-    //         }
-
-    //         (AlertType::JsonError, _) => {
-    //             format!("JSON parsing error detected ({:?} severity)", self.alert_level)
-    //         }
-    //     }
-    // }
 }
 
 pub fn generate_alerts(things_to_alert_on: PossibleAlertValues) -> Vec<Alert> {
@@ -100,7 +93,7 @@ pub fn generate_alerts(things_to_alert_on: PossibleAlertValues) -> Vec<Alert> {
     //Time gap alerts
     if let Some(time_gap) = things_to_alert_on.largest_time_gap {
         let standard_deviations_above_the_mean =
-            (time_gap.gap.num_seconds() as f64 - things_to_alert_on.mean) / things_to_alert_on.std;
+            ((time_gap.gap.num_seconds() as f64 - things_to_alert_on.mean) / things_to_alert_on.std).floor() as usize;
         if let Some(level) = get_alert_level_of_time_gap(standard_deviations_above_the_mean) {
             alerts.push(Alert::new(level, AlertType::SusTimeGap));
         };
@@ -109,12 +102,12 @@ pub fn generate_alerts(things_to_alert_on: PossibleAlertValues) -> Vec<Alert> {
     alerts
 }
 
-fn get_alert_level_of_time_gap(standard_deviations_above_the_mean: f64) -> Option<AlertLevel> {
-    if standard_deviations_above_the_mean >= 100.0 {
+fn get_alert_level_of_time_gap(standard_deviations_above_the_mean: usize) -> Option<AlertLevel> {
+    if standard_deviations_above_the_mean > get_alert_threshold_value(AlertLevel::High, AlertType::SusTimeGap) {
         Some(AlertLevel::High)
-    } else if standard_deviations_above_the_mean >= 30.0 {
+    } else if standard_deviations_above_the_mean > get_alert_threshold_value(AlertLevel::Medium, AlertType::SusTimeGap) {
         Some(AlertLevel::Medium)
-    } else if standard_deviations_above_the_mean >= 10.0 {
+    } else if standard_deviations_above_the_mean > get_alert_threshold_value(AlertLevel::Low, AlertType::SusTimeGap) {
         Some(AlertLevel::Low)
     } else {
         None
@@ -122,11 +115,11 @@ fn get_alert_level_of_time_gap(standard_deviations_above_the_mean: f64) -> Optio
 }
 
 fn get_alert_level_of_num_redactions(num_redactions: usize) -> Option<AlertLevel> {
-    if num_redactions > 100 {
+    if num_redactions > get_alert_threshold_value(AlertLevel::High, AlertType::RedactionEvents) {
         Some(AlertLevel::High)
-    } else if num_redactions > 10 {
+    } else if num_redactions > get_alert_threshold_value(AlertLevel::Medium, AlertType::RedactionEvents) {
         Some(AlertLevel::Medium)
-    } else if num_redactions > 0 {
+    } else if num_redactions > get_alert_threshold_value(AlertLevel::Low, AlertType::RedactionEvents) {
         Some(AlertLevel::Low)
     } else {
         None
@@ -134,11 +127,11 @@ fn get_alert_level_of_num_redactions(num_redactions: usize) -> Option<AlertLevel
 }
 
 fn get_alert_level_of_num_dupes(num_dupes: usize) -> Option<AlertLevel> {
-    if num_dupes > 100 {
+    if num_dupes > get_alert_threshold_value(AlertLevel::High, AlertType::DupeEvents) {
         Some(AlertLevel::High)
-    } else if num_dupes > 10 {
+    } else if num_dupes > get_alert_threshold_value(AlertLevel::Medium, AlertType::DupeEvents) {
         Some(AlertLevel::Medium)
-    } else if num_dupes > 0 {
+    } else if num_dupes > get_alert_threshold_value(AlertLevel::Low, AlertType::DupeEvents) {
         Some(AlertLevel::Low)
     } else {
         None
@@ -146,11 +139,11 @@ fn get_alert_level_of_num_dupes(num_dupes: usize) -> Option<AlertLevel> {
 }
 
 fn get_alert_level_of_num_events(n: usize) -> Option<AlertLevel> {
-    if n % 1000 == 0 {
+    if n % get_alert_threshold_value(AlertLevel::High, AlertType::SusEventCount) == 0 {
         Some(AlertLevel::High)
-    } else if n % 100 == 0 {
+    } else if n % get_alert_threshold_value(AlertLevel::Medium, AlertType::SusEventCount) == 0 {
         Some(AlertLevel::Medium)
-    } else if n % 10 == 0 {
+    } else if n % get_alert_threshold_value(AlertLevel::Low, AlertType::SusEventCount) == 0 {
         Some(AlertLevel::Low)
     } else {
         None
@@ -179,10 +172,10 @@ mod tests {
     }
     #[test]
     fn test_get_alert_level_of_time_gap() {
-        assert_eq!(get_alert_level_of_time_gap(200.0), Some(AlertLevel::High));
-        assert_eq!(get_alert_level_of_time_gap(60.0), Some(AlertLevel::Medium));
-        assert_eq!(get_alert_level_of_time_gap(15.0), Some(AlertLevel::Low));
-        assert_eq!(get_alert_level_of_time_gap(2.0), None);
+        assert_eq!(get_alert_level_of_time_gap(200), Some(AlertLevel::High));
+        assert_eq!(get_alert_level_of_time_gap(60), Some(AlertLevel::Medium));
+        assert_eq!(get_alert_level_of_time_gap(15), Some(AlertLevel::Low));
+        assert_eq!(get_alert_level_of_time_gap(2), None);
     }
 
     #[test]
