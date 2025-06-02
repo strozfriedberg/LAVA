@@ -70,7 +70,7 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
     if let Err(e) = write_output_to_csv(&results, &execution_settings) {
         eprintln!("Failed to write to CSV: {}", e);
     }
-    if let Err(e) = print_pretty_alerts_and_write_to_output_file(&results) {
+    if let Err(e) = print_pretty_alerts_and_write_to_output_file(&results, &execution_settings) {
         eprintln!("Failed to output alerts: {}", e);
     }
 }

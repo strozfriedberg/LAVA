@@ -281,7 +281,7 @@ fn integration_test_print_alerts() {
         process_file(log_file, &settings).expect("Failed to get Proceesed Log File"),
         process_file(log_file2, &settings).expect("Failed to get Proceesed Log File"),
     ];
-    if let Err(e) = print_pretty_alerts_and_write_to_output_file(&output) {
+    if let Err(e) = print_pretty_alerts_and_write_to_output_file(&output, &settings) {
         eprintln!("Failed to output alerts: {}", e);
     }
 

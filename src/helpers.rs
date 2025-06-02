@@ -12,6 +12,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::fs::OpenOptions;
 use std::hash::{Hash, Hasher};
 use std::io::{BufWriter, Write};
+use std::path::PathBuf;
 
 pub fn generate_log_filename() -> String {
     let now = Utc::now();
@@ -184,12 +185,40 @@ pub fn write_errors_to_error_log(
     Ok(())
 }
 
-pub fn print_pretty_alerts_and_write_to_output_file(results: &Vec<ProcessedLogFile>) -> Result<()> {
+pub fn print_pretty_alerts_and_write_to_output_file(
+    results: &Vec<ProcessedLogFile>,
+    execution_settings: &ExecutionSettings,
+) -> Result<()> {
+
+    let mut writer = match execution_settings.actually_write_to_files {
+        false => None,
+        true => {
+            let output_file_path: PathBuf = execution_settings.output_dir.join("alerts_output.txt");
+            let alert_output_file = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .write(true)
+                .open(output_file_path)
+                .expect("Failed to open alerts output file");
+            Some(BufWriter::new(alert_output_file))
+        }
+    };
+
+
     let mut alert_table_structure: HashMap<AlertLevel, HashMap<AlertType, Vec<&String>>> =
         HashMap::new();
     for processed in results.iter() {
         if let Some(alerts) = &processed.alerts {
             for alert in alerts.iter() {
+                if let Some(writer) = writer.as_mut() {
+                    writeln!(
+                        writer,
+                        "File Path:{} | Level: {:?} | Type {:?}",
+                        processed.file_path.as_ref().unwrap(),
+                        alert.alert_level,
+                        alert.alert_type,
+                    ).expect("Failed to write to alert output file");
+                }
                 alert_table_structure
                     .entry(alert.alert_level)
                     .or_insert_with(HashMap::new)
@@ -237,12 +266,14 @@ pub fn print_pretty_alerts_and_write_to_output_file(results: &Vec<ProcessedLogFi
             }
         }
     }
-    if output_table.is_empty(){
-        println!("No alerts were generated when processing {} files", results.len());
-    }else{
+    if output_table.is_empty() {
+        println!(
+            "No alerts were generated when processing {} files",
+            results.len()
+        );
+    } else {
         println!("{output_table}");
     }
-
 
     Ok(())
 }
