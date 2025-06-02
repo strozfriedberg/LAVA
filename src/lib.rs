@@ -19,9 +19,9 @@ pub mod basic_objects;
 use basic_objects::*;
 mod processing_objects;
 use processing_objects::*;
+pub mod alerts;
 pub mod main_helpers;
 mod redaction_regex;
-pub mod alerts;
 use alerts::generate_alerts;
 include!(concat!(env!("OUT_DIR"), "/generated_date_regexes.rs"));
 
@@ -70,7 +70,7 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
     if let Err(e) = write_output_to_csv(&results, &execution_settings) {
         eprintln!("Failed to write to CSV: {}", e);
     }
-    if let Err(e) = print_pretty_alerts_and_write_to_output_file(&results, &execution_settings){
+    if let Err(e) = print_pretty_alerts_and_write_to_output_file(&results) {
         eprintln!("Failed to output alerts: {}", e);
     }
 }

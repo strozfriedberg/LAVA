@@ -1,7 +1,7 @@
 use lava::{
     basic_objects::{ExecutionSettings, LogFile, LogType},
+    helpers::print_pretty_alerts_and_write_to_output_file,
     process_file,
-    helpers::print_pretty_alerts_and_write_to_output_file
 };
 use std::fs;
 use tempfile::NamedTempFile;
@@ -254,7 +254,6 @@ fn integration_test_no_timestamps_duplicates_and_redactions() {
     temp_log_file.delete_temp_file();
 }
 
-
 #[test]
 fn integration_test_print_alerts() {
     let data = "\
@@ -278,8 +277,11 @@ fn integration_test_print_alerts() {
     let log_file2 = temp_log_file2.get_log_file_object();
     let settings = ExecutionSettings::create_integration_test_object(None, false);
 
-    let output = vec![process_file(log_file, &settings).expect("Failed to get Proceesed Log File"), process_file(log_file2, &settings).expect("Failed to get Proceesed Log File")];
-    if let Err(e) = print_pretty_alerts_and_write_to_output_file(&output, &settings){
+    let output = vec![
+        process_file(log_file, &settings).expect("Failed to get Proceesed Log File"),
+        process_file(log_file2, &settings).expect("Failed to get Proceesed Log File"),
+    ];
+    if let Err(e) = print_pretty_alerts_and_write_to_output_file(&output) {
         eprintln!("Failed to output alerts: {}", e);
     }
 

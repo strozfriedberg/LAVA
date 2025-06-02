@@ -1,12 +1,11 @@
+use crate::alerts::Alert;
 use crate::date_regex::*;
 use crate::errors::LavaError;
 use crate::helpers::*;
-use crate::alerts::Alert;
 use chrono::{NaiveDateTime, TimeDelta};
 use csv::StringRecord;
 use std::cmp::Ordering;
 use std::path::PathBuf;
-use serde::Serialize;
 
 #[cfg(test)]
 mod logfilerecord_tests;
@@ -86,7 +85,6 @@ pub struct ProcessedLogFile {
     pub errors: Vec<LavaError>,
     pub alerts: Option<Vec<Alert>>,
 }
-
 
 #[derive(Debug, Default)]
 pub struct TimeStatisticsFields {

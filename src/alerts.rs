@@ -1,4 +1,3 @@
-use chrono::TimeDelta;
 use crate::processing_objects::PossibleAlertValues;
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
@@ -16,7 +15,6 @@ pub enum AlertType {
     RedactionEvents,
     JsonError,
 }
-
 
 #[derive(Debug, Clone)]
 pub struct Alert {
@@ -81,39 +79,37 @@ impl Alert {
     // }
 }
 
-
-pub fn generate_alerts(things_to_alert_on: PossibleAlertValues ) -> Vec<Alert> {
+pub fn generate_alerts(things_to_alert_on: PossibleAlertValues) -> Vec<Alert> {
     let mut alerts: Vec<Alert> = Vec::new();
 
-    //Num records alerts 
+    //Num records alerts
     if let Some(level) = get_alert_level_of_num_events(things_to_alert_on.num_records) {
         alerts.push(Alert::new(level, AlertType::SusEventCount));
     };
 
-    //Num dupes alerts 
+    //Num dupes alerts
     if let Some(level) = get_alert_level_of_num_dupes(things_to_alert_on.num_dupes) {
         alerts.push(Alert::new(level, AlertType::DupeEvents));
     };
 
-    //Num redactions alerts 
+    //Num redactions alerts
     if let Some(level) = get_alert_level_of_num_redactions(things_to_alert_on.num_redactions) {
         alerts.push(Alert::new(level, AlertType::RedactionEvents));
     };
-    
+
     //Time gap alerts
     if let Some(time_gap) = things_to_alert_on.largest_time_gap {
-        let standard_deviations_above_the_mean = (time_gap.gap.num_seconds() as f64 - things_to_alert_on.mean)/things_to_alert_on.std;
+        let standard_deviations_above_the_mean =
+            (time_gap.gap.num_seconds() as f64 - things_to_alert_on.mean) / things_to_alert_on.std;
         if let Some(level) = get_alert_level_of_time_gap(standard_deviations_above_the_mean) {
             alerts.push(Alert::new(level, AlertType::SusTimeGap));
         };
     };
-    
-    alerts
 
+    alerts
 }
 
-
-fn get_alert_level_of_time_gap(standard_deviations_above_the_mean: f64)-> Option<AlertLevel> {
+fn get_alert_level_of_time_gap(standard_deviations_above_the_mean: f64) -> Option<AlertLevel> {
     if standard_deviations_above_the_mean >= 100.0 {
         Some(AlertLevel::High)
     } else if standard_deviations_above_the_mean >= 30.0 {
@@ -125,25 +121,24 @@ fn get_alert_level_of_time_gap(standard_deviations_above_the_mean: f64)-> Option
     }
 }
 
-
-fn get_alert_level_of_num_redactions(num_redactions: usize)-> Option<AlertLevel> {
+fn get_alert_level_of_num_redactions(num_redactions: usize) -> Option<AlertLevel> {
     if num_redactions > 100 {
         Some(AlertLevel::High)
-    } else if num_redactions > 10  {
+    } else if num_redactions > 10 {
         Some(AlertLevel::Medium)
-    } else if num_redactions > 0  {
+    } else if num_redactions > 0 {
         Some(AlertLevel::Low)
     } else {
         None
     }
 }
 
-fn get_alert_level_of_num_dupes(num_dupes: usize)-> Option<AlertLevel> {
+fn get_alert_level_of_num_dupes(num_dupes: usize) -> Option<AlertLevel> {
     if num_dupes > 100 {
         Some(AlertLevel::High)
-    } else if num_dupes > 10  {
+    } else if num_dupes > 10 {
         Some(AlertLevel::Medium)
-    } else if num_dupes > 0  {
+    } else if num_dupes > 0 {
         Some(AlertLevel::Low)
     } else {
         None
@@ -168,6 +163,7 @@ mod tests {
     use crate::basic_objects::TimeGap;
     use crate::processing_objects::PossibleAlertValues;
     use chrono::NaiveDate;
+    use chrono::TimeDelta;
 
     fn dummy_timegap(gap_secs: i64) -> TimeGap {
         let start = NaiveDate::from_ymd_opt(2024, 1, 1)
@@ -207,8 +203,14 @@ mod tests {
 
     #[test]
     fn test_get_alert_level_of_num_redactions() {
-        assert_eq!(get_alert_level_of_num_redactions(150), Some(AlertLevel::High));
-        assert_eq!(get_alert_level_of_num_redactions(20), Some(AlertLevel::Medium));
+        assert_eq!(
+            get_alert_level_of_num_redactions(150),
+            Some(AlertLevel::High)
+        );
+        assert_eq!(
+            get_alert_level_of_num_redactions(20),
+            Some(AlertLevel::Medium)
+        );
         assert_eq!(get_alert_level_of_num_redactions(1), Some(AlertLevel::Low));
         assert_eq!(get_alert_level_of_num_redactions(0), None);
     }
@@ -228,9 +230,21 @@ mod tests {
         let alerts = generate_alerts(input);
 
         assert_eq!(alerts.len(), 4);
-        assert!(alerts.iter().any(|a| matches!(a.alert_level, AlertLevel::High)));
-        assert!(alerts.iter().any(|a| matches!(a.alert_level, AlertLevel::Medium)));
-        assert!(alerts.iter().any(|a| matches!(a.alert_level, AlertLevel::Low)));
+        assert!(
+            alerts
+                .iter()
+                .any(|a| matches!(a.alert_level, AlertLevel::High))
+        );
+        assert!(
+            alerts
+                .iter()
+                .any(|a| matches!(a.alert_level, AlertLevel::Medium))
+        );
+        assert!(
+            alerts
+                .iter()
+                .any(|a| matches!(a.alert_level, AlertLevel::Low))
+        );
     }
 
     #[test]

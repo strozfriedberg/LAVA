@@ -260,7 +260,8 @@ impl LogRecordProcessor {
             }
             let current_time_gap = TimeGap::new(previous_datetime, current_timestamp);
             // println!("Seconds - {:?}, milliseconds - {:?}", current_time_gap.gap.num_seconds(), current_time_gap.gap.num_milliseconds());
-            self.welford_calculator.push(current_time_gap.gap.num_seconds() as i128); // Will this get too big with milliseconds??
+            self.welford_calculator
+                .push(current_time_gap.gap.num_seconds() as i128); // Will this get too big with milliseconds??
             if let Some(largest_time_gap) = self.largest_time_gap {
                 if current_time_gap > largest_time_gap {
                     self.largest_time_gap =
@@ -314,7 +315,10 @@ impl LogRecordProcessor {
             let (mean, standard_deviation) = self.get_mean_and_standard_deviation();
             statistics_fields.mean_time_gap = Some(mean.to_string());
             statistics_fields.std_dev_time_gap = Some(standard_deviation.to_string());
-            statistics_fields.number_of_std_devs_above = Some(((largest_time_gap.gap.num_seconds() as f64 - mean)/standard_deviation).to_string())
+            statistics_fields.number_of_std_devs_above = Some(
+                ((largest_time_gap.gap.num_seconds() as f64 - mean) / standard_deviation)
+                    .to_string(),
+            )
         }
 
         if !self.execution_settings.quick_mode {
@@ -325,19 +329,18 @@ impl LogRecordProcessor {
         Ok(statistics_fields)
     }
 
-    fn get_mean_and_standard_deviation(&self) -> (f64, f64){
+    fn get_mean_and_standard_deviation(&self) -> (f64, f64) {
         let mean = match self.welford_calculator.mean() {
             Some(real_mean) => real_mean as f64,
             None => 0.0,
         };
-        let standard_deviation = match self.welford_calculator.var(){
+        let standard_deviation = match self.welford_calculator.var() {
             Some(variance) => (variance as f64).sqrt(),
             None => 0.0,
         };
         (mean, standard_deviation)
     }
     pub fn get_possible_alert_values(&self) -> PossibleAlertValues {
-        
         let (mean, standard_deviation) = self.get_mean_and_standard_deviation();
         // println!("mean: {:?}, standard deviation: {:?}", mean, standard_deviation);
         PossibleAlertValues {
