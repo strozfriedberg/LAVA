@@ -211,41 +211,36 @@ pub fn print_pretty_alerts_and_write_to_output_file(results: &Vec<ProcessedLogFi
     let tbch = output_table.style(TableComponent::TopBorder).unwrap();
 
     for level in levels.iter() {
-        output_table
-            .add_row(vec![
-                Cell::new(alert_level_to_string(level)).fg(alert_level_color(level)),
-            ])
-            .set_style(TableComponent::MiddleIntersections, hlch)
-            .set_style(TableComponent::TopBorderIntersections, tbch)
-            .set_style(TableComponent::BottomBorderIntersections, hlch);
-
         if let Some(alerts_of_this_level) = alert_table_structure.get(level) {
-            let mut alerts_cell_string = String::new();
-            for alert in alerts_of_this_level.keys() {
-                let num_files_in_this_category = alerts_of_this_level.get(alert).unwrap().len();
-                alerts_cell_string.push_str(&format!(
-                    "{}\n",
-                    get_message_for_alert(level.clone(), alert.clone(), num_files_in_this_category)
-                ));
+            if alerts_of_this_level.keys().len() > 0 {
+                output_table
+                    .add_row(vec![
+                        Cell::new(alert_level_to_string(level)).fg(alert_level_color(level)),
+                    ])
+                    .set_style(TableComponent::MiddleIntersections, hlch)
+                    .set_style(TableComponent::TopBorderIntersections, tbch)
+                    .set_style(TableComponent::BottomBorderIntersections, hlch);
+                let mut alerts_cell_string = String::new();
+                for alert in alerts_of_this_level.keys() {
+                    let num_files_in_this_category = alerts_of_this_level.get(alert).unwrap().len();
+                    alerts_cell_string.push_str(&format!(
+                        "{}\n",
+                        get_message_for_alert(
+                            level.clone(),
+                            alert.clone(),
+                            num_files_in_this_category
+                        )
+                    ));
+                }
+                output_table.add_row(vec![
+                    Cell::new(alerts_cell_string.trim_end()).fg(alert_level_color(level)),
+                ]);
             }
-            output_table.add_row(vec![
-                Cell::new(alerts_cell_string.trim_end()).fg(alert_level_color(level)),
-            ]);
         }
     }
     println!("{output_table}");
 
     Ok(())
-}
-
-fn alert_type_to_string(alert_type: &AlertType) -> &str {
-    match alert_type {
-        AlertType::SusTimeGap => "SusTimeGap",
-        AlertType::DupeEvents => "DupeEvents",
-        AlertType::JsonError => "Json Error",
-        AlertType::RedactionEvents => "Redactions",
-        AlertType::SusEventCount => "SusEventCount",
-    }
 }
 
 fn alert_level_to_string(alert_level: &AlertLevel) -> &str {

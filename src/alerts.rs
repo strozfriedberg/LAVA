@@ -95,7 +95,9 @@ pub fn generate_alerts(things_to_alert_on: PossibleAlertValues) -> Vec<Alert> {
     let mut alerts: Vec<Alert> = Vec::new();
 
     //Num records alerts
-    if let Some(level) = get_alert_level_remainder_zero(things_to_alert_on.num_records, AlertType::SusEventCount) {
+    if let Some(level) =
+        get_alert_level_remainder_zero(things_to_alert_on.num_records, AlertType::SusEventCount)
+    {
         alerts.push(Alert::new(level, AlertType::SusEventCount));
     };
 
@@ -201,10 +203,22 @@ mod tests {
 
     #[test]
     fn test_get_alert_level_remainder_zero() {
-        assert_eq!(get_alert_level_remainder_zero(1000, AlertType::SusEventCount), Some(AlertLevel::High));
-        assert_eq!(get_alert_level_remainder_zero(200,AlertType::SusEventCount), Some(AlertLevel::Medium));
-        assert_eq!(get_alert_level_remainder_zero(30, AlertType::SusEventCount), Some(AlertLevel::Low));
-        assert_eq!(get_alert_level_remainder_zero(7, AlertType::SusEventCount), None);
+        assert_eq!(
+            get_alert_level_remainder_zero(1000, AlertType::SusEventCount),
+            Some(AlertLevel::High)
+        );
+        assert_eq!(
+            get_alert_level_remainder_zero(200, AlertType::SusEventCount),
+            Some(AlertLevel::Medium)
+        );
+        assert_eq!(
+            get_alert_level_remainder_zero(30, AlertType::SusEventCount),
+            Some(AlertLevel::Low)
+        );
+        assert_eq!(
+            get_alert_level_remainder_zero(7, AlertType::SusEventCount),
+            None
+        );
     }
 
     #[test]
