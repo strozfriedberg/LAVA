@@ -95,7 +95,7 @@ pub fn generate_alerts(things_to_alert_on: PossibleAlertValues) -> Vec<Alert> {
     let mut alerts: Vec<Alert> = Vec::new();
 
     //Num records alerts
-    if let Some(level) = get_alert_level_of_num_events(things_to_alert_on.num_records) {
+    if let Some(level) = get_alert_level_remainder_zero(things_to_alert_on.num_records, AlertType::SusEventCount) {
         alerts.push(Alert::new(level, AlertType::SusEventCount));
     };
 
@@ -147,12 +147,12 @@ fn get_alert_level_greater_than_threshold_values(
     }
 }
 
-fn get_alert_level_of_num_events(n: usize) -> Option<AlertLevel> {
-    if n % get_alert_threshold_value(AlertLevel::High, AlertType::SusEventCount) == 0 {
+fn get_alert_level_remainder_zero(n: usize, alert_type: AlertType) -> Option<AlertLevel> {
+    if n % get_alert_threshold_value(AlertLevel::High, alert_type) == 0 {
         Some(AlertLevel::High)
-    } else if n % get_alert_threshold_value(AlertLevel::Medium, AlertType::SusEventCount) == 0 {
+    } else if n % get_alert_threshold_value(AlertLevel::Medium, alert_type) == 0 {
         Some(AlertLevel::Medium)
-    } else if n % get_alert_threshold_value(AlertLevel::Low, AlertType::SusEventCount) == 0 {
+    } else if n % get_alert_threshold_value(AlertLevel::Low, alert_type) == 0 {
         Some(AlertLevel::Low)
     } else {
         None
@@ -200,11 +200,11 @@ mod tests {
     }
 
     #[test]
-    fn test_get_alert_level_of_num_events() {
-        assert_eq!(get_alert_level_of_num_events(1000), Some(AlertLevel::High));
-        assert_eq!(get_alert_level_of_num_events(200), Some(AlertLevel::Medium));
-        assert_eq!(get_alert_level_of_num_events(30), Some(AlertLevel::Low));
-        assert_eq!(get_alert_level_of_num_events(7), None);
+    fn test_get_alert_level_remainder_zero() {
+        assert_eq!(get_alert_level_remainder_zero(1000, AlertType::SusEventCount), Some(AlertLevel::High));
+        assert_eq!(get_alert_level_remainder_zero(200,AlertType::SusEventCount), Some(AlertLevel::Medium));
+        assert_eq!(get_alert_level_remainder_zero(30, AlertType::SusEventCount), Some(AlertLevel::Low));
+        assert_eq!(get_alert_level_remainder_zero(7, AlertType::SusEventCount), None);
     }
 
     #[test]
