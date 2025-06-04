@@ -102,6 +102,7 @@ pub fn get_reader_from_certain_index(
     }
     let reader = ReaderBuilder::new()
         .has_headers(false) // Set to false if there's no header
+        .flexible(true)
         .from_reader(buf_reader);
     Ok(reader)
 }
@@ -114,12 +115,16 @@ pub fn try_to_get_timestamp_hit_for_csv(
     // println!("Using header index {}", header_row);
     let mut reader = get_reader_from_certain_index(header_info.first_data_row, log_file)?;
 
-    let record: csv::StringRecord = reader.records().next().unwrap().map_err(|e| {
-        LavaError::new(
-            format!("Unable to get first row because of {e}"),
-            LavaErrorLevel::Critical,
-        )
-    })?; // This is returning a result, that is why I had to use the question mark below before the iter()
+    let record: csv::StringRecord = reader
+        .records()
+        .next()
+        .ok_or_else(|| LavaError::new("Empty CSV file.", LavaErrorLevel::Critical))?
+        .map_err(|e| {
+            LavaError::new(
+                format!("Unable to get first row because of {e}"),
+                LavaErrorLevel::Critical,
+            )
+        })?; // This is returning a result, that is why I had to use the question mark below before the iter()
 
     let response = try_to_get_timestamp_hit_for_csv_functionality(
         header_info.headers,
