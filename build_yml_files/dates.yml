@@ -38,3 +38,13 @@
   should_match: 
     - "2023-01-01 01:00:00"
   should_not_match:
+
+- pretty_format: "Epoch Time"
+  regex: "^\\d{10}$"
+  strftime_format: "%s"  # Note: %s is platform-dependent
+  should_match:
+    - "1672534800"
+  should_not_match:
+    - "16725348000"
+    - "1672534800 "
+    - " 1672534800"
