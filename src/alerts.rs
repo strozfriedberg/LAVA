@@ -76,10 +76,7 @@ pub fn get_message_for_alert_comfy_table(
     }
 }
 
-pub fn get_message_for_alert_output_file(
-    alert_level: AlertLevel,
-    alert_type: AlertType,
-) -> String {
+pub fn get_message_for_alert_output_file(alert_level: AlertLevel, alert_type: AlertType) -> String {
     match alert_type {
         AlertType::SusTimeGap => format!(
             "Largest time gap greater than {} standard deviations above the average",

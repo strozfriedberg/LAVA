@@ -189,7 +189,6 @@ pub fn print_pretty_alerts_and_write_to_output_file(
     results: &Vec<ProcessedLogFile>,
     execution_settings: &ExecutionSettings,
 ) -> Result<()> {
-
     let mut writer = match execution_settings.actually_write_to_files {
         false => None,
         true => {
@@ -204,7 +203,6 @@ pub fn print_pretty_alerts_and_write_to_output_file(
         }
     };
 
-
     let mut alert_table_structure: HashMap<AlertLevel, HashMap<AlertType, Vec<&String>>> =
         HashMap::new();
     for processed in results.iter() {
@@ -218,7 +216,8 @@ pub fn print_pretty_alerts_and_write_to_output_file(
                         alert.alert_level,
                         alert.alert_type,
                         get_message_for_alert_output_file(alert.alert_level, alert.alert_type)
-                    ).expect("Failed to write to alert output file");
+                    )
+                    .expect("Failed to write to alert output file");
                 }
                 alert_table_structure
                     .entry(alert.alert_level)
