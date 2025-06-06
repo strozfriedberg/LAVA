@@ -8,9 +8,11 @@ mod errors;
 use errors::*;
 mod handlers {
     pub mod csv_handlers;
+    pub mod json_handlers;
     pub mod unstructured_handlers;
 }
 use handlers::csv_handlers::*;
+use handlers::json_handlers::*;
 use handlers::unstructured_handlers::*;
 mod date_regex;
 pub mod helpers;
@@ -311,6 +313,8 @@ fn try_to_get_timestamp_hit(
         );
     } else if log_file.log_type == LogType::Unstructured {
         return try_to_get_timestamp_hit_for_unstructured(log_file, execution_settings);
+    } else if log_file.log_type == LogType::Json {
+        return try_to_get_timestamp_hit_for_json(log_file, execution_settings);
     }
     Err(LavaError::new(
         "Have not implemented scanning for timestamp for this file type yet",
