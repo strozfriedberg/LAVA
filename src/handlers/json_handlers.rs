@@ -84,22 +84,45 @@ pub fn try_to_get_timestamp_hit_for_json(
                 LavaErrorLevel::Critical,
             )
         })?;
-        let serialized_line = parse_json_line_into_json(line, 0);
-        println!("{:?}", serialized_line);
-        if let Some(field_to_use) = &execution_settings.timestamp_field {
-            //split the string based on ->
-        } else {
 
-        }
+        return try_to_get_timestamp_hit_for_json_functionality(line, execution_settings)
     }
 
     Ok(None)
 }
 
+fn try_to_get_timestamp_hit_for_json_functionality(line: String, execution_settings: &ExecutionSettings) -> Result<Option<IdentifiedTimeInformation>> {
+    let serialized_line = parse_json_line_into_json(line, 0)?;
+    println!("{:?}", serialized_line);
+    if let Some(field_to_use) = &execution_settings.timestamp_field {
+        //split the string based on ->
+    } else {
+        let converted_vec = collect_json_values_with_paths(&serialized_line);
+        for json_key in converted_vec.iter() {
+            for date_regex in execution_settings.regexes.iter() {
+                if date_regex.string_contains_date(&json_key.value) {
+                    return Ok(Some(IdentifiedTimeInformation {
+                        column_name: Some(json_key.path.clone()),
+                        column_index: None,
+                        direction: None,
+                        regex_info: date_regex.clone(),
+                    }));
+                }
+            }
+        }
+
+    }
+    Ok(None)
+}
+
+
 #[cfg(test)]
 mod json_handler_tests {
 
     use super::*;
+    use crate::date_regex::DateRegex;
+    use regex::Regex;
+    use std::path::PathBuf;
     #[test]
     fn test_json_serialize_success() {
         let json_str = r#"
@@ -148,5 +171,58 @@ mod json_handler_tests {
         let response = parse_json_line_into_json(json_str.to_string(), 1).unwrap();
         let converted = collect_json_values_with_paths(&response);
         println!("{:?}", converted);
+        assert_eq!(3, converted.len())
+    }
+
+    #[test]
+    fn test_json_pathgrabber() {
+        let json_str = r#"
+        {
+            "user": {
+                "id": 42,
+                "profile": {
+                    "name": "Alice",
+                    "email": "alice@example.com"
+                }
+            }
+        }"#;
+        let response = parse_json_line_into_json(json_str.to_string(), 1).unwrap();
+        let converted = collect_json_values_with_paths(&response);
+        assert_eq!("Alice", response.pointer("/user/profile/name").unwrap())
+    }
+
+    #[test]
+    fn test_timestamp_field_matches() {
+        let json_line = r#"
+        {
+            "first_timestamp": "not a date",
+            "second_timestamp": "2024-06-09 12:34:56"
+        }
+        "#;
+
+        let test_args = ExecutionSettings {
+            input_dir: PathBuf::from("/dummy/input"),
+            output_dir: PathBuf::from("/dummy/output"),
+            regexes: vec![DateRegex {
+                pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(),
+                strftime_format: "%Y-%m-%d %H:%M:%S".to_string(),
+                regex: Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").unwrap(),
+            }],
+            timestamp_field: None,
+            quick_mode: false,
+            verbose_mode: true,
+            actually_write_to_files: false,
+        };
+
+        let result = try_to_get_timestamp_hit_for_json_functionality(
+            json_line.to_string(),
+            &test_args,
+        )
+        .unwrap();
+
+        assert!(result.is_some());
+        let info = result.unwrap();
+        assert_eq!(info.column_name, Some("/second_timestamp".to_string()));
+        assert_eq!(info.regex_info.pretty_format, "YYYY-MM-DD HH:MM:SS");
     }
 }
