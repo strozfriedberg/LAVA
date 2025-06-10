@@ -64,6 +64,12 @@ fn collect_helper<'a>(
     }
 }
 
+
+pub fn convert_arrow_path_to_json_pointer(input: &str) -> String {
+    let parts: Vec<&str> = input.split("->").collect();
+    format!("/{}", parts.join("/"))
+}
+
 pub fn try_to_get_timestamp_hit_for_json(
     log_file: &LogFile,
     execution_settings: &ExecutionSettings,
@@ -95,7 +101,20 @@ fn try_to_get_timestamp_hit_for_json_functionality(line: String, execution_setti
     let serialized_line = parse_json_line_into_json(line, 0)?;
     println!("{:?}", serialized_line);
     if let Some(field_to_use) = &execution_settings.timestamp_field {
-        //split the string based on ->
+        println!("GOT HERE");
+        let correct_formatted_path = convert_arrow_path_to_json_pointer(&field_to_use);
+        if let Some(found_value) = serialized_line.pointer(&correct_formatted_path) {
+            for date_regex in execution_settings.regexes.iter() {
+                if date_regex.string_contains_date(found_value.as_str().ok_or_else(|| LavaError::new("The target value was not a string", LavaErrorLevel::Critical))?) {
+                    return Ok(Some(IdentifiedTimeInformation {
+                        column_name: Some(correct_formatted_path),
+                        column_index: None,
+                        direction: None,
+                        regex_info: date_regex.clone(),
+                    }));
+                }
+            }
+        }
     } else {
         let converted_vec = collect_json_values_with_paths(&serialized_line);
         for json_key in converted_vec.iter() {
@@ -222,7 +241,7 @@ mod json_handler_tests {
 
         assert!(result.is_some());
         let info = result.unwrap();
-        assert_eq!(info.column_name, Some("/second_timestamp/test".to_string()));
+        assert_eq!(info.column_name, Some("/first_timestamp".to_string()));
         assert_eq!(info.regex_info.pretty_format, "YYYY-MM-DD HH:MM:SS");
     }
 
