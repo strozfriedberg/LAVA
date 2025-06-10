@@ -17,6 +17,53 @@ fn parse_json_line_into_json(line: String, index: usize) -> Result<Value> {
     }
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct JsonValue {
+    pub path: String,
+    pub value: String,
+}
+
+pub fn collect_json_values_with_paths(value: &Value) -> Vec<JsonValue> {
+    let mut result = Vec::new();
+    let mut path = Vec::new();
+    collect_helper(value, &mut path, &mut result);
+    result
+}
+
+fn collect_helper<'a>(
+    value: &'a Value,
+    path: &mut Vec<String>,
+    result: &mut Vec<JsonValue>,
+) {
+    match value {
+        Value::Object(map) => {
+            for (key, val) in map {
+                path.push(key.clone());
+                collect_helper(val, path, result);
+                path.pop();
+            }
+        }
+        Value::Array(arr) => {
+            for (i, val) in arr.iter().enumerate() {
+                path.push(i.to_string());
+                collect_helper(val, path, result);
+                path.pop();
+            }
+        }
+        _ => {
+            let full_path = format!("/{}", path.join("/"));
+            match value {
+                Value::String(s) => {
+                    result.push(JsonValue{path:full_path, value: s.clone()}); // unquoted string
+                }
+                _ => {
+                    result.push(JsonValue{path: full_path, value: value.to_string()}); // fallback for numbers, bools, etc.
+                }
+            }
+        }
+    }
+}
+
 pub fn try_to_get_timestamp_hit_for_json(
     log_file: &LogFile,
     execution_settings: &ExecutionSettings,
@@ -39,34 +86,22 @@ pub fn try_to_get_timestamp_hit_for_json(
         })?;
         let serialized_line = parse_json_line_into_json(line, 0);
         println!("{:?}", serialized_line);
-        // // Recursively scan the JSON for string values
-        // for date_regex in &execution_settings.regexes {
-        //     if find_match_in_json(&json_value, date_regex) {
-        //         println!(
-        //             "Found match for '{}' time format in {}",
-        //             date_regex.pretty_format,
-        //             log_file.file_path.to_string_lossy()
-        //         );
-        //         return Ok(Some(IdentifiedTimeInformation {
-        //             column_name: None,
-        //             column_index: None,
-        //             direction: None,
-        //             regex_info: date_regex.clone(),
-        //         }));
-        //     }
-        // }
+        if let Some(field_to_use) = &execution_settings.timestamp_field {
+            //split the string based on ->
+        } else {
+
+        }
     }
 
     Ok(None)
 }
-
 
 #[cfg(test)]
 mod json_handler_tests {
 
     use super::*;
     #[test]
-    fn test_json_serialize_success(){
+    fn test_json_serialize_success() {
         let json_str = r#"
         {
             "user": {
@@ -83,7 +118,7 @@ mod json_handler_tests {
     }
 
     #[test]
-    fn test_json_serialize_fail(){
+    fn test_json_serialize_fail() {
         let json_str = r#"
         {
             "user": {
@@ -96,5 +131,22 @@ mod json_handler_tests {
         let response = parse_json_line_into_json(json_str.to_string(), 1);
         println!("{:?}", response);
         assert!(response.is_err());
+    }
+
+    #[test]
+    fn test_json_into_vec_converter() {
+        let json_str = r#"
+        {
+            "user": {
+                "id": 42,
+                "profile": {
+                    "name": "Alice",
+                    "email": "alice@example.com"
+                }
+            }
+        }"#;
+        let response = parse_json_line_into_json(json_str.to_string(), 1).unwrap();
+        let converted = collect_json_values_with_paths(&response);
+        println!("{:?}", converted);
     }
 }
