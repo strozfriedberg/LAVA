@@ -192,11 +192,11 @@ mod json_handler_tests {
     }
 
     #[test]
-    fn test_timestamp_field_matches() {
+    fn test_timestamp_field_matches_without_provided() {
         let json_line = r#"
         {
-            "first_timestamp": "not a date",
-            "second_timestamp": "2024-06-09 12:34:56"
+            "first_timestamp": "2024-06-09 12:34:56",
+            "second_timestamp": {"test":"2024-06-09 12:34:56"}
         }
         "#;
 
@@ -222,7 +222,42 @@ mod json_handler_tests {
 
         assert!(result.is_some());
         let info = result.unwrap();
-        assert_eq!(info.column_name, Some("/second_timestamp".to_string()));
+        assert_eq!(info.column_name, Some("/second_timestamp/test".to_string()));
+        assert_eq!(info.regex_info.pretty_format, "YYYY-MM-DD HH:MM:SS");
+    }
+
+    #[test]
+    fn test_timestamp_field_matches_with_provided() {
+        let json_line = r#"
+        {
+            "first_timestamp": "2024-06-09 12:34:56",
+            "second_timestamp": {"test":"2024-06-09 12:34:56"}
+        }
+        "#;
+
+        let test_args = ExecutionSettings {
+            input_dir: PathBuf::from("/dummy/input"),
+            output_dir: PathBuf::from("/dummy/output"),
+            regexes: vec![DateRegex {
+                pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(),
+                strftime_format: "%Y-%m-%d %H:%M:%S".to_string(),
+                regex: Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").unwrap(),
+            }],
+            timestamp_field: Some("second_timestamp->test".to_string()),
+            quick_mode: false,
+            verbose_mode: true,
+            actually_write_to_files: false,
+        };
+
+        let result = try_to_get_timestamp_hit_for_json_functionality(
+            json_line.to_string(),
+            &test_args,
+        )
+        .unwrap();
+
+        assert!(result.is_some());
+        let info = result.unwrap();
+        assert_eq!(info.column_name, Some("/second_timestamp/test".to_string()));
         assert_eq!(info.regex_info.pretty_format, "YYYY-MM-DD HH:MM:SS");
     }
 }
