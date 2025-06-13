@@ -1,7 +1,6 @@
 use crate::basic_objects::*;
 use crate::errors::*;
 use crate::processing_objects::*;
-use csv::StringRecord;
 use serde_json::Value;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -30,11 +29,7 @@ pub fn collect_json_values_with_paths(value: &Value) -> Vec<JsonValue> {
     result
 }
 
-fn collect_helper<'a>(
-    value: &'a Value,
-    path: &mut Vec<String>,
-    result: &mut Vec<JsonValue>,
-) {
+fn collect_helper<'a>(value: &'a Value, path: &mut Vec<String>, result: &mut Vec<JsonValue>) {
     match value {
         Value::Object(map) => {
             for (key, val) in map {
@@ -54,16 +49,21 @@ fn collect_helper<'a>(
             let full_path = format!("/{}", path.join("/"));
             match value {
                 Value::String(s) => {
-                    result.push(JsonValue{path:full_path, value: s.clone()}); // unquoted string
+                    result.push(JsonValue {
+                        path: full_path,
+                        value: s.clone(),
+                    }); // unquoted string
                 }
                 _ => {
-                    result.push(JsonValue{path: full_path, value: value.to_string()}); // fallback for numbers, bools, etc.
+                    result.push(JsonValue {
+                        path: full_path,
+                        value: value.to_string(),
+                    }); // fallback for numbers, bools, etc.
                 }
             }
         }
     }
 }
-
 
 pub fn convert_arrow_path_to_json_pointer(input: &str) -> String {
     let parts: Vec<&str> = input.split("->").collect();
@@ -91,20 +91,28 @@ pub fn try_to_get_timestamp_hit_for_json(
             )
         })?;
 
-        return try_to_get_timestamp_hit_for_json_functionality(line, execution_settings)
+        return try_to_get_timestamp_hit_for_json_functionality(line, execution_settings);
     }
 
     Ok(None)
 }
 
-fn try_to_get_timestamp_hit_for_json_functionality(line: String, execution_settings: &ExecutionSettings) -> Result<Option<IdentifiedTimeInformation>> {
+fn try_to_get_timestamp_hit_for_json_functionality(
+    line: String,
+    execution_settings: &ExecutionSettings,
+) -> Result<Option<IdentifiedTimeInformation>> {
     let serialized_line = parse_json_line_into_json(line, 0)?;
     println!("{:?}", serialized_line);
     if let Some(field_to_use) = &execution_settings.timestamp_field {
         let correct_formatted_path = convert_arrow_path_to_json_pointer(&field_to_use);
         if let Some(found_value) = serialized_line.pointer(&correct_formatted_path) {
             for date_regex in execution_settings.regexes.iter() {
-                if date_regex.string_contains_date(found_value.as_str().ok_or_else(|| LavaError::new("The target value was not a string", LavaErrorLevel::Critical))?) {
+                if date_regex.string_contains_date(found_value.as_str().ok_or_else(|| {
+                    LavaError::new(
+                        "The target value was not a string",
+                        LavaErrorLevel::Critical,
+                    )
+                })?) {
                     return Ok(Some(IdentifiedTimeInformation {
                         column_name: Some(correct_formatted_path),
                         column_index: None,
@@ -128,7 +136,6 @@ fn try_to_get_timestamp_hit_for_json_functionality(line: String, execution_setti
                 }
             }
         }
-
     }
     Ok(None)
 }
@@ -153,43 +160,49 @@ pub fn set_time_direction_by_scanning_json_file(
             )
         })?;
         let serialized_line = parse_json_line_into_json(line, index)?;
-        let extracted_timestamp = serialized_line.pointer(timestamp_hit.column_name.as_ref().ok_or_else(|| LavaError::new(
-            format!("No JSON path to timestamp field found during scanning for direction phase."),
-            LavaErrorLevel::Critical,
-        ))?);
+        let extracted_timestamp =
+            serialized_line.pointer(timestamp_hit.column_name.as_ref().ok_or_else(|| {
+                LavaError::new(
+                    format!(
+                        "No JSON path to timestamp field found during scanning for direction phase."
+                    ),
+                    LavaErrorLevel::Critical,
+                )
+            })?);
         match extracted_timestamp {
-            None => return Err(LavaError::new(
-                format!("No timestamp field extracted during JSON direction scanning"),
-                LavaErrorLevel::Critical,
-            )),
-            Some(timestamp) =>{
-                match timestamp {
-                    Value::String(string) =>{
-                        if let Some(current_datetime) = timestamp_hit
+            None => {
+                return Err(LavaError::new(
+                    format!("No timestamp field extracted during JSON direction scanning"),
+                    LavaErrorLevel::Critical,
+                ));
+            }
+            Some(timestamp) => match timestamp {
+                Value::String(string) => {
+                    if let Some(current_datetime) = timestamp_hit
                         .regex_info
                         .get_timestamp_object_from_string_contianing_date(string.clone())?
                     {
-                        if let Some(direction) = direction_checker.process_timestamp(current_datetime) {
+                        if let Some(direction) =
+                            direction_checker.process_timestamp(current_datetime)
+                        {
                             timestamp_hit.direction = Some(direction);
                             return Ok(());
                         }
                     };
-                    },
-                    _ => return Err(LavaError::new(
-                        format!("Non String timestamp field extracted during JSON direction scanning"),
-                        LavaErrorLevel::Critical,
-                    )),
-
                 }
-            }
+                _ => {
+                    return Err(LavaError::new(
+                        format!(
+                            "Non String timestamp field extracted during JSON direction scanning"
+                        ),
+                        LavaErrorLevel::Critical,
+                    ));
+                }
+            },
         }
     }
     Ok(())
 }
-
-
-
-
 
 #[cfg(test)]
 mod json_handler_tests {
@@ -197,8 +210,129 @@ mod json_handler_tests {
     use super::*;
     use crate::date_regex::DateRegex;
     use regex::Regex;
+    use serde_json::json;
+    use std::fs::write;
     use std::path::PathBuf;
-    
+    use tempfile::NamedTempFile;
+
+    #[test]
+    fn test_set_time_direction_by_scanning_json_file_ascending() {
+        // Step 1: Create temporary log file with JSON lines
+        let temp_file = NamedTempFile::new().expect("Failed to create temp file");
+        let file_path = temp_file.path().to_path_buf();
+
+        // Create a few JSON lines with timestamps
+        let json_lines = vec![
+            json!({"timestamp": "2024-01-01T12:00:00Z"}).to_string(),
+            json!({"timestamp": "2024-01-01T12:01:00Z"}).to_string(),
+            json!({"timestamp": "2024-01-01T12:02:00Z"}).to_string(),
+        ]
+        .join("\n");
+
+        write(&file_path, json_lines).expect("Failed to write JSON lines to temp file");
+
+        // Step 2: Construct the input structs
+        let log_file = LogFile {
+            log_type: LogType::Json, // Assuming a variant exists
+            file_path: file_path.clone(),
+        };
+
+        let mut identified_time_info = try_to_get_timestamp_hit_for_json(
+            &log_file,
+            &ExecutionSettings::create_integration_test_object(None, false),
+        )
+        .unwrap()
+        .unwrap();
+
+        // Step 3: Call the function
+        let result = set_time_direction_by_scanning_json_file(&log_file, &mut identified_time_info);
+
+        // Step 4: Assert success and expected direction
+        assert!(result.is_ok());
+        assert_eq!(
+            identified_time_info.direction,
+            Some(TimeDirection::Ascending)
+        ); // or whatever is expected
+    }
+
+    #[test]
+    fn test_set_time_direction_by_scanning_json_file_descending() {
+        // Step 1: Create temporary log file with JSON lines
+        let temp_file = NamedTempFile::new().expect("Failed to create temp file");
+        let file_path = temp_file.path().to_path_buf();
+
+        // Create a few JSON lines with timestamps
+        let json_lines = vec![
+            json!({"timestamp": "2024-01-01T12:05:00Z"}).to_string(),
+            json!({"timestamp": "2024-01-01T12:03:00Z"}).to_string(),
+            json!({"timestamp": "2024-01-01T12:02:00Z"}).to_string(),
+        ]
+        .join("\n");
+
+        write(&file_path, json_lines).expect("Failed to write JSON lines to temp file");
+
+        // Step 2: Construct the input structs
+        let log_file = LogFile {
+            log_type: LogType::Json, // Assuming a variant exists
+            file_path: file_path.clone(),
+        };
+
+        let mut identified_time_info = try_to_get_timestamp_hit_for_json(
+            &log_file,
+            &ExecutionSettings::create_integration_test_object(None, false),
+        )
+        .unwrap()
+        .unwrap();
+
+        // Step 3: Call the function
+        let result = set_time_direction_by_scanning_json_file(&log_file, &mut identified_time_info);
+
+        // Step 4: Assert success and expected direction
+        assert!(result.is_ok());
+        assert_eq!(
+            identified_time_info.direction,
+            Some(TimeDirection::Descending)
+        ); // or whatever is expected
+    }
+
+    #[test]
+    fn test_set_time_direction_by_scanning_json_file_1_line() {
+        // Step 1: Create temporary log file with JSON lines
+        let temp_file = NamedTempFile::new().expect("Failed to create temp file");
+        let file_path = temp_file.path().to_path_buf();
+
+        // Create a few JSON lines with timestamps
+        let json_lines = vec![
+            json!({"timestamp": "2024-01-01T12:05:00Z"}).to_string(),
+        ]
+        .join("\n");
+
+        write(&file_path, json_lines).expect("Failed to write JSON lines to temp file");
+
+        // Step 2: Construct the input structs
+        let log_file = LogFile {
+            log_type: LogType::Json, // Assuming a variant exists
+            file_path: file_path.clone(),
+        };
+
+        let mut identified_time_info = try_to_get_timestamp_hit_for_json(
+            &log_file,
+            &ExecutionSettings::create_integration_test_object(None, false),
+        )
+        .unwrap()
+        .unwrap();
+
+        // Step 3: Call the function
+        let result = set_time_direction_by_scanning_json_file(&log_file, &mut identified_time_info);
+
+        // Step 4: Assert success and expected direction
+        assert!(result.is_ok());
+        assert_eq!(
+            identified_time_info.direction,
+            None
+        ); // or whatever is expected
+    }
+
     #[test]
     fn test_json_serialize_success() {
         let json_str = r#"
@@ -263,7 +397,6 @@ mod json_handler_tests {
             }
         }"#;
         let response = parse_json_line_into_json(json_str.to_string(), 1).unwrap();
-        let converted = collect_json_values_with_paths(&response);
         assert_eq!("Alice", response.pointer("/user/profile/name").unwrap())
     }
 
@@ -290,11 +423,9 @@ mod json_handler_tests {
             actually_write_to_files: false,
         };
 
-        let result = try_to_get_timestamp_hit_for_json_functionality(
-            json_line.to_string(),
-            &test_args,
-        )
-        .unwrap();
+        let result =
+            try_to_get_timestamp_hit_for_json_functionality(json_line.to_string(), &test_args)
+                .unwrap();
 
         assert!(result.is_some());
         let info = result.unwrap();
@@ -325,11 +456,9 @@ mod json_handler_tests {
             actually_write_to_files: false,
         };
 
-        let result = try_to_get_timestamp_hit_for_json_functionality(
-            json_line.to_string(),
-            &test_args,
-        )
-        .unwrap();
+        let result =
+            try_to_get_timestamp_hit_for_json_functionality(json_line.to_string(), &test_args)
+                .unwrap();
 
         assert!(result.is_some());
         let info = result.unwrap();
