@@ -131,17 +131,6 @@ pub fn try_to_get_timestamp_hit_for_csv(
         record,
         execution_settings,
     )?;
-    if let Some(identified_timestamp) = &response {
-        println!(
-            "Found match for '{}' time format in the '{}' column of {}",
-            identified_timestamp.regex_info.pretty_format,
-            identified_timestamp
-                .column_name
-                .as_ref()
-                .ok_or_else(|| LavaError::new("No column name found.", LavaErrorLevel::Critical))?,
-            log_file.file_path.to_string_lossy().to_string()
-        );
-    }
     Ok(response)
 }
 

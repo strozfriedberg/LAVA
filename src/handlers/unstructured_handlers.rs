@@ -27,11 +27,6 @@ pub fn try_to_get_timestamp_hit_for_unstructured(
         })?;
         for date_regex in execution_settings.regexes.iter() {
             if date_regex.string_contains_date(&line) {
-                println!(
-                    "Found match for '{}' time format in {}",
-                    date_regex.pretty_format,
-                    log_file.file_path.to_string_lossy().to_string()
-                );
                 return Ok(Some(IdentifiedTimeInformation {
                     column_name: None,
                     column_index: None,

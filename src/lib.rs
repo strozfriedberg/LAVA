@@ -152,6 +152,23 @@ pub fn process_file(
     let potential_timestamp_hit =
         match try_to_get_timestamp_hit(log_file, execution_settings, header_info.clone()) {
             Ok(Some(mut timestamp_hit)) => {
+                match timestamp_hit.column_name.as_ref() {
+                    None => {
+                        println!(
+                            "Found match for '{}' time format in {}",
+                            timestamp_hit.regex_info.pretty_format,
+                            log_file.file_path.to_string_lossy().to_string()
+                        );
+                    },
+                    Some(column_name)=>{
+                        println!(
+                            "Found match for '{}' time format in the '{}' column of {}",
+                            timestamp_hit.regex_info.pretty_format,
+                            column_name,
+                            log_file.file_path.to_string_lossy().to_string()
+                        );
+                    }
+                }
                 base_processed_file.time_header = timestamp_hit.column_name.clone();
                 base_processed_file.time_format =
                     Some(timestamp_hit.regex_info.pretty_format.clone());
