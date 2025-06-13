@@ -4,6 +4,8 @@ use crate::processing_objects::*;
 use serde_json::Value;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use crate::helpers::get_file_stem;
+use csv::StringRecord;
 
 fn parse_json_line_into_json(line: String, index: usize) -> Result<Value> {
     // Parse the JSON
@@ -102,7 +104,6 @@ fn try_to_get_timestamp_hit_for_json_functionality(
     execution_settings: &ExecutionSettings,
 ) -> Result<Option<IdentifiedTimeInformation>> {
     let serialized_line = parse_json_line_into_json(line, 0)?;
-    println!("{:?}", serialized_line);
     if let Some(field_to_use) = &execution_settings.timestamp_field {
         let correct_formatted_path = convert_arrow_path_to_json_pointer(&field_to_use);
         if let Some(found_value) = serialized_line.pointer(&correct_formatted_path) {
@@ -202,6 +203,65 @@ pub fn set_time_direction_by_scanning_json_file(
         }
     }
     Ok(())
+}
+
+
+pub fn stream_json_file(
+    log_file: &LogFile,
+    timestamp_hit: &Option<IdentifiedTimeInformation>,
+    execution_settings: &ExecutionSettings,
+) -> Result<LogRecordProcessor> {
+    let mut processing_object = LogRecordProcessor::new(
+        timestamp_hit,
+        execution_settings,
+        get_file_stem(log_file)?,
+        None,
+    );
+    let file = File::open(&log_file.file_path).map_err(|e| {
+        LavaError::new(
+            format!("Unable to open log file because of {e}"),
+            LavaErrorLevel::Critical,
+        )
+    })?;
+    let reader = BufReader::new(file);
+    for (index, line_result) in reader.lines().enumerate() {
+        let line = line_result.map_err(|e| {
+            LavaError::new(
+                format!("Error reading line because of {}", e),
+                LavaErrorLevel::Critical,
+            )
+        })?;
+        let serialized_line = parse_json_line_into_json(line.clone(), index)?;
+        let current_datetime = match timestamp_hit {
+            None => None,
+            Some(timestamp_hit) => {
+                if let Some(value_of_key) = serialized_line.pointer(timestamp_hit.column_name.as_ref().unwrap()){
+                    match value_of_key {
+                        Value::String(string) => {
+                            timestamp_hit
+                            .regex_info
+                            .get_timestamp_object_from_string_contianing_date(string.clone())?
+                        }
+                        _ => {
+                            return Err(LavaError::new(
+                                format!(
+                                    "Non String timestamp field extracted during JSON direction scanning"
+                                ),
+                                LavaErrorLevel::Critical,
+                            ));
+                        }
+                    }
+                }else{
+                    None
+                }
+        }};
+        processing_object.process_record(LogFileRecord::new(
+            index,
+            current_datetime,
+            StringRecord::from(vec![line]),
+        ))?;
+    }
+    Ok(processing_object)
 }
 
 #[cfg(test)]
