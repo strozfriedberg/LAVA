@@ -340,8 +340,11 @@ fn set_time_direction_by_scanning_file(
             header_info_unwrapped,
         );
     }
-    if log_file.log_type == LogType::Unstructured {
+    else if log_file.log_type == LogType::Unstructured {
         return set_time_direction_by_scanning_unstructured_file(log_file, timestamp_hit);
+    }
+    else if log_file.log_type == LogType::Json {
+        return set_time_direction_by_scanning_json_file(log_file, timestamp_hit);
     }
     Err(LavaError::new(
         "Have not implemented scanning for directions for this file type yet.",
