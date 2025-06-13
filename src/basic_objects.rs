@@ -7,8 +7,17 @@ use csv::StringRecord;
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
+
+
+
 #[cfg(test)]
 mod logfilerecord_tests;
+
+static WELFORD_TIME_SIGNIFIGANCE: TimeSignifigance = TimeSignifigance::Milliseconds; //Is this going to be too big for the welford calc?
+pub enum TimeSignifigance {
+    Seconds,
+    Milliseconds
+}
 
 #[derive(Debug, Clone, Default)]
 pub struct ExecutionSettings {
@@ -177,6 +186,12 @@ impl TimeGap {
             gap,
             beginning_time,
             end_time,
+        }
+    }
+    pub fn get_time_duration_number(&self) -> i64 {
+        match WELFORD_TIME_SIGNIFIGANCE {
+            TimeSignifigance::Milliseconds => self.gap.num_milliseconds(),
+            TimeSignifigance::Seconds => self.gap.num_seconds()
         }
     }
 }

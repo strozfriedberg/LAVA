@@ -259,9 +259,8 @@ impl LogRecordProcessor {
                 self.min_timestamp = Some(current_timestamp)
             }
             let current_time_gap = TimeGap::new(previous_datetime, current_timestamp);
-            // println!("Seconds - {:?}, milliseconds - {:?}", current_time_gap.gap.num_seconds(), current_time_gap.gap.num_milliseconds());
             self.welford_calculator
-                .push(current_time_gap.gap.num_seconds() as i128); // Will this get too big with milliseconds??
+                .push(current_time_gap.get_time_duration_number() as i128);
             if let Some(largest_time_gap) = self.largest_time_gap {
                 if current_time_gap > largest_time_gap {
                     self.largest_time_gap =
@@ -316,7 +315,7 @@ impl LogRecordProcessor {
             statistics_fields.mean_time_gap = Some(mean.to_string());
             statistics_fields.std_dev_time_gap = Some(standard_deviation.to_string());
             statistics_fields.number_of_std_devs_above = Some(
-                ((largest_time_gap.gap.num_seconds() as f64 - mean) / standard_deviation)
+                ((largest_time_gap.get_time_duration_number() as f64 - mean) / standard_deviation)
                     .to_string(),
             )
         }
