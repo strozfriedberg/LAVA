@@ -101,7 +101,6 @@ fn try_to_get_timestamp_hit_for_json_functionality(line: String, execution_setti
     let serialized_line = parse_json_line_into_json(line, 0)?;
     println!("{:?}", serialized_line);
     if let Some(field_to_use) = &execution_settings.timestamp_field {
-        println!("GOT HERE");
         let correct_formatted_path = convert_arrow_path_to_json_pointer(&field_to_use);
         if let Some(found_value) = serialized_line.pointer(&correct_formatted_path) {
             for date_regex in execution_settings.regexes.iter() {
@@ -134,6 +133,63 @@ fn try_to_get_timestamp_hit_for_json_functionality(line: String, execution_setti
     Ok(None)
 }
 
+pub fn set_time_direction_by_scanning_json_file(
+    log_file: &LogFile,
+    timestamp_hit: &mut IdentifiedTimeInformation,
+) -> Result<()> {
+    let file = File::open(&log_file.file_path).map_err(|e| {
+        LavaError::new(
+            format!("Unable to open the log file because of {e}"),
+            LavaErrorLevel::Critical,
+        )
+    })?;
+    let reader = BufReader::new(file);
+    let mut direction_checker = TimeDirectionChecker::default();
+    for (index, line_result) in reader.lines().enumerate() {
+        let line = line_result.map_err(|e| {
+            LavaError::new(
+                format!("Error reading line because of {}", e),
+                LavaErrorLevel::Critical,
+            )
+        })?;
+        let serialized_line = parse_json_line_into_json(line, index)?;
+        let extracted_timestamp = serialized_line.pointer(timestamp_hit.column_name.as_ref().ok_or_else(|| LavaError::new(
+            format!("No JSON path to timestamp field found during scanning for direction phase."),
+            LavaErrorLevel::Critical,
+        ))?);
+        match extracted_timestamp {
+            None => return Err(LavaError::new(
+                format!("No timestamp field extracted during JSON direction scanning"),
+                LavaErrorLevel::Critical,
+            )),
+            Some(timestamp) =>{
+                match timestamp {
+                    Value::String(string) =>{
+                        if let Some(current_datetime) = timestamp_hit
+                        .regex_info
+                        .get_timestamp_object_from_string_contianing_date(string.clone())?
+                    {
+                        if let Some(direction) = direction_checker.process_timestamp(current_datetime) {
+                            timestamp_hit.direction = Some(direction);
+                            return Ok(());
+                        }
+                    };
+                    },
+                    _ => return Err(LavaError::new(
+                        format!("Non String timestamp field extracted during JSON direction scanning"),
+                        LavaErrorLevel::Critical,
+                    )),
+
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+
+
+
 
 #[cfg(test)]
 mod json_handler_tests {
@@ -142,6 +198,7 @@ mod json_handler_tests {
     use crate::date_regex::DateRegex;
     use regex::Regex;
     use std::path::PathBuf;
+    
     #[test]
     fn test_json_serialize_success() {
         let json_str = r#"
