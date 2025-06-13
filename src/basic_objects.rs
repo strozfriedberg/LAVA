@@ -6,17 +6,26 @@ use chrono::{NaiveDateTime, TimeDelta};
 use csv::StringRecord;
 use std::cmp::Ordering;
 use std::path::PathBuf;
-
+use std::fmt;
 
 
 
 #[cfg(test)]
 mod logfilerecord_tests;
 
-static WELFORD_TIME_SIGNIFIGANCE: TimeSignifigance = TimeSignifigance::Milliseconds; //Is this going to be too big for the welford calc?
+pub static WELFORD_TIME_SIGNIFIGANCE: TimeSignifigance = TimeSignifigance::Milliseconds; //Is this going to be too big for the welford calc?
 pub enum TimeSignifigance {
     Seconds,
     Milliseconds
+}
+impl fmt::Display for TimeSignifigance {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let as_str = match self {
+            TimeSignifigance::Milliseconds=> "Milliseconds",
+            TimeSignifigance::Seconds=> "Seconds",
+        };
+        write!(f, "{}", as_str)
+    }
 }
 
 #[derive(Debug, Clone, Default)]
