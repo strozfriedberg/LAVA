@@ -165,6 +165,27 @@ fn integration_test_successful_run_duplicates_and_redactions_quick_mode() {
 }
 
 #[test]
+fn integration_test_super_large_time_gap_stress_test_welford() {
+    let data = "\
+    id,name,date\n\
+    1,John,2001-05-09 10:00:00\n\
+    2,Jane,2025-05-10 11:00:00\n\
+    2,Jane,2029-05-10 11:00:00\n";
+
+    let temp_log_file = TempInputFile::new(LogType::Csv, data);
+    let log_file = temp_log_file.get_log_file_object();
+    let settings = ExecutionSettings::create_integration_test_object(None, true);
+
+    let output = process_file(log_file, &settings);
+    let processed = output.expect("Failed to get Proceesed Log File");
+    assert_eq!(0, processed.errors.len());
+    assert_eq!(None, processed.num_dupes);
+    assert_eq!(None, processed.num_redactions);
+    assert_eq!(None, processed.sha256hash);
+    temp_log_file.delete_temp_file();
+}
+
+#[test]
 fn integration_test_out_of_order_time_run_duplicates_and_redactions_1() {
     let data = "\
     id,name,date\n\
@@ -305,6 +326,44 @@ fn json_integration_test_successful_run_no_errors_newline_at_the_end() {
     println!("{:?}", processed.errors);
     assert_eq!(0, processed.errors.len());
     assert_eq!("2025-05-09 10:00:00", processed.min_timestamp.unwrap());
-    assert_eq!("2025-05-09 10:00:00", processed.max_timestamp.unwrap());
+    assert_eq!("2025-05-09 10:05:00", processed.max_timestamp.unwrap());
+    temp_log_file.delete_temp_file();
+}
+
+#[test]
+fn json_integration_test_successful_run_no_errors() {
+    let data = r#"{"user": {"time": "2021-05-09 10:00:00","profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:00:00"}
+        {"user": {"time": "2021-05-09 10:02:00","profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:01:00"}
+        {"user": {"time": "2021-05-09 10:05:00","profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:05:00"}"#;
+
+    let temp_log_file = TempInputFile::new(LogType::Json, data);
+    let log_file = temp_log_file.get_log_file_object();
+    let settings = ExecutionSettings::create_integration_test_object(None, false);
+
+    let output = process_file(log_file, &settings);
+    let processed = output.expect("Failed to get Proceesed Log File");
+    println!("{:?}", processed.errors);
+    assert_eq!(0, processed.errors.len());
+    assert_eq!("2025-05-09 10:00:00", processed.min_timestamp.unwrap());
+    assert_eq!("2025-05-09 10:05:00", processed.max_timestamp.unwrap());
+    temp_log_file.delete_temp_file();
+}
+
+#[test]
+fn json_integration_test_successful_run_no_errors_nested_key() {
+    let data = r#"{"user": {"time": "2021-05-09 10:00:00","profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:00:00"}
+        {"user": {"time": "2021-05-09 10:02:00","profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:01:00"}
+        {"user": {"time": "2021-05-09 10:05:00","profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:05:00"}"#;
+
+    let temp_log_file = TempInputFile::new(LogType::Json, data);
+    let log_file = temp_log_file.get_log_file_object();
+    let settings = ExecutionSettings::create_integration_test_object(Some("user->time".to_string()), false);
+
+    let output = process_file(log_file, &settings);
+    let processed = output.expect("Failed to get Proceesed Log File");
+    println!("{:?}", processed.errors);
+    assert_eq!(0, processed.errors.len());
+    assert_eq!("2021-05-09 10:00:00", processed.min_timestamp.unwrap());
+    assert_eq!("2021-05-09 10:05:00", processed.max_timestamp.unwrap());
     temp_log_file.delete_temp_file();
 }
