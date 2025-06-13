@@ -159,8 +159,8 @@ pub fn process_file(
                             timestamp_hit.regex_info.pretty_format,
                             log_file.file_path.to_string_lossy().to_string()
                         );
-                    },
-                    Some(column_name)=>{
+                    }
+                    Some(column_name) => {
                         println!(
                             "Found match for '{}' time format in the '{}' column of {}",
                             timestamp_hit.regex_info.pretty_format,
@@ -387,12 +387,10 @@ fn stream_file(
                 LavaErrorLevel::Critical,
             ));
         }
-    }
-    else if log_file.log_type == LogType::Unstructured {
+    } else if log_file.log_type == LogType::Unstructured {
         return stream_unstructured_file(log_file, timestamp_hit, execution_settings);
-    }
-    else if log_file.log_type == LogType::Json {
-        return  stream_json_file(log_file, timestamp_hit, execution_settings);
+    } else if log_file.log_type == LogType::Json {
+        return stream_json_file(log_file, timestamp_hit, execution_settings);
     }
     Err(LavaError::new(
         "Have not implemented streaming for this file type yet",

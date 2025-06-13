@@ -1,20 +1,27 @@
 use crate::basic_objects::*;
 use crate::errors::*;
+use crate::helpers::get_file_stem;
 use crate::processing_objects::*;
+use csv::StringRecord;
 use serde_json::Value;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use crate::helpers::get_file_stem;
-use csv::StringRecord;
 
 fn parse_json_line_into_json(line: String, index: usize) -> Result<Value> {
-    // Parse the JSON
-    match serde_json::from_str(&line) {
-        Ok(val) => Ok(val),
-        Err(e) => Err(LavaError::new(
-            format!("Unable to parse JSON at line {} because of {}", index, e),
-            LavaErrorLevel::Critical,
-        )), // Not valid JSON
+    let trimmed = line.trim();
+    if trimmed.len() > 0 {
+        match serde_json::from_str(&line) {
+            Ok(val) => Ok(val),
+            Err(e) => Err(LavaError::new(
+                format!("Unable to parse JSON at line {} because of {}", index, e),
+                LavaErrorLevel::Critical,
+            )), // Not valid JSON
+        }
+    } else {
+        Err(LavaError::new(
+            "Attempted to parse JSON from empty line",
+            LavaErrorLevel::Low,
+        ))
     }
 }
 
@@ -103,37 +110,50 @@ fn try_to_get_timestamp_hit_for_json_functionality(
     line: String,
     execution_settings: &ExecutionSettings,
 ) -> Result<Option<IdentifiedTimeInformation>> {
-    let serialized_line = parse_json_line_into_json(line, 0)?;
-    if let Some(field_to_use) = &execution_settings.timestamp_field {
-        let correct_formatted_path = convert_arrow_path_to_json_pointer(&field_to_use);
-        if let Some(found_value) = serialized_line.pointer(&correct_formatted_path) {
-            for date_regex in execution_settings.regexes.iter() {
-                if date_regex.string_contains_date(found_value.as_str().ok_or_else(|| {
-                    LavaError::new(
-                        "The target value was not a string",
-                        LavaErrorLevel::Critical,
-                    )
-                })?) {
-                    return Ok(Some(IdentifiedTimeInformation {
-                        column_name: Some(correct_formatted_path),
-                        column_index: None,
-                        direction: None,
-                        regex_info: date_regex.clone(),
-                    }));
-                }
+    let serialized_line = parse_json_line_into_json(line, 0);
+    match serialized_line {
+        Err(e) => {
+            if e.level == LavaErrorLevel::Critical {
+                return Err(e);
+            } else {
+                return Ok(None);
             }
         }
-    } else {
-        let converted_vec = collect_json_values_with_paths(&serialized_line);
-        for json_key in converted_vec.iter() {
-            for date_regex in execution_settings.regexes.iter() {
-                if date_regex.string_contains_date(&json_key.value) {
-                    return Ok(Some(IdentifiedTimeInformation {
-                        column_name: Some(json_key.path.clone()),
-                        column_index: None,
-                        direction: None,
-                        regex_info: date_regex.clone(),
-                    }));
+        Ok(serialized_line) => {
+            if let Some(field_to_use) = &execution_settings.timestamp_field {
+                let correct_formatted_path = convert_arrow_path_to_json_pointer(&field_to_use);
+                if let Some(found_value) = serialized_line.pointer(&correct_formatted_path) {
+                    for date_regex in execution_settings.regexes.iter() {
+                        if date_regex.string_contains_date(found_value.as_str().ok_or_else(
+                            || {
+                                LavaError::new(
+                                    "The target value was not a string",
+                                    LavaErrorLevel::Critical,
+                                )
+                            },
+                        )?) {
+                            return Ok(Some(IdentifiedTimeInformation {
+                                column_name: Some(correct_formatted_path),
+                                column_index: None,
+                                direction: None,
+                                regex_info: date_regex.clone(),
+                            }));
+                        }
+                    }
+                }
+            } else {
+                let converted_vec = collect_json_values_with_paths(&serialized_line);
+                for json_key in converted_vec.iter() {
+                    for date_regex in execution_settings.regexes.iter() {
+                        if date_regex.string_contains_date(&json_key.value) {
+                            return Ok(Some(IdentifiedTimeInformation {
+                                column_name: Some(json_key.path.clone()),
+                                column_index: None,
+                                direction: None,
+                                regex_info: date_regex.clone(),
+                            }));
+                        }
+                    }
                 }
             }
         }
@@ -205,7 +225,6 @@ pub fn set_time_direction_by_scanning_json_file(
     Ok(())
 }
 
-
 pub fn stream_json_file(
     log_file: &LogFile,
     timestamp_hit: &Option<IdentifiedTimeInformation>,
@@ -235,13 +254,13 @@ pub fn stream_json_file(
         let current_datetime = match timestamp_hit {
             None => None,
             Some(timestamp_hit) => {
-                if let Some(value_of_key) = serialized_line.pointer(timestamp_hit.column_name.as_ref().unwrap()){
+                if let Some(value_of_key) =
+                    serialized_line.pointer(timestamp_hit.column_name.as_ref().unwrap())
+                {
                     match value_of_key {
-                        Value::String(string) => {
-                            timestamp_hit
+                        Value::String(string) => timestamp_hit
                             .regex_info
-                            .get_timestamp_object_from_string_contianing_date(string.clone())?
-                        }
+                            .get_timestamp_object_from_string_contianing_date(string.clone())?,
                         _ => {
                             return Err(LavaError::new(
                                 format!(
@@ -251,10 +270,11 @@ pub fn stream_json_file(
                             ));
                         }
                     }
-                }else{
+                } else {
                     None
                 }
-        }};
+            }
+        };
         processing_object.process_record(LogFileRecord::new(
             index,
             current_datetime,
@@ -362,10 +382,7 @@ mod json_handler_tests {
         let file_path = temp_file.path().to_path_buf();
 
         // Create a few JSON lines with timestamps
-        let json_lines = vec![
-            json!({"timestamp": "2024-01-01T12:05:00Z"}).to_string(),
-        ]
-        .join("\n");
+        let json_lines = vec![json!({"timestamp": "2024-01-01T12:05:00Z"}).to_string()].join("\n");
 
         write(&file_path, json_lines).expect("Failed to write JSON lines to temp file");
 
@@ -387,10 +404,7 @@ mod json_handler_tests {
 
         // Step 4: Assert success and expected direction
         assert!(result.is_ok());
-        assert_eq!(
-            identified_time_info.direction,
-            None
-        ); // or whatever is expected
+        assert_eq!(identified_time_info.direction, None); // or whatever is expected
     }
 
     #[test]

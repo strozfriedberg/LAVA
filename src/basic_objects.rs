@@ -5,10 +5,8 @@ use crate::helpers::*;
 use chrono::{NaiveDateTime, TimeDelta};
 use csv::StringRecord;
 use std::cmp::Ordering;
-use std::path::PathBuf;
 use std::fmt;
-
-
+use std::path::PathBuf;
 
 #[cfg(test)]
 mod logfilerecord_tests;
@@ -16,13 +14,13 @@ mod logfilerecord_tests;
 pub static WELFORD_TIME_SIGNIFIGANCE: TimeSignifigance = TimeSignifigance::Milliseconds; //Is this going to be too big for the welford calc?
 pub enum TimeSignifigance {
     Seconds,
-    Milliseconds
+    Milliseconds,
 }
 impl fmt::Display for TimeSignifigance {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let as_str = match self {
-            TimeSignifigance::Milliseconds=> "Milliseconds",
-            TimeSignifigance::Seconds=> "Seconds",
+            TimeSignifigance::Milliseconds => "Milliseconds",
+            TimeSignifigance::Seconds => "Seconds",
         };
         write!(f, "{}", as_str)
     }
@@ -200,7 +198,7 @@ impl TimeGap {
     pub fn get_time_duration_number(&self) -> i64 {
         match WELFORD_TIME_SIGNIFIGANCE {
             TimeSignifigance::Milliseconds => self.gap.num_milliseconds(),
-            TimeSignifigance::Seconds => self.gap.num_seconds()
+            TimeSignifigance::Seconds => self.gap.num_seconds(),
         }
     }
 }

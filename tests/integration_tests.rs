@@ -289,7 +289,6 @@ fn integration_test_print_alerts() {
     temp_log_file2.delete_temp_file();
 }
 
-
 #[test]
 fn json_integration_test_successful_run_no_errors_newline_at_the_end() {
     let data = r#"{"user": {"time": 42,"profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:00:00"}
@@ -303,7 +302,7 @@ fn json_integration_test_successful_run_no_errors_newline_at_the_end() {
 
     let output = process_file(log_file, &settings);
     let processed = output.expect("Failed to get Proceesed Log File");
-    println!("{:?}",processed.errors);
+    println!("{:?}", processed.errors);
     assert_eq!(0, processed.errors.len());
     assert_eq!("2025-05-09 10:00:00", processed.min_timestamp.unwrap());
     assert_eq!("2025-05-09 10:00:00", processed.max_timestamp.unwrap());
