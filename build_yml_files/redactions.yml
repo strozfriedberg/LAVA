@@ -7,6 +7,13 @@
     - "**"
     - "*masked*"
 
+- name: Sensitive Data Removed
+  pattern: "<sensitiveDataRemoved>"
+  should_match:
+    - "<sensitiveDataRemoved>"
+  should_not_match:
+    - "<sensitiveData>"
+    
 - name: Bracketed REDACTED
   pattern: "\\[REDACTED\\]"
   should_match:
@@ -109,15 +116,6 @@
   should_not_match:
     - "[SENSITIVE]"
     - "[[SENSITIVE]"
-
-- name: Anonymized Marker
-  pattern: "\\bANONYMIZED_DATA\\b"
-  should_match:
-    - "ANONYMIZED_DATA"
-    - "The record is ANONYMIZED_DATA"
-  should_not_match:
-    - "ANONYMIZED_DATA_FIELD"
-    - "MY_ANONYMIZED_DATA"
 
 - name: Base64 Placeholder
   pattern: "\\bBASE64_REDACTED\\b"
