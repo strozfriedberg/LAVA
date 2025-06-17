@@ -141,7 +141,7 @@ pub fn generate_alerts(things_to_alert_on: PossibleAlertValues) -> Vec<Alert> {
 
     //Time gap alerts
     if let Some(time_gap) = things_to_alert_on.largest_time_gap {
-        let standard_deviations_above_the_mean = ((time_gap.gap.num_seconds() as f64
+        let standard_deviations_above_the_mean = ((time_gap.get_time_duration_number() as f64
             - things_to_alert_on.mean)
             / things_to_alert_on.std)
             .floor() as usize;
