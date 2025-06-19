@@ -180,7 +180,7 @@ pub fn set_time_direction_by_scanning_json_file(
                 LavaErrorLevel::Critical,
             )
         })?;
-        if line.trim().is_empty(){
+        if line.trim().is_empty() {
             continue;
         }
         let serialized_line = parse_json_line_into_json(line, index)?;
@@ -253,7 +253,7 @@ pub fn stream_json_file(
                 LavaErrorLevel::Critical,
             )
         })?;
-        if line.trim().is_empty(){
+        if line.trim().is_empty() {
             continue;
         }
         let serialized_line = parse_json_line_into_json(line.clone(), index)?;

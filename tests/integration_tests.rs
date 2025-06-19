@@ -358,7 +358,8 @@ fn json_integration_test_successful_run_no_errors_nested_key() {
 
     let temp_log_file = TempInputFile::new(LogType::Json, data);
     let log_file = temp_log_file.get_log_file_object();
-    let settings = ExecutionSettings::create_integration_test_object(Some("user->time".to_string()), false);
+    let settings =
+        ExecutionSettings::create_integration_test_object(Some("user->time".to_string()), false);
 
     let output = process_file(log_file, &settings);
     let processed = output.expect("Failed to get Proceesed Log File");
