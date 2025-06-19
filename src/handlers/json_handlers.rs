@@ -180,6 +180,9 @@ pub fn set_time_direction_by_scanning_json_file(
                 LavaErrorLevel::Critical,
             )
         })?;
+        if line.trim().is_empty(){
+            continue;
+        }
         let serialized_line = parse_json_line_into_json(line, index)?;
         let extracted_timestamp =
             serialized_line.pointer(timestamp_hit.column_name.as_ref().ok_or_else(|| {
@@ -250,6 +253,9 @@ pub fn stream_json_file(
                 LavaErrorLevel::Critical,
             )
         })?;
+        if line.trim().is_empty(){
+            continue;
+        }
         let serialized_line = parse_json_line_into_json(line.clone(), index)?;
         let current_datetime = match timestamp_hit {
             None => None,
