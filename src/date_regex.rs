@@ -40,7 +40,7 @@ impl DateRegex {
                     NaiveDateTime::parse_from_str(datetime_str, &self.strftime_format).map_err(
                         |e| {
                             LavaError::new(
-                                format!("Unable to parse timestamp because {e}"),
+                                format!("NaiveDateTime::parse_from_str was unable to the parse timestamp because {e}"),
                                 LavaErrorLevel::Critical,
                             )
                         },
