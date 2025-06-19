@@ -226,19 +226,19 @@ mod tests {
     #[test]
     fn test_get_alert_level_remainder_zero() {
         assert_eq!(
-            get_alert_level_remainder_zero(1000, AlertType::SusEventCount),
+            get_alert_level_remainder_zero(20000, AlertType::SusEventCount),
             Some(AlertLevel::High)
         );
         assert_eq!(
-            get_alert_level_remainder_zero(200, AlertType::SusEventCount),
+            get_alert_level_remainder_zero(2000, AlertType::SusEventCount),
             Some(AlertLevel::Medium)
         );
         assert_eq!(
-            get_alert_level_remainder_zero(30, AlertType::SusEventCount),
+            get_alert_level_remainder_zero(300, AlertType::SusEventCount),
             Some(AlertLevel::Low)
         );
         assert_eq!(
-            get_alert_level_remainder_zero(7, AlertType::SusEventCount),
+            get_alert_level_remainder_zero(70, AlertType::SusEventCount),
             None
         );
     }
