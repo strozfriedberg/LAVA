@@ -131,7 +131,7 @@ pub fn write_output_to_csv(
             LavaErrorLevel::Critical,
         )
     })?; //Is this really needed?
-    println!("Data written to {}", output_filepath.to_string_lossy());
+    // println!("Data written to {}", output_filepath.to_string_lossy());
     Ok(())
 }
 
