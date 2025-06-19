@@ -8,6 +8,7 @@ use std::collections::HashSet;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
 use welford::Welford;
+use num_format::{Locale, ToFormattedString};
 include!(concat!(env!("OUT_DIR"), "/generated_redaction_regexes.rs"));
 
 #[cfg(test)]
@@ -285,7 +286,7 @@ impl LogRecordProcessor {
     pub fn get_statistics(&self) -> Result<TimeStatisticsFields> {
         let mut statistics_fields = TimeStatisticsFields::default();
 
-        statistics_fields.num_records = Some(self.num_records.to_string());
+        statistics_fields.num_records = Some(self.num_records.to_formatted_string(&Locale::fr));
 
         if let Some(min_timestamp) = self.min_timestamp {
             statistics_fields.min_timestamp =
