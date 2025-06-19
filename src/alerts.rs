@@ -323,8 +323,8 @@ mod tests {
             num_redactions: 0,
             largest_time_gap: Some(dummy_timegap(60)),
             errors: Vec::new(),
-            mean: 50.0,
-            std: 10.0,
+            mean: 50000.0,
+            std: 10000.0,
         };
 
         let alerts = generate_alerts(input);
