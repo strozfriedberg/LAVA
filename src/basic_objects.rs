@@ -28,7 +28,7 @@ impl fmt::Display for TimeSignifigance {
 
 #[derive(Debug, Clone, Default)]
 pub struct ExecutionSettings {
-    pub input_dir: PathBuf,
+    pub input: PathBuf,
     pub output_dir: PathBuf,
     pub regexes: Vec<DateRegex>,
     pub timestamp_field: Option<String>,

@@ -142,7 +142,7 @@ fn get_csv_timestamp_hit_finds_valid_timestamp() {
     let record = StringRecord::from(vec!["1", "2024-05-10 10:23:00", "test log"]);
 
     let test_args = ExecutionSettings {
-        input_dir: PathBuf::from("/dummy/input"),
+        input: PathBuf::from("/dummy/input"),
         output_dir: PathBuf::from("/dummy/output"),
         regexes: vec![DateRegex {
             pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(),
@@ -170,7 +170,7 @@ fn get_csv_timestamp_hit_does_not_find_valid_timestamp() {
     let record = StringRecord::from(vec!["1", "no timestamp", "test log"]);
 
     let test_args = ExecutionSettings {
-        input_dir: PathBuf::from("/dummy/input"),
+        input: PathBuf::from("/dummy/input"),
         output_dir: PathBuf::from("/dummy/output"),
         regexes: vec![DateRegex {
             pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(),
@@ -199,7 +199,7 @@ fn get_csv_timestamp_hit_finds_valid_different_timestamp() {
     ]);
 
     let test_args = ExecutionSettings {
-        input_dir: PathBuf::from("/dummy/input"),
+        input: PathBuf::from("/dummy/input"),
         output_dir: PathBuf::from("/dummy/output"),
         regexes: vec![DateRegex {
             pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(),

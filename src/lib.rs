@@ -38,7 +38,8 @@ include!(concat!(env!("OUT_DIR"), "/generated_redactions_tests.rs"));
 
 pub fn process_all_files(execution_settings: ExecutionSettings) {
     let mut paths: Vec<PathBuf> = Vec::new();
-    let pattern = format!("{}/**/*", execution_settings.input_dir.to_string_lossy());
+    println!("Starting to enumerate log files in {:?}", execution_settings.input);
+    let pattern = format!("{}/**/*", execution_settings.input.to_string_lossy());
     for entry in glob(&pattern).expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => {
@@ -57,7 +58,6 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
             Err(e) => println!("{:?}", e),
         }
     }
-    println!("Starting to enumerate log files in {:?}", execution_settings.input_dir);
     let supported_files = categorize_files(&paths);
     println!("Found {} supported log files. Starting to process now.", supported_files.len());
     let results: Vec<ProcessedLogFile> = supported_files

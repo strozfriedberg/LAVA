@@ -40,7 +40,7 @@ pub fn get_full_execution_settings(matches: &ArgMatches) -> Result<ExecutionSett
     let timestamp_field = matches.get_one::<String>("tf").cloned();
 
     Ok(ExecutionSettings {
-        input_dir: input_dir,
+        input: input_dir,
         output_dir: output_dir,
         regexes: regexes,
         timestamp_field: timestamp_field,
