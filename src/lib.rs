@@ -57,9 +57,9 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
             Err(e) => println!("{:?}", e),
         }
     }
-
+    println!("Starting to enumerate log files in {:?}", execution_settings.input_dir);
     let supported_files = categorize_files(&paths);
-
+    println!("Found {} supported log files. Starting to process now.", supported_files.len());
     let results: Vec<ProcessedLogFile> = supported_files
         .par_iter()
         .map(|path| process_file(path, &execution_settings).expect("Error processing file"))
