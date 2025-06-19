@@ -1,11 +1,34 @@
-- pretty_format: "YYYY-MM-DDTHH:MM:SS.SSSZ"
-  regex: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?Z"
-  strftime_format: "%Y-%m-%dT%H:%M:%S%.3fZ"
-  should_match: 
-    - "2023-01-01T01:00:00Z"
+- pretty_format: "YYYY-MM-DDTHH:MM:SSZ"
+  regex: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z"
+  strftime_format: "%Y-%m-%dT%H:%M:%S%.fZ"
+  should_match:
+    - "2023-01-01T01:00:00.000000Z"
     - "2023-01-01T01:00:00.000Z"
+    - "2023-01-01T01:00:00Z"
   should_not_match:
     - "2023-01-01T01:00:00"
+    - "2023-01-01 01:00:00.000000Z"
+
+- pretty_format: "YYYY-MM-DDTHH:MM:SS.SSS"
+  regex: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?"
+  strftime_format: "%Y-%m-%dT%H:%M:%S%.f"
+  should_match: 
+    - "2023-01-01T01:00:00.000"
+    - "2023-01-01T01:00:00.000000"
+    - "2023-01-01T01:00:00.0"
+    - "2023-01-01T01:00:00"
+  should_not_match:
+    - "2023-01-01 01:00:00"
+
+- pretty_format: "YYYY-MM-DD HH:MM:SS"
+  regex: "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?"
+  strftime_format: "%Y-%m-%d %H:%M:%S%.f"
+  should_match: 
+    - "2023-01-01 01:00:00"
+    - "2023-01-01 01:00:00.0"
+    - "2023-01-01 01:00:00.000"
+    - "2023-01-01 01:00:00.000000"
+  should_not_match:
 
 - pretty_format: "Mon D, YYYY h:MM:SS AM/PM"
   regex: "[A-Za-z]{3} \\d{1,2}, \\d{4} \\d{1,2}:\\d{2}:\\d{2} [AP]M"
@@ -15,6 +38,16 @@
   should_not_match:
     - "Jan 1, 2023 1:00:00 PM"
 
+- pretty_format: "Epoch Time"
+  regex: "\\b\\d{10}\\b"
+  strftime_format: "%s"  # Note: %s is platform-dependent
+  should_match:
+    - "1672534800"
+    - "date:1672534800"
+    - "\\\"ts\\\":1672534800.000000"
+  should_not_match:
+    - "167253480000"
+
 - pretty_format: "date= time="
   regex: "date=\\d{4}-\\d{2}-\\d{2}\\s+time=\\d{2}:\\d{2}:\\d{2}"
   strftime_format: "date=%Y-%m-%d time=%H:%M:%S"
@@ -22,29 +55,3 @@
     - "date=2023-01-01 time=01:00:00"
   should_not_match:
     - "date=2023-01-01 time=01:00"
-
-- pretty_format: "YYYY-MM-DDTHH:MM:SS.SSS"
-  regex: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{1,3}"
-  strftime_format: "%Y-%m-%dT%H:%M:%S%.3f"
-  should_match: 
-    - "2023-01-01T01:00:00.000"
-    - "2023-01-01T01:00:00.0"
-  should_not_match:
-    - "2023-01-01T01:00:00"
-
-- pretty_format: "YYYY-MM-DD HH:MM:SS"
-  regex: "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}"
-  strftime_format: "%Y-%m-%d %H:%M:%S"
-  should_match: 
-    - "2023-01-01 01:00:00"
-  should_not_match:
-
-- pretty_format: "Epoch Time"
-  regex: "^\\d{10}$"
-  strftime_format: "%s"  # Note: %s is platform-dependent
-  should_match:
-    - "1672534800"
-  should_not_match:
-    - "16725348000"
-    - "1672534800 "
-    - " 1672534800"
