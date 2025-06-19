@@ -315,6 +315,7 @@ fn json_integration_test_successful_run_no_errors_newline_at_the_end() {
     let data = r#"{"user": {"time": 42,"profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:00:00"}
         {"user": {"time": 42,"profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:01:00"}
         {"user": {"time": 42,"profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:05:00"}
+        
         "#;
 
     let temp_log_file = TempInputFile::new(LogType::Json, data);
