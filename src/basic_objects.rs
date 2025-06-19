@@ -223,4 +223,5 @@ pub struct QuickStats {
     pub min_timestamp: String,
     pub max_timestamp: String,
     pub largest_gap_duration: String,
+    pub num_records: String,
 }

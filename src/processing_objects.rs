@@ -286,7 +286,7 @@ impl LogRecordProcessor {
     pub fn get_statistics(&self) -> Result<TimeStatisticsFields> {
         let mut statistics_fields = TimeStatisticsFields::default();
 
-        statistics_fields.num_records = Some(self.num_records.to_formatted_string(&Locale::fr));
+        statistics_fields.num_records = Some(self.num_records.to_formatted_string(&Locale::en));
 
         if let Some(min_timestamp) = self.min_timestamp {
             statistics_fields.min_timestamp =
