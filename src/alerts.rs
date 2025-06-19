@@ -24,9 +24,9 @@ fn get_alert_threshold_value(alert_level: AlertLevel, alert_type: AlertType) -> 
             AlertLevel::Low => 10,
         },
         AlertType::SusEventCount => match alert_level {
-            AlertLevel::High => 1000,
-            AlertLevel::Medium => 100,
-            AlertLevel::Low => 10,
+            AlertLevel::High => 10000,
+            AlertLevel::Medium => 1000,
+            AlertLevel::Low => 100,
         },
         AlertType::DupeEvents => match alert_level {
             AlertLevel::High => 100,
