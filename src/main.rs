@@ -9,7 +9,7 @@ fn main() {
     let matches = Command::new("LAVA")
         .version("1.0")
         .about("Tool to check the validity and completeness of a given log set.")
-        .arg(arg!(-i --input <PATH> "Input directory of log files to process.").required(true))
+        .arg(arg!(-i --input <PATH> "Input log file or directory. If a directory is provided, all log files within will be recusively processed.").required(true))
         .arg(arg!(-o --output <PATH> "Output directory.").default_value("LAVA_Output"))
         .arg(arg!(-r --regexes <PATH> "YML file with custom timestamp parsing to use. See Input_Regexes.yml for an example.").required(false))
         .arg(arg!(-t --tf <PATH> "Timestamp field to use for time analysis. Supports -> for nested keys in JSONL.").required(false))
