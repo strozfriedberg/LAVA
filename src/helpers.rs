@@ -278,9 +278,7 @@ pub fn print_pretty_alerts_and_write_to_output_file(
     Ok(())
 }
 
-pub fn print_pretty_quick_stats(
-    results: &Vec<ProcessedLogFile>
-) -> Result<()> {
+pub fn print_pretty_quick_stats(results: &Vec<ProcessedLogFile>) -> Result<()> {
     let mut successful_time_processed_data: Vec<QuickStats> = results
         .iter()
         .filter_map(|item| {
@@ -290,6 +288,7 @@ pub fn print_pretty_quick_stats(
                 min_timestamp: item.min_timestamp.clone()?,
                 max_timestamp: item.max_timestamp.clone()?,
                 largest_gap_duration: item.largest_gap_duration.clone()?,
+                num_records: item.num_records.clone()?,
             })
         })
         .collect();
@@ -301,26 +300,33 @@ pub fn print_pretty_quick_stats(
         successful_time_processed_data[..successful_time_processed_data.len().min(5)].to_vec();
 
     if first_five_slice.len() > 0 {
-
         let mut output_table = Table::new();
         output_table
             .load_preset(UTF8_FULL)
             .apply_modifier(UTF8_ROUND_CORNERS);
 
-        output_table
-        .set_header(vec![
-            Cell::new("Filename"), Cell::new("Min Timestamp"), Cell::new("Max Timestamp"), Cell::new("Largest Gap Duration (Hours)"),
+        output_table.set_header(vec![
+            Cell::new("Filename"),
+            Cell::new("Min Timestamp"),
+            Cell::new("Max Timestamp"),
+            Cell::new("Record Count"),
+            Cell::new("Largest Gap Duration (Hours)"),
         ]);
         for result in first_five_slice.iter() {
-            output_table
-            .add_row(vec![
-                Cell::new(&result.filename), Cell::new(&result.min_timestamp), Cell::new(&result.max_timestamp), Cell::new(&result.largest_gap_duration),
+            output_table.add_row(vec![
+                Cell::new(&result.filename),
+                Cell::new(&result.min_timestamp),
+                Cell::new(&result.max_timestamp),
+                Cell::new(&result.num_records),
+                Cell::new(&result.largest_gap_duration),
             ]);
         }
-        println!("File(s) with the largest {} time gaps", first_five_slice.len());
+        println!(
+            "File(s) with the largest {} time gaps",
+            first_five_slice.len()
+        );
         println!("{output_table}");
-
-    }else {
+    } else {
         println!("Time analysis did not complete successfully for any input file")
     }
 
