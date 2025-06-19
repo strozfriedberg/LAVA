@@ -278,6 +278,52 @@ pub fn print_pretty_alerts_and_write_to_output_file(
     Ok(())
 }
 
+pub fn print_pretty_quick_stats(
+    results: &Vec<ProcessedLogFile>
+) -> Result<()> {
+    let mut successful_time_processed_data: Vec<QuickStats> = results
+        .iter()
+        .filter_map(|item| {
+            // Only continue if *all* required fields are Some
+            Some(QuickStats {
+                filename: item.filename.clone()?,
+                min_timestamp: item.min_timestamp.clone()?,
+                max_timestamp: item.max_timestamp.clone()?,
+                largest_gap_duration: item.largest_gap_duration.clone()?,
+            })
+        })
+        .collect();
+
+    successful_time_processed_data
+        .sort_by(|a, b| b.largest_gap_duration.cmp(&a.largest_gap_duration));
+
+    let first_five_slice =
+        successful_time_processed_data[..successful_time_processed_data.len().min(5)].to_vec();
+
+    if first_five_slice.len() > 0 {
+        let mut output_table = Table::new();
+        output_table
+            .load_preset(UTF8_FULL)
+            .apply_modifier(UTF8_ROUND_CORNERS);
+        output_table
+        .add_row(vec![
+            Cell::new("Filename"), Cell::new("Min Timestamp"), Cell::new("Max Timestamp"), Cell::new("Largest Gap Duration"),
+        ]);
+        for result in first_five_slice.iter() {
+            output_table
+            .add_row(vec![
+                Cell::new(&result.filename), Cell::new(&result.min_timestamp), Cell::new(&result.max_timestamp), Cell::new(&result.largest_gap_duration),
+            ]);
+        }
+        println!("{output_table}");
+
+    }else {
+        println!("Time analysis did not complete successfully for any input file")
+    }
+
+    Ok(())
+}
+
 fn alert_level_to_string(alert_level: &AlertLevel) -> &str {
     match alert_level {
         AlertLevel::High => "HIGH ALERTS",

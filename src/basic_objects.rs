@@ -216,3 +216,11 @@ pub struct HeaderInfo {
     pub first_data_row: usize,
     pub headers: StringRecord,
 }
+
+#[derive(Debug, Clone)]
+pub struct QuickStats {
+    pub filename: String,
+    pub min_timestamp: String,
+    pub max_timestamp: String,
+    pub largest_gap_duration: String,
+}
