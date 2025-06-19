@@ -9,7 +9,7 @@
     - "2023-01-01T01:00:00"
     - "2023-01-01 01:00:00.000000Z"
 
-- pretty_format: "YYYY-MM-DDTHH:MM:SS.SSS"
+- pretty_format: "YYYY-MM-DDTHH:MM:SS.SS"
   regex: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?"
   strftime_format: "%Y-%m-%dT%H:%M:%S%.f"
   should_match: 
