@@ -1,7 +1,7 @@
 use glob::glob;
 use rayon::prelude::*;
 use sha2::{Digest, Sha256};
-use std::fs::File;
+use std::fs::{File, metadata};
 use std::io::Read;
 use std::path::PathBuf;
 mod errors;
@@ -37,44 +37,50 @@ include!(concat!(env!("OUT_DIR"), "/generated_date_tests.rs"));
 include!(concat!(env!("OUT_DIR"), "/generated_redactions_tests.rs"));
 
 pub fn process_all_files(execution_settings: ExecutionSettings) {
-    let mut paths: Vec<PathBuf> = Vec::new();
-    println!("Starting to enumerate log files in {:?}", execution_settings.input);
-    let pattern = format!("{}/**/*", execution_settings.input.to_string_lossy());
-    for entry in glob(&pattern).expect("Failed to read glob pattern") {
-        match entry {
-            Ok(path) => {
-                let metadata = std::fs::metadata(&path)
-                    .map_err(|e| {
-                        LavaError::new(
-                            format!("Failed to read metadata of file becase of {e}"),
-                            LavaErrorLevel::Critical,
-                        )
-                    })
-                    .unwrap();
-                if metadata.is_file() {
-                    paths.push(path);
+
+    match metadata(&execution_settings.input) {
+        Err(e) => println!("Could not get the metadata of the input path because of {}",e)
+        Ok(metadata) => {
+            let mut paths: Vec<PathBuf> = Vec::new();
+            println!("Starting to enumerate log files in {:?}", execution_settings.input);
+            let pattern = format!("{}/**/*", execution_settings.input.to_string_lossy());
+            for entry in glob(&pattern).expect("Failed to read glob pattern") {
+                match entry {
+                    Ok(path) => {
+                        let metadata = std::fs::metadata(&path)
+                            .map_err(|e| {
+                                LavaError::new(
+                                    format!("Failed to read metadata of file becase of {e}"),
+                                    LavaErrorLevel::Critical,
+                                )
+                            })
+                            .unwrap();
+                        if metadata.is_file() {
+                            paths.push(path);
+                        }
+                    }
+                    Err(e) => println!("{:?}", e),
                 }
             }
-            Err(e) => println!("{:?}", e),
+            let supported_files = categorize_files(&paths);
+            println!("Found {} supported log files. Starting to process now.", supported_files.len());
+            let results: Vec<ProcessedLogFile> = supported_files
+                .par_iter()
+                .map(|path| process_file(path, &execution_settings).expect("Error processing file"))
+                .collect();
+        
+            // Make a line here to go through each ProcessedLogFile, and write that to the error log
+            if let Err(e) = write_errors_to_error_log(&results, &execution_settings) {
+                eprintln!("Failed to write errors to error log {}", e);
+            }
+            if let Err(e) = write_output_to_csv(&results, &execution_settings) {
+                eprintln!("Failed to write to CSV: {}", e);
+            }
+            if let Err(e) = print_pretty_alerts_and_write_to_output_file(&results, &execution_settings) {
+                eprintln!("Failed to output alerts: {}", e);
+            }
         }
-    }
-    let supported_files = categorize_files(&paths);
-    println!("Found {} supported log files. Starting to process now.", supported_files.len());
-    let results: Vec<ProcessedLogFile> = supported_files
-        .par_iter()
-        .map(|path| process_file(path, &execution_settings).expect("Error processing file"))
-        .collect();
-
-    // Make a line here to go through each ProcessedLogFile, and write that to the error log
-    if let Err(e) = write_errors_to_error_log(&results, &execution_settings) {
-        eprintln!("Failed to write errors to error log {}", e);
-    }
-    if let Err(e) = write_output_to_csv(&results, &execution_settings) {
-        eprintln!("Failed to write to CSV: {}", e);
-    }
-    if let Err(e) = print_pretty_alerts_and_write_to_output_file(&results, &execution_settings) {
-        eprintln!("Failed to output alerts: {}", e);
-    }
+    };
 }
 
 fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile> {
