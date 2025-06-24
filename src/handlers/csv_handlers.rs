@@ -1,6 +1,6 @@
 use crate::basic_objects::*;
 use crate::errors::*;
-use crate::helpers::get_file_stem;
+use crate::helpers::{get_file_stem, print_if_verbose_mode_on};
 use crate::processing_objects::*;
 use chrono::NaiveDateTime;
 use csv::Reader;
@@ -112,7 +112,8 @@ pub fn try_to_get_timestamp_hit_for_csv(
     execution_settings: &ExecutionSettings,
     header_info: HeaderInfo,
 ) -> Result<Option<IdentifiedTimeInformation>> {
-    // println!("Using header index {}", header_row);
+
+    print_if_verbose_mode_on(format!("Trying to get hit for {:?}", log_file.file_path));
     let mut reader = get_reader_from_certain_index(header_info.first_data_row, log_file)?;
 
     let record: csv::StringRecord = reader

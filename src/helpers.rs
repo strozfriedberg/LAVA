@@ -9,10 +9,20 @@ use csv::StringRecord;
 use csv::Writer;
 use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
+use std::fmt::Display;
 use std::fs::OpenOptions;
 use std::hash::{Hash, Hasher};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
+
+
+pub fn print_if_verbose_mode_on<T: Display>(thing_to_print: T){
+    if let Some(verbose_mode) =crate::VERBOSE.get(){
+        if *verbose_mode {
+            println!("{}", thing_to_print)
+        }
+    }
+}
 
 pub fn generate_log_filename() -> String {
     let now = Utc::now();
