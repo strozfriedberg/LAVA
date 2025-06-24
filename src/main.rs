@@ -14,7 +14,7 @@ fn main() {
         .arg(arg!(-r --regexes <PATH> "YML file with custom timestamp formats to use. For formatting example run --printregexes."))
         .arg(arg!(-p --printregexes "Print the built in timestamp formats."))
         .arg(arg!(-t --tf <PATH> "Timestamp field to use for time analysis. Supports -> for nested keys in JSONL."))
-        .arg(arg!(-q --quick "Quick mode. Skips resource-intensive processing steps such as duplicate detection."))
+        .arg(arg!(-q --quick "Quick mode. Skips resource-intensive processing steps such as file hashing and duplicate detection."))
         .arg(arg!(-v --verbose "Verbose mode."))// Not implemented yet
         .group(ArgGroup::new("required").args(&["input", "printregexes"]).required(true).multiple(false))
         .get_matches();
