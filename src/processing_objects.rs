@@ -4,11 +4,11 @@ use crate::helpers::*;
 use chrono::NaiveDateTime;
 use csv::StringRecord;
 use csv::WriterBuilder;
+use num_format::{Locale, ToFormattedString};
 use std::collections::HashSet;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
 use welford::Welford;
-use num_format::{Locale, ToFormattedString};
 include!(concat!(env!("OUT_DIR"), "/generated_redaction_regexes.rs"));
 
 #[cfg(test)]

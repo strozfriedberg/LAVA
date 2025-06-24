@@ -72,7 +72,10 @@ pub fn write_output_to_csv(
         "Largest Time Gap (LTG)",
         "Duration of LTG",
         &format!("Mean {} of Time Gaps", WELFORD_TIME_SIGNIFIGANCE),
-        &format!("Standard Deviation of Time Gaps in {}", WELFORD_TIME_SIGNIFIGANCE),
+        &format!(
+            "Standard Deviation of Time Gaps in {}",
+            WELFORD_TIME_SIGNIFIGANCE
+        ),
         "LTG Number of Standard Deviations Above the Mean",
         "Duplicate Record Count",
         "Possible Redactions Count",
