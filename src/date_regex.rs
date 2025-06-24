@@ -63,8 +63,8 @@ impl fmt::Display for DateRegex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Pretty: {}\n  Strftime: {}\n  Regex: {}",
-            self.pretty_format, self.strftime_format, self.regex
+            "- pretty_format: \"{}\"\n  regex: \"{}\"\n  strftime_format: \"{}\"",
+            self.pretty_format, self.regex.to_string().trim_end_matches(')').trim_start_matches('('), self.strftime_format,
         )
     }
 }
