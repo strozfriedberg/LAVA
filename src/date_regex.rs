@@ -1,6 +1,7 @@
 use crate::errors::*;
 use chrono::NaiveDateTime;
 use regex::Regex;
+use std::fmt;
 use serde::Deserialize;
 #[cfg(test)]
 mod date_regex_tests;
@@ -55,5 +56,15 @@ impl DateRegex {
             return true;
         }
         false
+    }
+}
+
+impl fmt::Display for DateRegex {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Pretty: {}\n  Strftime: {}\n  Regex: {}",
+            self.pretty_format, self.strftime_format, self.regex
+        )
     }
 }

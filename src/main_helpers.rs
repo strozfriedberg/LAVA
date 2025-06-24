@@ -8,6 +8,13 @@ use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 
+pub fn print_compiled_regexes() -> (){
+    println!("Supported regex / strftime pairs. To provide your own, use --tf.\n");
+    for date_format in PREBUILT_DATE_REGEXES.iter(){
+        println!("{}\n", date_format);
+    }
+}
+
 pub fn get_full_execution_settings(matches: &ArgMatches) -> Result<ExecutionSettings> {
     // might want to perfrom lots of sanitation here
     let input_dir = PathBuf::from(
