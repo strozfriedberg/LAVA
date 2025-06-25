@@ -7,7 +7,6 @@ fn main() {
     let start = Instant::now();
     print_ascii_art();
     let matches = Command::new("LAVA")
-        .version("1.0")
         .about("Tool to check the validity and completeness of a given log set.")
         .arg(arg!(-i --input <PATH> "Input log file or directory. If a directory is provided, all log files within will be recusively processed."))
         .arg(arg!(-o --output <PATH> "Output directory.").default_value("LAVA_Output"))
