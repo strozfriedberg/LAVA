@@ -1,6 +1,6 @@
 # Log Anomaly and Validity Analyzer (LAVA)
 
-This tool generates statistics about provided log files and alerts on common issues within them. 
+LAVA parses a variety of log types, generates statistics about provided log files and alerts on common issues within them. 
 
 Useful statistics include
 - Minimum Timestamp
