@@ -7,6 +7,7 @@ fn main() {
     let start = Instant::now();
     print_ascii_art();
     let matches = Command::new("LAVA")
+        .version("1.0")
         .about("Tool to check the validity and completeness of a given log set.")
         .arg(arg!(-i --input <PATH> "Input log file or directory. If a directory is provided, all log files within will be recusively processed."))
         .arg(arg!(-o --output <PATH> "Output directory.").default_value("LAVA_Output"))
@@ -15,6 +16,7 @@ fn main() {
         .arg(arg!(-t --tf <PATH> "Timestamp field to use for time analysis. Supports -> for nested keys in JSONL."))
         .arg(arg!(-q --quick "Quick mode. Skips resource-intensive processing steps such as file hashing and duplicate detection."))
         .arg(arg!(-v --verbose "Verbose mode."))// Not implemented yet
+        // .disable_version_flag(true)
         .group(ArgGroup::new("required").args(&["input", "printregexes", "help"]).required(true).multiple(false))
         .get_matches();
 
