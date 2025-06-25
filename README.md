@@ -2,7 +2,7 @@
 
 LAVA parses a variety of log types, generates statistics about provided log files and alerts on common issues within them. 
 
-Useful statistics include
+Useful statistics include:
 - Minimum Timestamp
 - Maximum Timestamp
 - Number of Records
@@ -14,10 +14,10 @@ Although not guaranteed, the author of this project will attempt to fix critical
 
 ## Supported Log Files
 - CSV
-    - The tool attempts to handle CSVs where there is garbage data above the header row, although this is not guaranteed to work in all cases. You may need to manually fix the CSV before processing.
+    - LAVA attempts to handle CSVs where there is garbage data above the header row, although this is not guaranteed to work in all cases. You may need to manually fix the CSV before processing.
 - JSONL (New Line Separated JSON)
 - Unstructured, plaintext log files
-    - Since many log files are simply new line separated plain text, the tool attempts to handle these formats as well. Because of the unstructured nature of many plaintext logs, results may be unreliable. 
+    - Since many log files are simply new line separated plain text, LAVA attempts to handle these formats as well. Because of the unstructured nature of many plaintext logs, results may be unreliable. 
 ## Assumptions
 - Input files are sorted based on time
 
@@ -28,7 +28,7 @@ Although not guaranteed, the author of this project will attempt to fix critical
   
   `-o, --output <PATH>`   
   
-  Directory to output files to. If a directory is not provided, the tool will create a "LAVA_Output" directory in the directory of execution.
+  Directory to output files to. If a directory is not provided, LAVA will create a "LAVA_Output" directory in the directory of execution.
 
   `-r, --regexes <PATH>`
 
@@ -61,7 +61,7 @@ Although not guaranteed, the author of this project will attempt to fix critical
 
 ## Date Regexes
 
-For timestamp analysis, this tool relies on pairs of regex and strftime format strings. The regex is used to capture the timestamp string from the logs, and the strftime format is used to parse it into a NaiveDateTime object. These pairs are exposed in the yml file at `build_yml_files/dates.yml`, and are built into the executable at compile time. An example of the format needed in that file are below 
+For timestamp analysis, LAVA relies on pairs of regex and strftime format strings. The regex is used to capture the timestamp string from the logs, and the strftime format is used to parse it into a NaiveDateTime object. These pairs are exposed in the yml file at `build_yml_files/dates.yml`, and are built into the executable at compile time. An example of the format needed in that file are below 
 ```
 - pretty_format: "YYYY-MM-DDTHH:MM:SSZ"
   regex: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z"
