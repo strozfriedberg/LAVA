@@ -16,7 +16,7 @@ fn main() {
         .arg(arg!(-t --tf <PATH> "Timestamp field to use for time analysis. Supports -> for nested keys in JSONL."))
         .arg(arg!(-q --quick "Quick mode. Skips resource-intensive processing steps such as file hashing and duplicate detection."))
         .arg(arg!(-v --verbose "Verbose mode."))// Not implemented yet
-        .group(ArgGroup::new("required").args(&["input", "printregexes"]).required(true).multiple(false))
+        .group(ArgGroup::new("required").args(&["input", "printregexes", "help"]).required(true).multiple(false))
         .get_matches();
 
 
