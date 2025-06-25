@@ -8,7 +8,16 @@ Useful statistics include
 - Number of Records
 - Largest Time Gap
 
+## Disclaimer
 
+Although not guaranteed, the author of this project will attempt to fix critical issues and respond to pull requests in a timely manor. Use at your own risk.
+
+## Supported Log Files
+- CSV
+    - The tool attempts to handle CSVs where there is garbage data above the header row, although this is not guaranteed to work in all cases. You may need to manually fix the CSV before processing.
+- JSONL (New Line Separated JSON)
+- Unstructured, plaintext log files
+    - Since many log files are simply new line separated plain text, the tool attempts to handle these formats as well. Because of the unstructured nature of many plaintext logs, results may be unreliable. 
 ## Assumptions
 - Input files are sorted based on time
 
