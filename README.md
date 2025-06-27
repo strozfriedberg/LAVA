@@ -1,5 +1,9 @@
 # Log Anomaly and Validity Analyzer (LAVA)
 
+First released July of 2025
+
+## About
+
 LAVA parses a variety of log types, generates statistics about provided log files and alerts on common issues within. 
 
 Useful statistics include:
@@ -7,10 +11,6 @@ Useful statistics include:
 - Maximum Timestamp
 - Number of Records
 - Largest Time Gap
-
-## Disclaimer
-
-Although not guaranteed, the author of this project will attempt to fix critical issues and respond to pull requests in a timely manor. Use at your own risk.
 
 ## Supported Log Files
 - CSV
@@ -83,3 +83,8 @@ For timestamp analysis, LAVA relies on pairs of regex and strftime format string
 `should_match` - List of strings that should get captured by the regex, successfully parsed by the strftime format, and **match the date January 1st, 2023, at 1 AM**. A test is auto generated for each of these, and if any one of those conditions fail, the test will fail.
 
 `should_not_match` - List of strings that should fail one of conditions needed for should_match. 
+
+
+## Disclaimer
+
+Although not guaranteed, the author of this project will attempt to fix critical issues and respond to pull requests in a timely manor. Use at your own risk and do not solely depend on output of this tool when it comes to legal forensic findings.
