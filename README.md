@@ -11,6 +11,8 @@ Useful statistics include:
 - Maximum Timestamp
 - Number of Records
 - Largest Time Gap
+- Duplicate Records
+- Potential Redactions
 
 ## Supported Log Files
 - CSV
