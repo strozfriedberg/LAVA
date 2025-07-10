@@ -1,10 +1,8 @@
 use clap::{ArgGroup, Command, arg};
 use lava::main_helpers::{get_full_execution_settings, print_compiled_regexes};
 use lava::process_all_files;
-use std::time::Instant;
 
 fn main() {
-    let start = Instant::now();
     print_ascii_art();
     let matches = Command::new("LAVA")
         .version("1.0")
@@ -20,18 +18,11 @@ fn main() {
         .group(ArgGroup::new("required").args(&["input", "printregexes", "help"]).required(true).multiple(false))
         .get_matches();
 
-
     if matches.get_flag("printregexes") {
         print_compiled_regexes();
     } else {
-
         let execution_settings = get_full_execution_settings(&matches).unwrap(); // I think unwrap is fine here because I want to crash the program if I get an error here
         process_all_files(execution_settings);
-
-        let duration = start.elapsed();
-        let minutes = duration.as_secs_f64() / 60.0;
-
-        println!("Finished in {:.2} minutes", minutes);
     }
 }
 

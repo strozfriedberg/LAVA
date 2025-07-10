@@ -1,5 +1,5 @@
 use super::super::*;
-use crate::basic_objects::{ExecutionSettings, TimeDirection};
+use crate::basic_objects::{ExecutionSettings, TimeDirection, TimeGap};
 use crate::test_helpers::*;
 use csv::StringRecord;
 
@@ -35,23 +35,20 @@ fn processes_ascending_records_correctly() {
         ))
         .unwrap();
 
-    let results = processor.get_statistics().unwrap();
     assert_eq!(
-        results.min_timestamp.unwrap().to_string(),
-        "2024-05-01 12:00:00"
+        processor.min_timestamp.unwrap(),
+        NaiveDateTime::parse_from_str("2024-05-01 12:00:00", "%Y-%m-%d %H:%M:%S").unwrap()
     );
     assert_eq!(
-        results.max_timestamp.unwrap().to_string(),
-        "2024-05-01 15:00:00"
+        processor.max_timestamp.unwrap(),
+        NaiveDateTime::parse_from_str("2024-05-01 15:00:00", "%Y-%m-%d %H:%M:%S").unwrap()
     );
-    assert_eq!(
-        results.largest_gap_duration.unwrap(),
-        "02:00:00".to_string()
+    let expected_time_gap = TimeGap::new(
+        NaiveDateTime::parse_from_str("2024-05-01 13:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
+        NaiveDateTime::parse_from_str("2024-05-01 15:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
     );
-    assert_eq!(
-        results.largest_gap.unwrap(),
-        "2024-05-01 13:00:00 to 2024-05-01 15:00:00".to_string()
-    );
+
+    assert_eq!(processor.largest_time_gap.unwrap(), expected_time_gap);
 }
 
 #[test]
@@ -86,23 +83,20 @@ fn processes_ascending_records_same_time_gap_correctly() {
         ))
         .unwrap();
 
-    let results = processor.get_statistics().unwrap();
     assert_eq!(
-        results.min_timestamp.unwrap().to_string(),
-        "2024-05-01 12:00:00"
+        processor.min_timestamp.unwrap(),
+        NaiveDateTime::parse_from_str("2024-05-01 12:00:00", "%Y-%m-%d %H:%M:%S").unwrap()
     );
     assert_eq!(
-        results.max_timestamp.unwrap().to_string(),
-        "2024-05-01 14:00:00"
+        processor.max_timestamp.unwrap(),
+        NaiveDateTime::parse_from_str("2024-05-01 14:00:00", "%Y-%m-%d %H:%M:%S").unwrap()
     );
-    assert_eq!(
-        results.largest_gap_duration.unwrap(),
-        "01:00:00".to_string()
+    let expected_time_gap = TimeGap::new(
+        NaiveDateTime::parse_from_str("2024-05-01 12:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
+        NaiveDateTime::parse_from_str("2024-05-01 13:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
     );
-    assert_eq!(
-        results.largest_gap.unwrap(),
-        "2024-05-01 12:00:00 to 2024-05-01 13:00:00".to_string()
-    );
+
+    assert_eq!(processor.largest_time_gap.unwrap(), expected_time_gap);
 }
 
 #[test]
@@ -137,23 +131,20 @@ fn processes_descending_records_correctly() {
         ))
         .unwrap();
 
-    let results = processor.get_statistics().unwrap();
     assert_eq!(
-        results.min_timestamp.unwrap().to_string(),
-        "2024-05-01 11:00:00"
+        processor.min_timestamp.unwrap(),
+        NaiveDateTime::parse_from_str("2024-05-01 11:00:00", "%Y-%m-%d %H:%M:%S").unwrap()
     );
     assert_eq!(
-        results.max_timestamp.unwrap().to_string(),
-        "2024-05-01 14:00:00"
+        processor.max_timestamp.unwrap(),
+        NaiveDateTime::parse_from_str("2024-05-01 14:00:00", "%Y-%m-%d %H:%M:%S").unwrap()
     );
-    assert_eq!(
-        results.largest_gap_duration.unwrap(),
-        "02:00:00".to_string()
+    let expected_time_gap = TimeGap::new(
+        NaiveDateTime::parse_from_str("2024-05-01 11:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
+        NaiveDateTime::parse_from_str("2024-05-01 13:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
     );
-    assert_eq!(
-        results.largest_gap.unwrap(),
-        "2024-05-01 11:00:00 to 2024-05-01 13:00:00".to_string()
-    );
+
+    assert_eq!(processor.largest_time_gap.unwrap(), expected_time_gap);
 }
 
 #[test]

@@ -1,7 +1,7 @@
 use crate::alerts::*;
 use crate::basic_objects::*;
 use crate::errors::*;
-use chrono::{TimeDelta, Utc};
+use chrono::Utc;
 use comfy_table::modifiers::UTF8_ROUND_CORNERS;
 use comfy_table::presets::UTF8_FULL;
 use comfy_table::*;
@@ -15,9 +15,8 @@ use std::hash::{Hash, Hasher};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 
-
-pub fn print_if_verbose_mode_on<T: Display>(thing_to_print: T){
-    if let Some(verbose_mode) =crate::VERBOSE.get(){
+pub fn print_if_verbose_mode_on<T: Display>(thing_to_print: T) {
+    if let Some(verbose_mode) = crate::VERBOSE.get() {
         if *verbose_mode {
             println!("{}", thing_to_print)
         }
@@ -28,16 +27,6 @@ pub fn generate_log_filename() -> String {
     let now = Utc::now();
     let formatted = now.format("%Y-%m-%d_%H-%M-%S_LAVA_Output.csv");
     formatted.to_string()
-}
-
-pub fn format_timedelta(tdelta: TimeDelta) -> String {
-    let total_seconds = tdelta.num_seconds().abs(); // make it positive for display
-
-    let hours = total_seconds / 3600;
-    let minutes = (total_seconds % 3600) / 60;
-    let seconds = total_seconds % 60;
-
-    format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
 }
 
 pub fn hash_csv_record(record: &StringRecord) -> u64 {
@@ -75,12 +64,15 @@ pub fn write_output_to_csv(
         "First Data Row Used",
         "Header Used",
         "Timestamp Format",
-        "Number of Records",
+        "Total Number of Records",
+        "Number of Records Processed for Timestamp Analysis",
         "Min Timestamp",
         "Max Timestamp",
-        "Duration of Entire Log File",
+        "Duration of Entire Log File (Hours)",
+        "Pretty Duration of Entire Log File",
         "Largest Time Gap (LTG)",
-        "Duration of LTG",
+        "Duration of LTG (Hours)",
+        "Pretty Duration of LTG",
         &format!("Mean {} of Time Gaps", WELFORD_TIME_SIGNIFIGANCE),
         &format!(
             "Standard Deviation of Time Gaps in {}",
@@ -98,45 +90,13 @@ pub fn write_output_to_csv(
         )
     })?;
     for log_file in processed_log_files {
-        let error_message = if log_file.errors.is_empty() {
-            String::new()
-        } else {
-            if log_file.errors.len() > 1 {
-                format!(
-                    "There were {} errors during processing. Check errors.csv for detailed errors.",
-                    log_file.errors.len()
+        wtr.serialize(log_file.get_strings_for_file_statistics_output_row())
+            .map_err(|e| {
+                LavaError::new(
+                    format!("Issue writing lines of output file because of {e}"),
+                    LavaErrorLevel::Critical,
                 )
-            } else {
-                log_file.errors[0].reason.clone()
-            }
-        };
-        wtr.serialize(vec![
-            log_file.filename.as_deref().unwrap_or(""),
-            log_file.file_path.as_deref().unwrap_or(""),
-            log_file.sha256hash.as_deref().unwrap_or(""),
-            log_file.size.as_deref().unwrap_or(""),
-            log_file.first_data_row_used.as_deref().unwrap_or(""),
-            log_file.time_header.as_deref().unwrap_or(""),
-            log_file.time_format.as_deref().unwrap_or(""),
-            log_file.num_records.as_deref().unwrap_or(""),
-            log_file.min_timestamp.as_deref().unwrap_or(""),
-            log_file.max_timestamp.as_deref().unwrap_or(""),
-            log_file.min_max_duration.as_deref().unwrap_or(""),
-            log_file.largest_gap.as_deref().unwrap_or(""),
-            log_file.largest_gap_duration.as_deref().unwrap_or(""),
-            log_file.mean_time_gap.as_deref().unwrap_or(""),
-            log_file.std_dev_time_gap.as_deref().unwrap_or(""),
-            log_file.number_of_std_devs_above.as_deref().unwrap_or(""),
-            log_file.num_dupes.as_deref().unwrap_or(""),
-            log_file.num_redactions.as_deref().unwrap_or(""),
-            &error_message,
-        ])
-        .map_err(|e| {
-            LavaError::new(
-                format!("Issue writing lines of output file because of {e}"),
-                LavaErrorLevel::Critical,
-            )
-        })?;
+            })?;
     }
     wtr.flush().map_err(|e| {
         LavaError::new(
@@ -296,13 +256,7 @@ pub fn print_pretty_quick_stats(results: &Vec<ProcessedLogFile>) -> Result<()> {
         .iter()
         .filter_map(|item| {
             // Only continue if *all* required fields are Some
-            Some(QuickStats {
-                filename: item.filename.clone()?,
-                min_timestamp: item.min_timestamp.clone()?,
-                max_timestamp: item.max_timestamp.clone()?,
-                largest_gap_duration: item.largest_gap_duration.clone()?,
-                num_records: item.num_records.clone()?,
-            })
+            item.get_quick_stats()
         })
         .collect();
 
@@ -323,7 +277,7 @@ pub fn print_pretty_quick_stats(results: &Vec<ProcessedLogFile>) -> Result<()> {
             Cell::new("Min Timestamp"),
             Cell::new("Max Timestamp"),
             Cell::new("Record Count"),
-            Cell::new("Largest Gap Duration (Hours)"),
+            Cell::new("Largest Gap Duration"),
         ]);
         for result in first_five_slice.iter() {
             output_table.add_row(vec![
@@ -331,7 +285,7 @@ pub fn print_pretty_quick_stats(results: &Vec<ProcessedLogFile>) -> Result<()> {
                 Cell::new(&result.min_timestamp),
                 Cell::new(&result.max_timestamp),
                 Cell::new(&result.num_records),
-                Cell::new(&result.largest_gap_duration),
+                Cell::new(&result.largest_gap_duration_human),
             ]);
         }
         println!(

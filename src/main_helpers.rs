@@ -8,9 +8,11 @@ use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 
-pub fn print_compiled_regexes() -> (){
-    println!("Built in regex / strftime pairs for timestamp analysis. To provide your own, use --regexes.\n");
-    for date_format in PREBUILT_DATE_REGEXES.iter(){
+pub fn print_compiled_regexes() -> () {
+    println!(
+        "Built in regex / strftime pairs for timestamp analysis. To provide your own, use --regexes.\n"
+    );
+    for date_format in PREBUILT_DATE_REGEXES.iter() {
         println!("{}\n", date_format);
     }
 }

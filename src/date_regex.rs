@@ -1,8 +1,8 @@
 use crate::errors::*;
 use chrono::NaiveDateTime;
 use regex::Regex;
-use std::fmt;
 use serde::Deserialize;
+use std::fmt;
 #[cfg(test)]
 mod date_regex_tests;
 
@@ -64,7 +64,12 @@ impl fmt::Display for DateRegex {
         write!(
             f,
             "- pretty_format: \"{}\"\n  regex: \"{}\"\n  strftime_format: \"{}\"",
-            self.pretty_format, self.regex.to_string().trim_end_matches(')').trim_start_matches('('), self.strftime_format,
+            self.pretty_format,
+            self.regex
+                .to_string()
+                .trim_end_matches(')')
+                .trim_start_matches('('),
+            self.strftime_format,
         )
     }
 }

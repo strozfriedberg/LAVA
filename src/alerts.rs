@@ -53,7 +53,7 @@ pub fn get_message_for_alert_comfy_table(
 ) -> String {
     match alert_type {
         AlertType::SusTimeGap => format!(
-            "{} files had a largest time gap greater than {} standard deviations above the average",
+            "{} files had a largest time gap greater than {} standard deviations above the average time gap",
             number_of_files,
             get_alert_threshold_value(alert_level, alert_type)
         ),
@@ -79,7 +79,7 @@ pub fn get_message_for_alert_comfy_table(
 pub fn get_message_for_alert_output_file(alert_level: AlertLevel, alert_type: AlertType) -> String {
     match alert_type {
         AlertType::SusTimeGap => format!(
-            "Largest time gap greater than {} standard deviations above the average",
+            "Largest time gap greater than {} standard deviations above the average time gap",
             get_alert_threshold_value(alert_level, alert_type)
         ),
         AlertType::SusEventCount => format!(
@@ -117,10 +117,12 @@ pub fn generate_alerts(things_to_alert_on: PossibleAlertValues) -> Vec<Alert> {
     let mut alerts: Vec<Alert> = Vec::new();
 
     //Num records alerts
-    if let Some(level) =
-        get_alert_level_remainder_zero(things_to_alert_on.num_records, AlertType::SusEventCount)
-    {
-        alerts.push(Alert::new(level, AlertType::SusEventCount));
+    if things_to_alert_on.num_records > 0 {
+        if let Some(level) =
+            get_alert_level_remainder_zero(things_to_alert_on.num_records, AlertType::SusEventCount)
+        {
+            alerts.push(Alert::new(level, AlertType::SusEventCount));
+        };
     };
 
     //Num dupes alerts
@@ -318,7 +320,7 @@ mod tests {
     #[test]
     fn test_generate_alerts_none_triggered() {
         let input = PossibleAlertValues {
-            num_records: 3,
+            num_records: 0,
             num_dupes: 0,
             num_redactions: 0,
             largest_time_gap: Some(dummy_timegap(60)),

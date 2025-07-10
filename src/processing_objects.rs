@@ -1,10 +1,8 @@
 use crate::basic_objects::*;
 use crate::errors::*;
-use crate::helpers::*;
 use chrono::NaiveDateTime;
 use csv::StringRecord;
 use csv::WriterBuilder;
-use num_format::{Locale, ToFormattedString};
 use std::collections::HashSet;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
@@ -48,7 +46,8 @@ pub struct LogRecordProcessor {
     pub execution_settings: ExecutionSettings,
     pub file_name: String,
     pub data_field_headers: StringRecord,
-    pub num_records: usize,
+    pub total_num_records: usize,
+    pub timestamp_num_records: usize,
     pub min_timestamp: Option<NaiveDateTime>,
     pub max_timestamp: Option<NaiveDateTime>,
     pub previous_timestamp: Option<NaiveDateTime>,
@@ -90,7 +89,7 @@ impl LogRecordProcessor {
         }
     }
     pub fn process_record(&mut self, record: LogFileRecord) -> Result<()> {
-        self.num_records += 1;
+        self.total_num_records += 1;
 
         if !self.execution_settings.quick_mode {
             self.process_record_for_dupes(&record)?;
@@ -218,6 +217,7 @@ impl LogRecordProcessor {
 
     fn handle_first_out_of_order_timestamp(&mut self, record: &LogFileRecord) {
         self.process_timestamps = false;
+        self.timestamp_num_records = 0;
         self.min_timestamp = None;
         self.max_timestamp = None;
         self.largest_time_gap = None;
@@ -244,6 +244,8 @@ impl LogRecordProcessor {
                 return Ok(());
             }
         };
+        self.timestamp_num_records += 1;
+
         if let Some(previous_datetime) = self.previous_timestamp {
             // This is where all logic is done if it isn't the first record
             if self.order == Some(TimeDirection::Ascending) {
@@ -283,53 +285,7 @@ impl LogRecordProcessor {
         Ok(())
     }
 
-    pub fn get_statistics(&self) -> Result<TimeStatisticsFields> {
-        let mut statistics_fields = TimeStatisticsFields::default();
-
-        statistics_fields.num_records = Some(self.num_records.to_formatted_string(&Locale::en));
-
-        if let Some(min_timestamp) = self.min_timestamp {
-            statistics_fields.min_timestamp =
-                Some(min_timestamp.format("%Y-%m-%d %H:%M:%S").to_string())
-        }
-        if let Some(max_timestamp) = self.max_timestamp {
-            statistics_fields.max_timestamp =
-                Some(max_timestamp.format("%Y-%m-%d %H:%M:%S").to_string());
-        }
-
-        if self.min_timestamp.is_some() && self.max_timestamp.is_some() {
-            let min_max_gap = self
-                .max_timestamp
-                .unwrap()
-                .signed_duration_since(self.min_timestamp.unwrap());
-            statistics_fields.min_max_duration = Some(format_timedelta(min_max_gap));
-        }
-
-        if let Some(largest_time_gap) = self.largest_time_gap {
-            statistics_fields.largest_gap = Some(format!(
-                "{} to {}",
-                largest_time_gap.beginning_time.format("%Y-%m-%d %H:%M:%S"),
-                largest_time_gap.end_time.format("%Y-%m-%d %H:%M:%S")
-            ));
-            statistics_fields.largest_gap_duration = Some(format_timedelta(largest_time_gap.gap));
-            let (mean, standard_deviation) = self.get_mean_and_standard_deviation();
-            statistics_fields.mean_time_gap = Some(mean.to_string());
-            statistics_fields.std_dev_time_gap = Some(standard_deviation.to_string());
-            statistics_fields.number_of_std_devs_above = Some(
-                ((largest_time_gap.get_time_duration_number() as f64 - mean) / standard_deviation)
-                    .to_string(),
-            )
-        }
-
-        if !self.execution_settings.quick_mode {
-            statistics_fields.num_dupes = Some(self.num_dupes.to_string());
-            statistics_fields.num_redactions = Some(self.num_redactions.to_string());
-        }
-
-        Ok(statistics_fields)
-    }
-
-    fn get_mean_and_standard_deviation(&self) -> (f64, f64) {
+    pub fn get_mean_and_standard_deviation(&self) -> (f64, f64) {
         let mean = match self.welford_calculator.mean() {
             Some(real_mean) => real_mean as f64,
             None => 0.0,
@@ -344,7 +300,7 @@ impl LogRecordProcessor {
         let (mean, standard_deviation) = self.get_mean_and_standard_deviation();
         // println!("mean: {:?}, standard deviation: {:?}", mean, standard_deviation);
         PossibleAlertValues {
-            num_records: self.num_records,
+            num_records: self.timestamp_num_records,
             num_dupes: self.num_dupes,
             num_redactions: self.num_redactions,
             largest_time_gap: self.largest_time_gap,

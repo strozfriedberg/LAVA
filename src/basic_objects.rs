@@ -4,6 +4,8 @@ use crate::errors::LavaError;
 use crate::helpers::*;
 use chrono::{NaiveDateTime, TimeDelta};
 use csv::StringRecord;
+use human_time::human_time;
+use num_format::{Locale, ToFormattedString};
 use std::cmp::Ordering;
 use std::fmt;
 use std::path::PathBuf;
@@ -88,35 +90,182 @@ pub struct ProcessedLogFile {
     pub first_data_row_used: Option<String>,
     pub time_header: Option<String>,
     pub time_format: Option<String>,
-    pub min_timestamp: Option<String>,
-    pub max_timestamp: Option<String>,
-    pub min_max_duration: Option<String>,
-    pub largest_gap: Option<String>,
-    pub largest_gap_duration: Option<String>,
-    pub mean_time_gap: Option<String>,
-    pub std_dev_time_gap: Option<String>,
-    pub number_of_std_devs_above: Option<String>,
-    pub num_records: Option<String>,
-    pub num_dupes: Option<String>,
-    pub num_redactions: Option<String>,
+    pub min_timestamp: Option<NaiveDateTime>,
+    pub max_timestamp: Option<NaiveDateTime>,
+    // pub min_max_duration: Option<String>,
+    pub largest_gap: Option<TimeGap>,
+    // pub largest_gap_duration: Option<String>,
+    pub mean_time_gap: Option<f64>,
+    pub std_dev_time_gap: Option<f64>,
+    // pub number_of_std_devs_above: Option<String>,
+    pub total_num_records: usize,
+    pub timestamp_num_records: usize,
+    pub num_dupes: Option<usize>,
+    pub num_redactions: Option<usize>,
     pub errors: Vec<LavaError>,
     pub alerts: Option<Vec<Alert>>,
 }
 
-#[derive(Debug, Default)]
-pub struct TimeStatisticsFields {
-    pub num_records: Option<String>,
-    pub min_timestamp: Option<String>,
-    pub max_timestamp: Option<String>,
-    pub min_max_duration: Option<String>,
-    pub largest_gap: Option<String>,
-    pub largest_gap_duration: Option<String>,
-    pub num_dupes: Option<String>,
-    pub num_redactions: Option<String>,
-    pub mean_time_gap: Option<String>,
-    pub std_dev_time_gap: Option<String>,
-    pub number_of_std_devs_above: Option<String>,
+impl ProcessedLogFile {
+    pub fn get_strings_for_file_statistics_output_row(&self) -> Vec<String> {
+        let error_message = if self.errors.is_empty() {
+            String::new()
+        } else {
+            if self.errors.len() > 1 {
+                format!(
+                    "There were {} errors during processing. Check errors.csv for detailed errors.",
+                    self.errors.len()
+                )
+            } else {
+                self.errors[0].reason.clone()
+            }
+        };
+        vec![
+            self.filename.as_deref().unwrap_or("").to_string(),
+            self.file_path.as_deref().unwrap_or("").to_string(),
+            self.sha256hash.as_deref().unwrap_or("").to_string(),
+            self.size.as_deref().unwrap_or("").to_string(),
+            self.first_data_row_used
+                .as_deref()
+                .unwrap_or("")
+                .to_string(),
+            self.time_header.as_deref().unwrap_or("").to_string(),
+            self.time_format.as_deref().unwrap_or("").to_string(),
+            self.total_num_records.to_formatted_string(&Locale::en),
+            self.timestamp_num_records.to_formatted_string(&Locale::en),
+            match self.min_timestamp {
+                None => String::new(),
+                Some(timestamp) => timestamp.format("%Y-%m-%d %H:%M:%S").to_string(),
+            },
+            match self.max_timestamp {
+                None => String::new(),
+                Some(timestamp) => timestamp.format("%Y-%m-%d %H:%M:%S").to_string(),
+            },
+            self.get_min_max_duration(TimestampStringType::Hours)
+                .unwrap_or("".to_string()),
+            self.get_min_max_duration(TimestampStringType::Human)
+                .unwrap_or("".to_string()),
+            match self.largest_gap {
+                None => String::new(),
+                Some(largest_gap) => largest_gap.to_string(),
+            },
+            self.get_largest_gap_duration(TimestampStringType::Hours)
+                .unwrap_or("".to_string()),
+            self.get_largest_gap_duration(TimestampStringType::Human)
+                .unwrap_or("".to_string()),
+            self.mean_time_gap
+                .map(|v| v.to_string())
+                .unwrap_or_default(),
+            self.std_dev_time_gap
+                .map(|v| v.to_string())
+                .unwrap_or_default(),
+            self.get_num_std_devs_above_mean().unwrap_or("".to_string()),
+            self.num_dupes
+                .map(|v| v.to_formatted_string(&Locale::en))
+                .unwrap_or_default(),
+            self.num_redactions
+                .map(|v| v.to_formatted_string(&Locale::en))
+                .unwrap_or_default(),
+            error_message,
+        ]
+    }
+
+    pub fn get_quick_stats(&self) -> Option<QuickStats> {
+        Some(QuickStats {
+            filename: self.filename.clone()?,
+            min_timestamp: self.min_timestamp?.format("%Y-%m-%d %H:%M:%S").to_string(),
+            max_timestamp: self.max_timestamp?.format("%Y-%m-%d %H:%M:%S").to_string(),
+            largest_gap_duration: self.largest_gap?.gap,
+            largest_gap_duration_human: self
+                .get_largest_gap_duration(TimestampStringType::Human)?,
+            num_records: self.timestamp_num_records.to_formatted_string(&Locale::en),
+        })
+    }
+
+    fn get_min_max_duration(&self, time_type: TimestampStringType) -> Option<String> {
+        let chrono_duration = self.max_timestamp? - self.min_timestamp?;
+        match time_type {
+            TimestampStringType::Hours => Some(
+                ProcessedLogFile::convert_time_delta_to_number_of_hours(chrono_duration),
+            ),
+            TimestampStringType::Human => {
+                ProcessedLogFile::convert_time_delta_to_human_time(chrono_duration)
+            }
+        }
+    }
+
+    fn get_largest_gap_duration(&self, time_type: TimestampStringType) -> Option<String> {
+        let largest_gap = self.largest_gap?;
+        let chrono_duration = largest_gap.end_time - largest_gap.beginning_time;
+        match time_type {
+            TimestampStringType::Hours => Some(
+                ProcessedLogFile::convert_time_delta_to_number_of_hours(chrono_duration),
+            ),
+            TimestampStringType::Human => {
+                ProcessedLogFile::convert_time_delta_to_human_time(chrono_duration)
+            }
+        }
+    }
+
+    fn get_num_std_devs_above_mean(&self) -> Option<String> {
+        Some(
+            ((self.largest_gap?.get_time_duration_number() as f64 - self.mean_time_gap?)
+                / self.std_dev_time_gap?)
+                .to_string(),
+        )
+    }
+
+    fn convert_time_delta_to_number_of_hours(tdelta: TimeDelta) -> String {
+        let total_seconds = tdelta.num_seconds().abs(); // make it positive for display
+
+        let hours = total_seconds / 3600;
+        let minutes = (total_seconds % 3600) / 60;
+        let seconds = total_seconds % 60;
+
+        format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
+    }
+
+    fn convert_time_delta_to_human_time(chrono_duration: TimeDelta) -> Option<String> {
+        // Convert chrono::Duration to std::time::Duration
+        let std_duration = if let Some(dur) = chrono_duration.to_std().ok() {
+            dur
+        } else {
+            eprintln!("Negative duration not supported by std::time::Duration");
+            return None;
+        };
+        Some(human_time(std_duration))
+    }
 }
+
+enum TimestampStringType {
+    Human,
+    Hours,
+}
+
+#[derive(Debug, Clone)]
+pub struct QuickStats {
+    pub filename: String,
+    pub min_timestamp: String,
+    pub max_timestamp: String,
+    pub largest_gap_duration: TimeDelta,
+    pub largest_gap_duration_human: String,
+    pub num_records: String,
+}
+
+// #[derive(Debug, Default)]
+// pub struct TimeStatisticsFields {
+//     // pub num_records: Option<String>,
+//     // pub min_timestamp: Option<String>,
+//     // pub max_timestamp: Option<String>,
+//     // pub min_max_duration: Option<String>,
+//     // pub largest_gap: Option<String>,
+//     // pub largest_gap_duration: Option<String>,
+//     pub num_dupes: Option<usize>,
+//     pub num_redactions: Option<usize>,
+//     pub mean_time_gap: Option<f64>,
+//     pub std_dev_time_gap: Option<f64>,
+//     // pub number_of_std_devs_above: Option<String>,
+// }
 
 #[derive(PartialEq, Debug)]
 pub struct LogFileRecord {
@@ -183,6 +332,18 @@ impl PartialOrd for TimeGap {
     }
 }
 
+impl fmt::Display for TimeGap {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Write how the struct should be converted to a string
+        write!(
+            f,
+            "{} to {}",
+            self.beginning_time.format("%Y-%m-%d %H:%M:%S"),
+            self.end_time.format("%Y-%m-%d %H:%M:%S")
+        )
+    }
+}
+
 impl TimeGap {
     pub fn new(a: NaiveDateTime, b: NaiveDateTime) -> Self {
         let (beginning_time, end_time) = if a <= b { (a, b) } else { (b, a) };
@@ -215,13 +376,4 @@ pub struct IdentifiedTimeInformation {
 pub struct HeaderInfo {
     pub first_data_row: usize,
     pub headers: StringRecord,
-}
-
-#[derive(Debug, Clone)]
-pub struct QuickStats {
-    pub filename: String,
-    pub min_timestamp: String,
-    pub max_timestamp: String,
-    pub largest_gap_duration: String,
-    pub num_records: String,
 }

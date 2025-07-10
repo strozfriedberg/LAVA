@@ -14,6 +14,7 @@ mod handlers {
 use handlers::csv_handlers::*;
 use handlers::json_handlers::*;
 use handlers::unstructured_handlers::*;
+use num_format::{Locale, ToFormattedString};
 mod date_regex;
 pub mod helpers;
 use helpers::*;
@@ -26,6 +27,7 @@ pub mod main_helpers;
 mod redaction_regex;
 use alerts::generate_alerts;
 use once_cell::sync::OnceCell;
+use std::time::Instant;
 include!(concat!(env!("OUT_DIR"), "/generated_date_regexes.rs"));
 
 static VERBOSE: OnceCell<bool> = OnceCell::new();
@@ -40,6 +42,7 @@ include!(concat!(env!("OUT_DIR"), "/generated_date_tests.rs"));
 include!(concat!(env!("OUT_DIR"), "/generated_redactions_tests.rs"));
 
 pub fn process_all_files(execution_settings: ExecutionSettings) {
+    let start = Instant::now();
     let _ = VERBOSE.set(execution_settings.verbose_mode);
     match metadata(&execution_settings.input) {
         Err(e) => println!(
@@ -109,6 +112,20 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
             {
                 eprintln!("Failed to output alerts: {}", e);
             }
+
+            let formatted_total_of_records_with_timestamps = results
+                .iter()
+                .map(|f| f.timestamp_num_records)
+                .sum::<usize>()
+                .to_formatted_string(&Locale::en);
+            let duration = start.elapsed();
+            let minutes = duration.as_secs_f64() / 60.0;
+            println!("Finished in {:.2} minutes", minutes);
+            println!(
+                "Processed a total of {} records with timestamps across {} log files",
+                formatted_total_of_records_with_timestamps,
+                results.len()
+            )
         }
     };
 }
@@ -246,31 +263,42 @@ pub fn process_file(
             return Ok(base_processed_file);
         }
     };
-
+    base_processed_file.first_data_row_used = header_info.map(|n| n.first_data_row.to_string());
     let values_to_alert_on = completed_statistics_object.get_possible_alert_values();
     let alerts = generate_alerts(values_to_alert_on);
     base_processed_file.alerts = Some(alerts);
 
-    // Get the formatted stats from the stats object
-    let formatted_statistics = match completed_statistics_object.get_statistics() {
-        Ok(result) => result,
-        Err(e) => {
-            base_processed_file.errors.push(e);
-            return Ok(base_processed_file);
-        }
-    };
-    base_processed_file.first_data_row_used = header_info.map(|n| n.first_data_row.to_string());
-    base_processed_file.largest_gap = formatted_statistics.largest_gap;
-    base_processed_file.largest_gap_duration = formatted_statistics.largest_gap_duration;
-    base_processed_file.min_timestamp = formatted_statistics.min_timestamp;
-    base_processed_file.max_timestamp = formatted_statistics.max_timestamp;
-    base_processed_file.min_max_duration = formatted_statistics.min_max_duration;
-    base_processed_file.num_records = formatted_statistics.num_records;
-    base_processed_file.num_dupes = formatted_statistics.num_dupes;
-    base_processed_file.num_redactions = formatted_statistics.num_redactions;
-    base_processed_file.mean_time_gap = formatted_statistics.mean_time_gap;
-    base_processed_file.std_dev_time_gap = formatted_statistics.std_dev_time_gap;
-    base_processed_file.number_of_std_devs_above = formatted_statistics.number_of_std_devs_above;
+    // // Get the formatted stats from the stats object
+    // let formatted_statistics = match completed_statistics_object.get_statistics() {
+    //     Ok(result) => result,
+    //     Err(e) => {
+    //         base_processed_file.errors.push(e);
+    //         return Ok(base_processed_file);
+    //     }
+    // };
+
+    base_processed_file.largest_gap = completed_statistics_object.largest_time_gap;
+    base_processed_file.min_timestamp = completed_statistics_object.min_timestamp;
+    base_processed_file.max_timestamp = completed_statistics_object.max_timestamp;
+    if completed_statistics_object.largest_time_gap.is_some() {
+        let (mean_time_gap, std_dev_time_gap) =
+            completed_statistics_object.get_mean_and_standard_deviation();
+        base_processed_file.mean_time_gap = Some(mean_time_gap);
+        base_processed_file.std_dev_time_gap = Some(std_dev_time_gap);
+    }
+
+    // base_processed_file.largest_gap_duration = formatted_statistics.largest_gap_duration;
+
+    // base_processed_file.min_max_duration = formatted_statistics.min_max_duration;
+    base_processed_file.total_num_records = completed_statistics_object.total_num_records;
+    base_processed_file.timestamp_num_records = completed_statistics_object.timestamp_num_records;
+
+    if !execution_settings.quick_mode {
+        base_processed_file.num_dupes = Some(completed_statistics_object.num_dupes);
+        base_processed_file.num_redactions = Some(completed_statistics_object.num_redactions);
+    }
+
+    // base_processed_file.number_of_std_devs_above = formatted_statistics.number_of_std_devs_above;
     base_processed_file
         .errors
         .extend(completed_statistics_object.errors);
@@ -318,7 +346,7 @@ fn get_hash(file_path: &PathBuf) -> Result<String> {
 
     let mut hasher = Sha256::new();
 
-    let mut buffer = [0u8; 1024*1024]; //bump up a little but, might have to change back to 4096 if this breakes with the threading
+    let mut buffer = [0u8; 1024 * 1024]; //bump up a little but, might have to change back to 4096 if this breakes with the threading
     loop {
         let bytes_read = file.read(&mut buffer).map_err(|e| {
             LavaError::new(
