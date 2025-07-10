@@ -117,10 +117,12 @@ pub fn generate_alerts(things_to_alert_on: PossibleAlertValues) -> Vec<Alert> {
     let mut alerts: Vec<Alert> = Vec::new();
 
     //Num records alerts
-    if let Some(level) =
-        get_alert_level_remainder_zero(things_to_alert_on.num_records, AlertType::SusEventCount)
-    {
-        alerts.push(Alert::new(level, AlertType::SusEventCount));
+    if things_to_alert_on.num_records > 0 {
+        if let Some(level) =
+            get_alert_level_remainder_zero(things_to_alert_on.num_records, AlertType::SusEventCount)
+        {
+            alerts.push(Alert::new(level, AlertType::SusEventCount));
+        };
     };
 
     //Num dupes alerts
@@ -318,7 +320,7 @@ mod tests {
     #[test]
     fn test_generate_alerts_none_triggered() {
         let input = PossibleAlertValues {
-            num_records: 3,
+            num_records: 0,
             num_dupes: 0,
             num_redactions: 0,
             largest_time_gap: Some(dummy_timegap(60)),

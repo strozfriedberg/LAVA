@@ -34,7 +34,7 @@ impl TempInputFile {
     }
 }
 
-fn get_time_from_hardcoded_time_format(time: &str) -> NaiveDateTime{
+fn get_time_from_hardcoded_time_format(time: &str) -> NaiveDateTime {
     NaiveDateTime::parse_from_str(time, "%Y-%m-%d %H:%M:%S").unwrap()
 }
 
@@ -53,8 +53,14 @@ fn integration_test_successful_run_no_errors() {
     let output = process_file(log_file, &settings);
     let processed = output.expect("Failed to get Proceesed Log File");
     assert_eq!(0, processed.errors.len());
-    assert_eq!(get_time_from_hardcoded_time_format("2025-05-09 10:00:00"), processed.min_timestamp.unwrap());
-    assert_eq!(get_time_from_hardcoded_time_format("2025-06-01 13:00:00"), processed.max_timestamp.unwrap());
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        processed.min_timestamp.unwrap()
+    );
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-06-01 13:00:00"),
+        processed.max_timestamp.unwrap()
+    );
     temp_log_file.delete_temp_file();
 }
 
@@ -74,8 +80,14 @@ fn integration_test_successful_run_no_errors_junk_value() {
     let output = process_file(log_file, &settings);
     let processed = output.expect("Failed to get Proceesed Log File");
     assert_eq!(0, processed.errors.len());
-    assert_eq!(get_time_from_hardcoded_time_format("2025-05-09 10:00:00"), processed.min_timestamp.unwrap());
-    assert_eq!(get_time_from_hardcoded_time_format("2025-06-01 13:00:00"), processed.max_timestamp.unwrap());
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        processed.min_timestamp.unwrap()
+    );
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-06-01 13:00:00"),
+        processed.max_timestamp.unwrap()
+    );
     temp_log_file.delete_temp_file();
 }
 
@@ -95,8 +107,14 @@ fn integration_test_successful_run_no_errors_junk_value_descending() {
     let output = process_file(log_file, &settings);
     let processed = output.expect("Failed to get Proceesed Log File");
     assert_eq!(0, processed.errors.len());
-    assert_eq!(get_time_from_hardcoded_time_format("2025-05-09 10:00:00"), processed.min_timestamp.unwrap());
-    assert_eq!(get_time_from_hardcoded_time_format("2025-06-01 13:00:00"), processed.max_timestamp.unwrap());
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        processed.min_timestamp.unwrap()
+    );
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-06-01 13:00:00"),
+        processed.max_timestamp.unwrap()
+    );
     temp_log_file.delete_temp_file();
 }
 
@@ -141,8 +159,14 @@ fn integration_test_successful_run_one_weird_timestamp_in_middle() {
     let processed = output.expect("Failed to get Proceesed Log File");
     assert_eq!(2, processed.errors.len());
     println!("{:?}", processed.errors[0]);
-    assert_eq!(get_time_from_hardcoded_time_format("2025-06-01 13:00:00"), processed.max_timestamp.unwrap());
-    assert_eq!(get_time_from_hardcoded_time_format("2025-05-09 10:00:00"), processed.min_timestamp.unwrap());
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-06-01 13:00:00"),
+        processed.max_timestamp.unwrap()
+    );
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        processed.min_timestamp.unwrap()
+    );
     temp_log_file.delete_temp_file();
 }
 
@@ -327,8 +351,14 @@ fn json_integration_test_successful_run_no_errors_newline_at_the_end() {
     println!("{:?}", processed.errors);
     assert_eq!(0, processed.errors.len());
     assert_eq!(3, processed.total_num_records);
-    assert_eq!(get_time_from_hardcoded_time_format("2025-05-09 10:00:00"), processed.min_timestamp.unwrap());
-    assert_eq!(get_time_from_hardcoded_time_format("2025-05-09 10:05:00"), processed.max_timestamp.unwrap());
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        processed.min_timestamp.unwrap()
+    );
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-05-09 10:05:00"),
+        processed.max_timestamp.unwrap()
+    );
     temp_log_file.delete_temp_file();
 }
 
@@ -347,8 +377,14 @@ fn json_integration_test_successful_run_no_errors() {
     println!("{:?}", processed.errors);
     assert_eq!(0, processed.errors.len());
     assert_eq!(3, processed.total_num_records);
-    assert_eq!(get_time_from_hardcoded_time_format("2025-05-09 10:00:00"), processed.min_timestamp.unwrap());
-    assert_eq!(get_time_from_hardcoded_time_format("2025-05-09 10:05:00"), processed.max_timestamp.unwrap());
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        processed.min_timestamp.unwrap()
+    );
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-05-09 10:05:00"),
+        processed.max_timestamp.unwrap()
+    );
     temp_log_file.delete_temp_file();
 }
 
@@ -368,11 +404,16 @@ fn json_integration_test_successful_run_no_errors_nested_key() {
     println!("{:?}", processed.errors);
     assert_eq!(0, processed.errors.len());
     assert_eq!(3, processed.total_num_records);
-    assert_eq!(get_time_from_hardcoded_time_format("2021-05-09 10:00:00"), processed.min_timestamp.unwrap());
-    assert_eq!(get_time_from_hardcoded_time_format("2021-05-09 10:05:00"), processed.max_timestamp.unwrap());
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2021-05-09 10:00:00"),
+        processed.min_timestamp.unwrap()
+    );
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2021-05-09 10:05:00"),
+        processed.max_timestamp.unwrap()
+    );
     temp_log_file.delete_temp_file();
 }
-
 
 #[test]
 fn integration_test_unstructured() {
@@ -390,8 +431,14 @@ fn integration_test_unstructured() {
     assert_eq!(0, processed.errors.len());
     assert_eq!(3, processed.timestamp_num_records);
     assert_eq!(3, processed.total_num_records);
-    assert_eq!(get_time_from_hardcoded_time_format("2025-05-09 10:00:00"), processed.min_timestamp.unwrap());
-    assert_eq!(get_time_from_hardcoded_time_format("2025-06-01 13:00:00"), processed.max_timestamp.unwrap());
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        processed.min_timestamp.unwrap()
+    );
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-06-01 13:00:00"),
+        processed.max_timestamp.unwrap()
+    );
     temp_log_file.delete_temp_file();
 }
 
@@ -413,7 +460,13 @@ fn integration_test_unstructured_junk_at_top() {
     assert_eq!(2, processed.errors.len());
     assert_eq!(5, processed.total_num_records);
     assert_eq!(3, processed.timestamp_num_records);
-    assert_eq!(get_time_from_hardcoded_time_format("2025-05-09 10:00:00"), processed.min_timestamp.unwrap());
-    assert_eq!(get_time_from_hardcoded_time_format("2025-06-01 13:00:00"), processed.max_timestamp.unwrap());
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        processed.min_timestamp.unwrap()
+    );
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-06-01 13:00:00"),
+        processed.max_timestamp.unwrap()
+    );
     temp_log_file.delete_temp_file();
 }

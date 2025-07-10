@@ -1,7 +1,7 @@
 use crate::alerts::*;
 use crate::basic_objects::*;
 use crate::errors::*;
-use chrono::{Utc};
+use chrono::Utc;
 use comfy_table::modifiers::UTF8_ROUND_CORNERS;
 use comfy_table::presets::UTF8_FULL;
 use comfy_table::*;
@@ -65,7 +65,7 @@ pub fn write_output_to_csv(
         "Header Used",
         "Timestamp Format",
         "Total Number of Records",
-        "Number of Records with Recognized Timestamps",
+        "Number of Records Processed for Timestamp Analysis",
         "Min Timestamp",
         "Max Timestamp",
         "Duration of Entire Log File (Hours)",

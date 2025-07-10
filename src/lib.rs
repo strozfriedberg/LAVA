@@ -14,6 +14,7 @@ mod handlers {
 use handlers::csv_handlers::*;
 use handlers::json_handlers::*;
 use handlers::unstructured_handlers::*;
+use num_format::{Locale, ToFormattedString};
 mod date_regex;
 pub mod helpers;
 use helpers::*;
@@ -111,10 +112,20 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
             {
                 eprintln!("Failed to output alerts: {}", e);
             }
+
+            let formatted_total_of_records_with_timestamps = results
+                .iter()
+                .map(|f| f.timestamp_num_records)
+                .sum::<usize>()
+                .to_formatted_string(&Locale::en);
             let duration = start.elapsed();
             let minutes = duration.as_secs_f64() / 60.0;
-    
             println!("Finished in {:.2} minutes", minutes);
+            println!(
+                "Processed a total of {} records with timestamps across {} log files",
+                formatted_total_of_records_with_timestamps,
+                results.len()
+            )
         }
     };
 }
