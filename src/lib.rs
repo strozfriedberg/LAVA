@@ -26,6 +26,7 @@ pub mod main_helpers;
 mod redaction_regex;
 use alerts::generate_alerts;
 use once_cell::sync::OnceCell;
+use std::time::Instant;
 include!(concat!(env!("OUT_DIR"), "/generated_date_regexes.rs"));
 
 static VERBOSE: OnceCell<bool> = OnceCell::new();
@@ -40,6 +41,7 @@ include!(concat!(env!("OUT_DIR"), "/generated_date_tests.rs"));
 include!(concat!(env!("OUT_DIR"), "/generated_redactions_tests.rs"));
 
 pub fn process_all_files(execution_settings: ExecutionSettings) {
+    let start = Instant::now();
     let _ = VERBOSE.set(execution_settings.verbose_mode);
     match metadata(&execution_settings.input) {
         Err(e) => println!(
@@ -109,6 +111,10 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
             {
                 eprintln!("Failed to output alerts: {}", e);
             }
+            let duration = start.elapsed();
+            let minutes = duration.as_secs_f64() / 60.0;
+    
+            println!("Finished in {:.2} minutes", minutes);
         }
     };
 }
