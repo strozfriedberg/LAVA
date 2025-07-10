@@ -132,6 +132,7 @@ impl ProcessedLogFile {
             self.time_header.as_deref().unwrap_or("").to_string(),
             self.time_format.as_deref().unwrap_or("").to_string(),
             self.total_num_records.to_formatted_string(&Locale::en),
+            self.timestamp_num_records.to_formatted_string(&Locale::en),
             match self.min_timestamp {
                 None => String::new(),
                 Some(timestamp) => timestamp.format("%Y-%m-%d %H:%M:%S").to_string(),
