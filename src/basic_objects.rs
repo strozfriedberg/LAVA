@@ -193,7 +193,7 @@ impl ProcessedLogFile {
             filename: self.filename.clone()?,
             min_timestamp: self.min_timestamp?.format("%Y-%m-%d %H:%M:%S").to_string(),
             max_timestamp: self.max_timestamp?.format("%Y-%m-%d %H:%M:%S").to_string(),
-            largest_gap_duration_hours: self.get_largest_gap_duration(TimestampStringType::Hours)?,
+            largest_gap_duration: self.largest_gap?.gap,
             largest_gap_duration_human: self.get_largest_gap_duration(TimestampStringType::Human)?,
             num_records: self.num_records.to_formatted_string(&Locale::en),
         })
@@ -258,7 +258,7 @@ pub struct QuickStats {
     pub filename: String,
     pub min_timestamp: String,
     pub max_timestamp: String,
-    pub largest_gap_duration_hours: String,
+    pub largest_gap_duration: TimeDelta,
     pub largest_gap_duration_human: String,
     pub num_records: String,
 }

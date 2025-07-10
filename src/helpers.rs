@@ -261,7 +261,7 @@ pub fn print_pretty_quick_stats(results: &Vec<ProcessedLogFile>) -> Result<()> {
         .collect();
 
     successful_time_processed_data
-        .sort_by(|a, b| b.largest_gap_duration_hours.cmp(&a.largest_gap_duration_hours));
+        .sort_by(|a, b| b.largest_gap_duration.cmp(&a.largest_gap_duration));
 
     let first_five_slice =
         successful_time_processed_data[..successful_time_processed_data.len().min(5)].to_vec();
