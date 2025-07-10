@@ -98,39 +98,7 @@ pub fn write_output_to_csv(
         )
     })?;
     for log_file in processed_log_files {
-        let error_message = if log_file.errors.is_empty() {
-            String::new()
-        } else {
-            if log_file.errors.len() > 1 {
-                format!(
-                    "There were {} errors during processing. Check errors.csv for detailed errors.",
-                    log_file.errors.len()
-                )
-            } else {
-                log_file.errors[0].reason.clone()
-            }
-        };
-        wtr.serialize(vec![
-            log_file.filename.as_deref().unwrap_or(""),
-            log_file.file_path.as_deref().unwrap_or(""),
-            log_file.sha256hash.as_deref().unwrap_or(""),
-            log_file.size.as_deref().unwrap_or(""),
-            log_file.first_data_row_used.as_deref().unwrap_or(""),
-            log_file.time_header.as_deref().unwrap_or(""),
-            log_file.time_format.as_deref().unwrap_or(""),
-            log_file.num_records.as_deref().unwrap_or(""),
-            log_file.min_timestamp.as_deref().unwrap_or(""),
-            log_file.max_timestamp.as_deref().unwrap_or(""),
-            log_file.min_max_duration.as_deref().unwrap_or(""),
-            log_file.largest_gap.as_deref().unwrap_or(""),
-            log_file.largest_gap_duration.as_deref().unwrap_or(""),
-            log_file.mean_time_gap.as_deref().unwrap_or(""),
-            log_file.std_dev_time_gap.as_deref().unwrap_or(""),
-            log_file.number_of_std_devs_above.as_deref().unwrap_or(""),
-            log_file.num_dupes.as_deref().unwrap_or(""),
-            log_file.num_redactions.as_deref().unwrap_or(""),
-            &error_message,
-        ])
+        wtr.serialize(log_file.get_strings_for_file_statistics_output_row())
         .map_err(|e| {
             LavaError::new(
                 format!("Issue writing lines of output file because of {e}"),
@@ -296,13 +264,7 @@ pub fn print_pretty_quick_stats(results: &Vec<ProcessedLogFile>) -> Result<()> {
         .iter()
         .filter_map(|item| {
             // Only continue if *all* required fields are Some
-            Some(QuickStats {
-                filename: item.filename.clone()?,
-                min_timestamp: item.min_timestamp.clone()?,
-                max_timestamp: item.max_timestamp.clone()?,
-                largest_gap_duration: item.largest_gap_duration.clone()?,
-                num_records: item.num_records.clone()?,
-            })
+            item.get_quick_stats()
         })
         .collect();
 
