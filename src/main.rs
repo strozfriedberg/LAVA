@@ -1,7 +1,6 @@
 use clap::{ArgGroup, Command, arg};
 use lava::main_helpers::{get_full_execution_settings, print_compiled_regexes};
 use lava::process_all_files;
-use std::time::Instant;
 
 fn main() {
     print_ascii_art();
