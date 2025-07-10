@@ -20,11 +20,9 @@ fn main() {
         .group(ArgGroup::new("required").args(&["input", "printregexes", "help"]).required(true).multiple(false))
         .get_matches();
 
-
     if matches.get_flag("printregexes") {
         print_compiled_regexes();
     } else {
-
         let execution_settings = get_full_execution_settings(&matches).unwrap(); // I think unwrap is fine here because I want to crash the program if I get an error here
         process_all_files(execution_settings);
 

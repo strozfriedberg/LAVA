@@ -112,7 +112,6 @@ pub fn try_to_get_timestamp_hit_for_csv(
     execution_settings: &ExecutionSettings,
     header_info: HeaderInfo,
 ) -> Result<Option<IdentifiedTimeInformation>> {
-
     print_if_verbose_mode_on(format!("Trying to get hit for {:?}", log_file.file_path));
     let mut reader = get_reader_from_certain_index(header_info.first_data_row, log_file)?;
 

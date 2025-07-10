@@ -1,7 +1,7 @@
 use crate::alerts::*;
 use crate::basic_objects::*;
 use crate::errors::*;
-use chrono::{TimeDelta, Utc};
+use chrono::{Utc};
 use comfy_table::modifiers::UTF8_ROUND_CORNERS;
 use comfy_table::presets::UTF8_FULL;
 use comfy_table::*;
@@ -15,9 +15,8 @@ use std::hash::{Hash, Hasher};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 
-
-pub fn print_if_verbose_mode_on<T: Display>(thing_to_print: T){
-    if let Some(verbose_mode) =crate::VERBOSE.get(){
+pub fn print_if_verbose_mode_on<T: Display>(thing_to_print: T) {
+    if let Some(verbose_mode) = crate::VERBOSE.get() {
         if *verbose_mode {
             println!("{}", thing_to_print)
         }
@@ -91,12 +90,12 @@ pub fn write_output_to_csv(
     })?;
     for log_file in processed_log_files {
         wtr.serialize(log_file.get_strings_for_file_statistics_output_row())
-        .map_err(|e| {
-            LavaError::new(
-                format!("Issue writing lines of output file because of {e}"),
-                LavaErrorLevel::Critical,
-            )
-        })?;
+            .map_err(|e| {
+                LavaError::new(
+                    format!("Issue writing lines of output file because of {e}"),
+                    LavaErrorLevel::Critical,
+                )
+            })?;
     }
     wtr.flush().map_err(|e| {
         LavaError::new(

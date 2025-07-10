@@ -263,8 +263,9 @@ pub fn process_file(
     base_processed_file.largest_gap = completed_statistics_object.largest_time_gap;
     base_processed_file.min_timestamp = completed_statistics_object.min_timestamp;
     base_processed_file.max_timestamp = completed_statistics_object.max_timestamp;
-    if completed_statistics_object.largest_time_gap.is_some(){
-        let (mean_time_gap, std_dev_time_gap) = completed_statistics_object.get_mean_and_standard_deviation();
+    if completed_statistics_object.largest_time_gap.is_some() {
+        let (mean_time_gap, std_dev_time_gap) =
+            completed_statistics_object.get_mean_and_standard_deviation();
         base_processed_file.mean_time_gap = Some(mean_time_gap);
         base_processed_file.std_dev_time_gap = Some(std_dev_time_gap);
     }
@@ -273,7 +274,6 @@ pub fn process_file(
 
     // base_processed_file.min_max_duration = formatted_statistics.min_max_duration;
     base_processed_file.num_records = completed_statistics_object.num_records;
-
 
     if !execution_settings.quick_mode {
         base_processed_file.num_dupes = Some(completed_statistics_object.num_dupes);
@@ -328,7 +328,7 @@ fn get_hash(file_path: &PathBuf) -> Result<String> {
 
     let mut hasher = Sha256::new();
 
-    let mut buffer = [0u8; 1024*1024]; //bump up a little but, might have to change back to 4096 if this breakes with the threading
+    let mut buffer = [0u8; 1024 * 1024]; //bump up a little but, might have to change back to 4096 if this breakes with the threading
     loop {
         let bytes_read = file.read(&mut buffer).map_err(|e| {
             LavaError::new(

@@ -3,15 +3,12 @@ use crate::date_regex::*;
 use crate::errors::LavaError;
 use crate::helpers::*;
 use chrono::{NaiveDateTime, TimeDelta};
-use clap::builder::Str;
 use csv::StringRecord;
-use core::time;
+use human_time::human_time;
+use num_format::{Locale, ToFormattedString};
 use std::cmp::Ordering;
 use std::fmt;
 use std::path::PathBuf;
-use num_format::{Locale, ToFormattedString};
-use human_time::human_time;
-use std::time::Duration;
 
 #[cfg(test)]
 mod logfilerecord_tests;
@@ -151,39 +148,46 @@ impl ProcessedLogFile {
             self.file_path.as_deref().unwrap_or("").to_string(),
             self.sha256hash.as_deref().unwrap_or("").to_string(),
             self.size.as_deref().unwrap_or("").to_string(),
-            self.first_data_row_used.as_deref().unwrap_or("").to_string(),
+            self.first_data_row_used
+                .as_deref()
+                .unwrap_or("")
+                .to_string(),
             self.time_header.as_deref().unwrap_or("").to_string(),
             self.time_format.as_deref().unwrap_or("").to_string(),
             self.num_records.to_formatted_string(&Locale::en),
             match self.min_timestamp {
                 None => String::new(),
-                Some(timestamp) => timestamp.format("%Y-%m-%d %H:%M:%S").to_string()
+                Some(timestamp) => timestamp.format("%Y-%m-%d %H:%M:%S").to_string(),
             },
             match self.max_timestamp {
                 None => String::new(),
-                Some(timestamp) => timestamp.format("%Y-%m-%d %H:%M:%S").to_string()
+                Some(timestamp) => timestamp.format("%Y-%m-%d %H:%M:%S").to_string(),
             },
-            self.get_min_max_duration(TimestampStringType::Hours).unwrap_or("".to_string()),
-            self.get_min_max_duration(TimestampStringType::Human).unwrap_or("".to_string()),
+            self.get_min_max_duration(TimestampStringType::Hours)
+                .unwrap_or("".to_string()),
+            self.get_min_max_duration(TimestampStringType::Human)
+                .unwrap_or("".to_string()),
             match self.largest_gap {
                 None => String::new(),
-                Some(largest_gap) => largest_gap.to_string()
+                Some(largest_gap) => largest_gap.to_string(),
             },
-            self.get_largest_gap_duration(TimestampStringType::Hours).unwrap_or("".to_string()),
-            self.get_largest_gap_duration(TimestampStringType::Human).unwrap_or("".to_string()),
+            self.get_largest_gap_duration(TimestampStringType::Hours)
+                .unwrap_or("".to_string()),
+            self.get_largest_gap_duration(TimestampStringType::Human)
+                .unwrap_or("".to_string()),
             self.mean_time_gap
-            .map(|v| v.to_string())
-            .unwrap_or_default(),
-            self.std_dev_time_gap            
-            .map(|v| v.to_string())
-            .unwrap_or_default(),
+                .map(|v| v.to_string())
+                .unwrap_or_default(),
+            self.std_dev_time_gap
+                .map(|v| v.to_string())
+                .unwrap_or_default(),
             self.get_num_std_devs_above_mean().unwrap_or("".to_string()),
             self.num_dupes
-            .map(|v| v.to_formatted_string(&Locale::en))
-            .unwrap_or_default(),
+                .map(|v| v.to_formatted_string(&Locale::en))
+                .unwrap_or_default(),
             self.num_redactions
-            .map(|v| v.to_formatted_string(&Locale::en))
-            .unwrap_or_default(),
+                .map(|v| v.to_formatted_string(&Locale::en))
+                .unwrap_or_default(),
             error_message,
         ]
     }
@@ -194,17 +198,21 @@ impl ProcessedLogFile {
             min_timestamp: self.min_timestamp?.format("%Y-%m-%d %H:%M:%S").to_string(),
             max_timestamp: self.max_timestamp?.format("%Y-%m-%d %H:%M:%S").to_string(),
             largest_gap_duration: self.largest_gap?.gap,
-            largest_gap_duration_human: self.get_largest_gap_duration(TimestampStringType::Human)?,
+            largest_gap_duration_human: self
+                .get_largest_gap_duration(TimestampStringType::Human)?,
             num_records: self.num_records.to_formatted_string(&Locale::en),
         })
     }
 
-
     fn get_min_max_duration(&self, time_type: TimestampStringType) -> Option<String> {
         let chrono_duration = self.max_timestamp? - self.min_timestamp?;
         match time_type {
-            TimestampStringType::Hours => Some(ProcessedLogFile::convert_time_delta_to_number_of_hours(chrono_duration)),
-            TimestampStringType::Human => ProcessedLogFile::convert_time_delta_to_human_time(chrono_duration)
+            TimestampStringType::Hours => Some(
+                ProcessedLogFile::convert_time_delta_to_number_of_hours(chrono_duration),
+            ),
+            TimestampStringType::Human => {
+                ProcessedLogFile::convert_time_delta_to_human_time(chrono_duration)
+            }
         }
     }
 
@@ -212,45 +220,48 @@ impl ProcessedLogFile {
         let largest_gap = self.largest_gap?;
         let chrono_duration = largest_gap.end_time - largest_gap.beginning_time;
         match time_type {
-            TimestampStringType::Hours => Some(ProcessedLogFile::convert_time_delta_to_number_of_hours(chrono_duration)),
-            TimestampStringType::Human => ProcessedLogFile::convert_time_delta_to_human_time(chrono_duration)
+            TimestampStringType::Hours => Some(
+                ProcessedLogFile::convert_time_delta_to_number_of_hours(chrono_duration),
+            ),
+            TimestampStringType::Human => {
+                ProcessedLogFile::convert_time_delta_to_human_time(chrono_duration)
+            }
         }
     }
 
     fn get_num_std_devs_above_mean(&self) -> Option<String> {
         Some(
-            ((self.largest_gap?.get_time_duration_number() as f64 - self.mean_time_gap?) / self.std_dev_time_gap?)
+            ((self.largest_gap?.get_time_duration_number() as f64 - self.mean_time_gap?)
+                / self.std_dev_time_gap?)
                 .to_string(),
         )
     }
 
     fn convert_time_delta_to_number_of_hours(tdelta: TimeDelta) -> String {
         let total_seconds = tdelta.num_seconds().abs(); // make it positive for display
-    
+
         let hours = total_seconds / 3600;
         let minutes = (total_seconds % 3600) / 60;
         let seconds = total_seconds % 60;
-    
+
         format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
     }
 
-    fn convert_time_delta_to_human_time(chrono_duration: TimeDelta) -> Option<String>{
+    fn convert_time_delta_to_human_time(chrono_duration: TimeDelta) -> Option<String> {
         // Convert chrono::Duration to std::time::Duration
         let std_duration = if let Some(dur) = chrono_duration.to_std().ok() {
             dur
         } else {
             eprintln!("Negative duration not supported by std::time::Duration");
-            return None
+            return None;
         };
         Some(human_time(std_duration))
-
     }
-
 }
 
 enum TimestampStringType {
     Human,
-    Hours
+    Hours,
 }
 
 #[derive(Debug, Clone)]
@@ -346,9 +357,12 @@ impl PartialOrd for TimeGap {
 impl fmt::Display for TimeGap {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Write how the struct should be converted to a string
-        write!(f, "{} to {}",
+        write!(
+            f,
+            "{} to {}",
             self.beginning_time.format("%Y-%m-%d %H:%M:%S"),
-            self.end_time.format("%Y-%m-%d %H:%M:%S"))
+            self.end_time.format("%Y-%m-%d %H:%M:%S")
+        )
     }
 }
 
