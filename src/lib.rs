@@ -273,7 +273,8 @@ pub fn process_file(
     // base_processed_file.largest_gap_duration = formatted_statistics.largest_gap_duration;
 
     // base_processed_file.min_max_duration = formatted_statistics.min_max_duration;
-    base_processed_file.num_records = completed_statistics_object.num_records;
+    base_processed_file.total_num_records = completed_statistics_object.total_num_records;
+    base_processed_file.timestamp_num_records = completed_statistics_object.timestamp_num_records;
 
     if !execution_settings.quick_mode {
         base_processed_file.num_dupes = Some(completed_statistics_object.num_dupes);

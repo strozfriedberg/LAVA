@@ -46,7 +46,8 @@ pub struct LogRecordProcessor {
     pub execution_settings: ExecutionSettings,
     pub file_name: String,
     pub data_field_headers: StringRecord,
-    pub num_records: usize,
+    pub total_num_records: usize,
+    pub timestamp_num_records: usize,
     pub min_timestamp: Option<NaiveDateTime>,
     pub max_timestamp: Option<NaiveDateTime>,
     pub previous_timestamp: Option<NaiveDateTime>,
@@ -88,7 +89,7 @@ impl LogRecordProcessor {
         }
     }
     pub fn process_record(&mut self, record: LogFileRecord) -> Result<()> {
-        self.num_records += 1;
+        self.total_num_records += 1;
 
         if !self.execution_settings.quick_mode {
             self.process_record_for_dupes(&record)?;
@@ -216,6 +217,7 @@ impl LogRecordProcessor {
 
     fn handle_first_out_of_order_timestamp(&mut self, record: &LogFileRecord) {
         self.process_timestamps = false;
+        self.timestamp_num_records = 0;
         self.min_timestamp = None;
         self.max_timestamp = None;
         self.largest_time_gap = None;
@@ -242,6 +244,8 @@ impl LogRecordProcessor {
                 return Ok(());
             }
         };
+        self.timestamp_num_records += 1;
+
         if let Some(previous_datetime) = self.previous_timestamp {
             // This is where all logic is done if it isn't the first record
             if self.order == Some(TimeDirection::Ascending) {
@@ -296,7 +300,7 @@ impl LogRecordProcessor {
         let (mean, standard_deviation) = self.get_mean_and_standard_deviation();
         // println!("mean: {:?}, standard deviation: {:?}", mean, standard_deviation);
         PossibleAlertValues {
-            num_records: self.num_records,
+            num_records: self.timestamp_num_records,
             num_dupes: self.num_dupes,
             num_redactions: self.num_redactions,
             largest_time_gap: self.largest_time_gap,

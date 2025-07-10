@@ -238,7 +238,8 @@ fn integration_test_out_of_order_time_run_duplicates_and_redactions_2() {
         "File was not sorted on the identified timestamp. Out of order record at index 4",
         processed.errors[0].reason
     );
-    assert_eq!(6, processed.num_records);
+    assert_eq!(6, processed.total_num_records);
+    assert_eq!(0, processed.timestamp_num_records);
     assert_eq!(None, processed.min_timestamp);
     assert_eq!(None, processed.max_timestamp);
     assert_eq!(None, processed.largest_gap);
@@ -265,7 +266,7 @@ fn integration_test_no_timestamps_duplicates_and_redactions() {
     let processed = output.expect("Failed to get Proceesed Log File");
     assert_eq!(1, processed.errors.len());
     // println!("{:?}", processed.errors);
-    assert_eq!(5, processed.num_records);
+    assert_eq!(5, processed.total_num_records);
     assert_eq!(None, processed.min_timestamp);
     assert_eq!(None, processed.max_timestamp);
     assert_eq!(None, processed.largest_gap);
@@ -325,6 +326,7 @@ fn json_integration_test_successful_run_no_errors_newline_at_the_end() {
     let processed = output.expect("Failed to get Proceesed Log File");
     println!("{:?}", processed.errors);
     assert_eq!(0, processed.errors.len());
+    assert_eq!(3, processed.total_num_records);
     assert_eq!(get_time_from_hardcoded_time_format("2025-05-09 10:00:00"), processed.min_timestamp.unwrap());
     assert_eq!(get_time_from_hardcoded_time_format("2025-05-09 10:05:00"), processed.max_timestamp.unwrap());
     temp_log_file.delete_temp_file();
@@ -344,6 +346,7 @@ fn json_integration_test_successful_run_no_errors() {
     let processed = output.expect("Failed to get Proceesed Log File");
     println!("{:?}", processed.errors);
     assert_eq!(0, processed.errors.len());
+    assert_eq!(3, processed.total_num_records);
     assert_eq!(get_time_from_hardcoded_time_format("2025-05-09 10:00:00"), processed.min_timestamp.unwrap());
     assert_eq!(get_time_from_hardcoded_time_format("2025-05-09 10:05:00"), processed.max_timestamp.unwrap());
     temp_log_file.delete_temp_file();
@@ -364,7 +367,53 @@ fn json_integration_test_successful_run_no_errors_nested_key() {
     let processed = output.expect("Failed to get Proceesed Log File");
     println!("{:?}", processed.errors);
     assert_eq!(0, processed.errors.len());
+    assert_eq!(3, processed.total_num_records);
     assert_eq!(get_time_from_hardcoded_time_format("2021-05-09 10:00:00"), processed.min_timestamp.unwrap());
     assert_eq!(get_time_from_hardcoded_time_format("2021-05-09 10:05:00"), processed.max_timestamp.unwrap());
+    temp_log_file.delete_temp_file();
+}
+
+
+#[test]
+fn integration_test_unstructured() {
+    let data = "\
+    23 John 2025-05-09 10:00:00\n\
+    2 Jane 2025-05-10 11:00:00\n\
+    4 James 2025-06-01 13:00:00\n";
+
+    let temp_log_file = TempInputFile::new(LogType::Unstructured, data);
+    let log_file = temp_log_file.get_log_file_object();
+    let settings = ExecutionSettings::create_integration_test_object(None, false);
+
+    let output = process_file(log_file, &settings);
+    let processed = output.expect("Failed to get Proceesed Log File");
+    assert_eq!(0, processed.errors.len());
+    assert_eq!(3, processed.timestamp_num_records);
+    assert_eq!(3, processed.total_num_records);
+    assert_eq!(get_time_from_hardcoded_time_format("2025-05-09 10:00:00"), processed.min_timestamp.unwrap());
+    assert_eq!(get_time_from_hardcoded_time_format("2025-06-01 13:00:00"), processed.max_timestamp.unwrap());
+    temp_log_file.delete_temp_file();
+}
+
+#[test]
+fn integration_test_unstructured_junk_at_top() {
+    let data = "\
+    asdsdasd
+    asdasd
+    23 John 2025-05-09 10:00:00\n\
+    2 Jane 2025-05-10 11:00:00\n\
+    4 James 2025-06-01 13:00:00\n";
+
+    let temp_log_file = TempInputFile::new(LogType::Unstructured, data);
+    let log_file = temp_log_file.get_log_file_object();
+    let settings = ExecutionSettings::create_integration_test_object(None, false);
+
+    let output = process_file(log_file, &settings);
+    let processed = output.expect("Failed to get Proceesed Log File");
+    assert_eq!(2, processed.errors.len());
+    assert_eq!(5, processed.total_num_records);
+    assert_eq!(3, processed.timestamp_num_records);
+    assert_eq!(get_time_from_hardcoded_time_format("2025-05-09 10:00:00"), processed.min_timestamp.unwrap());
+    assert_eq!(get_time_from_hardcoded_time_format("2025-06-01 13:00:00"), processed.max_timestamp.unwrap());
     temp_log_file.delete_temp_file();
 }

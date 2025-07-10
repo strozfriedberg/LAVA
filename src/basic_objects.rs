@@ -98,36 +98,13 @@ pub struct ProcessedLogFile {
     pub mean_time_gap: Option<f64>,
     pub std_dev_time_gap: Option<f64>,
     // pub number_of_std_devs_above: Option<String>,
-    pub num_records: usize,
+    pub total_num_records: usize,
+    pub timestamp_num_records: usize,
     pub num_dupes: Option<usize>,
     pub num_redactions: Option<usize>,
     pub errors: Vec<LavaError>,
     pub alerts: Option<Vec<Alert>>,
 }
-// &[
-//         "Filename",
-//         "File Path",
-//         "SHA256 Hash",
-//         "Size",
-//         "First Data Row Used",
-//         "Header Used",
-//         "Timestamp Format",
-//         "Number of Records",
-//         "Min Timestamp",
-//         "Max Timestamp",
-//         "Duration of Entire Log File",
-//         "Largest Time Gap (LTG)",
-//         "Duration of LTG",
-//         &format!("Mean {} of Time Gaps", WELFORD_TIME_SIGNIFIGANCE),
-//         &format!(
-//             "Standard Deviation of Time Gaps in {}",
-//             WELFORD_TIME_SIGNIFIGANCE
-//         ),
-//         "LTG Number of Standard Deviations Above the Mean",
-//         "Duplicate Record Count",
-//         "Possible Redactions Count",
-//         "Error",
-//     ]
 
 impl ProcessedLogFile {
     pub fn get_strings_for_file_statistics_output_row(&self) -> Vec<String> {
@@ -154,7 +131,7 @@ impl ProcessedLogFile {
                 .to_string(),
             self.time_header.as_deref().unwrap_or("").to_string(),
             self.time_format.as_deref().unwrap_or("").to_string(),
-            self.num_records.to_formatted_string(&Locale::en),
+            self.total_num_records.to_formatted_string(&Locale::en),
             match self.min_timestamp {
                 None => String::new(),
                 Some(timestamp) => timestamp.format("%Y-%m-%d %H:%M:%S").to_string(),
@@ -200,7 +177,7 @@ impl ProcessedLogFile {
             largest_gap_duration: self.largest_gap?.gap,
             largest_gap_duration_human: self
                 .get_largest_gap_duration(TimestampStringType::Human)?,
-            num_records: self.num_records.to_formatted_string(&Locale::en),
+            num_records: self.timestamp_num_records.to_formatted_string(&Locale::en),
         })
     }
 
@@ -274,20 +251,20 @@ pub struct QuickStats {
     pub num_records: String,
 }
 
-#[derive(Debug, Default)]
-pub struct TimeStatisticsFields {
-    // pub num_records: Option<String>,
-    // pub min_timestamp: Option<String>,
-    // pub max_timestamp: Option<String>,
-    // pub min_max_duration: Option<String>,
-    // pub largest_gap: Option<String>,
-    // pub largest_gap_duration: Option<String>,
-    pub num_dupes: Option<usize>,
-    pub num_redactions: Option<usize>,
-    pub mean_time_gap: Option<f64>,
-    pub std_dev_time_gap: Option<f64>,
-    // pub number_of_std_devs_above: Option<String>,
-}
+// #[derive(Debug, Default)]
+// pub struct TimeStatisticsFields {
+//     // pub num_records: Option<String>,
+//     // pub min_timestamp: Option<String>,
+//     // pub max_timestamp: Option<String>,
+//     // pub min_max_duration: Option<String>,
+//     // pub largest_gap: Option<String>,
+//     // pub largest_gap_duration: Option<String>,
+//     pub num_dupes: Option<usize>,
+//     pub num_redactions: Option<usize>,
+//     pub mean_time_gap: Option<f64>,
+//     pub std_dev_time_gap: Option<f64>,
+//     // pub number_of_std_devs_above: Option<String>,
+// }
 
 #[derive(PartialEq, Debug)]
 pub struct LogFileRecord {
