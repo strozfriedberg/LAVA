@@ -30,16 +30,6 @@ pub fn generate_log_filename() -> String {
     formatted.to_string()
 }
 
-pub fn format_timedelta(tdelta: TimeDelta) -> String {
-    let total_seconds = tdelta.num_seconds().abs(); // make it positive for display
-
-    let hours = total_seconds / 3600;
-    let minutes = (total_seconds % 3600) / 60;
-    let seconds = total_seconds % 60;
-
-    format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
-}
-
 pub fn hash_csv_record(record: &StringRecord) -> u64 {
     let mut hasher = DefaultHasher::new();
     record.iter().for_each(|field| field.hash(&mut hasher));
@@ -78,9 +68,11 @@ pub fn write_output_to_csv(
         "Number of Records",
         "Min Timestamp",
         "Max Timestamp",
-        "Duration of Entire Log File",
+        "Duration of Entire Log File (Hours)",
+        "Pretty Duration of Entire Log File",
         "Largest Time Gap (LTG)",
-        "Duration of LTG",
+        "Duration of LTG (Hours)",
+        "Pretty Duration of LTG",
         &format!("Mean {} of Time Gaps", WELFORD_TIME_SIGNIFIGANCE),
         &format!(
             "Standard Deviation of Time Gaps in {}",
@@ -269,7 +261,7 @@ pub fn print_pretty_quick_stats(results: &Vec<ProcessedLogFile>) -> Result<()> {
         .collect();
 
     successful_time_processed_data
-        .sort_by(|a, b| b.largest_gap_duration.cmp(&a.largest_gap_duration));
+        .sort_by(|a, b| b.largest_gap_duration_hours.cmp(&a.largest_gap_duration_hours));
 
     let first_five_slice =
         successful_time_processed_data[..successful_time_processed_data.len().min(5)].to_vec();
@@ -293,7 +285,7 @@ pub fn print_pretty_quick_stats(results: &Vec<ProcessedLogFile>) -> Result<()> {
                 Cell::new(&result.min_timestamp),
                 Cell::new(&result.max_timestamp),
                 Cell::new(&result.num_records),
-                Cell::new(&result.largest_gap_duration),
+                Cell::new(&result.largest_gap_duration_human),
             ]);
         }
         println!(

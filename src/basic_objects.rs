@@ -163,12 +163,14 @@ impl ProcessedLogFile {
                 None => String::new(),
                 Some(timestamp) => timestamp.format("%Y-%m-%d %H:%M:%S").to_string()
             },
-            self.get_min_max_duration().unwrap_or("".to_string()),
+            self.get_min_max_duration(TimestampStringType::Hours).unwrap_or("".to_string()),
+            self.get_min_max_duration(TimestampStringType::Human).unwrap_or("".to_string()),
             match self.largest_gap {
                 None => String::new(),
                 Some(largest_gap) => largest_gap.to_string()
             },
-            self.get_largest_gap_duration().unwrap_or("".to_string()),
+            self.get_largest_gap_duration(TimestampStringType::Hours).unwrap_or("".to_string()),
+            self.get_largest_gap_duration(TimestampStringType::Human).unwrap_or("".to_string()),
             self.mean_time_gap
             .map(|v| v.to_string())
             .unwrap_or_default(),
@@ -191,21 +193,28 @@ impl ProcessedLogFile {
             filename: self.filename.clone()?,
             min_timestamp: self.min_timestamp?.format("%Y-%m-%d %H:%M:%S").to_string(),
             max_timestamp: self.max_timestamp?.format("%Y-%m-%d %H:%M:%S").to_string(),
-            largest_gap_duration: self.get_largest_gap_duration()?,
+            largest_gap_duration_hours: self.get_largest_gap_duration(TimestampStringType::Hours)?,
+            largest_gap_duration_human: self.get_largest_gap_duration(TimestampStringType::Human)?,
             num_records: self.num_records.to_formatted_string(&Locale::en),
         })
     }
 
 
-    fn get_min_max_duration(&self) -> Option<String> {
+    fn get_min_max_duration(&self, time_type: TimestampStringType) -> Option<String> {
         let chrono_duration = self.max_timestamp? - self.min_timestamp?;
-        ProcessedLogFile::convert_time_delta_to_human_time(chrono_duration)
+        match time_type {
+            TimestampStringType::Hours => Some(ProcessedLogFile::convert_time_delta_to_number_of_hours(chrono_duration)),
+            TimestampStringType::Human => ProcessedLogFile::convert_time_delta_to_human_time(chrono_duration)
+        }
     }
 
-    fn get_largest_gap_duration(&self) -> Option<String> {
+    fn get_largest_gap_duration(&self, time_type: TimestampStringType) -> Option<String> {
         let largest_gap = self.largest_gap?;
         let chrono_duration = largest_gap.end_time - largest_gap.beginning_time;
-        ProcessedLogFile::convert_time_delta_to_human_time(chrono_duration)
+        match time_type {
+            TimestampStringType::Hours => Some(ProcessedLogFile::convert_time_delta_to_number_of_hours(chrono_duration)),
+            TimestampStringType::Human => ProcessedLogFile::convert_time_delta_to_human_time(chrono_duration)
+        }
     }
 
     fn get_num_std_devs_above_mean(&self) -> Option<String> {
@@ -213,6 +222,16 @@ impl ProcessedLogFile {
             ((self.largest_gap?.get_time_duration_number() as f64 - self.mean_time_gap?) / self.std_dev_time_gap?)
                 .to_string(),
         )
+    }
+
+    fn convert_time_delta_to_number_of_hours(tdelta: TimeDelta) -> String {
+        let total_seconds = tdelta.num_seconds().abs(); // make it positive for display
+    
+        let hours = total_seconds / 3600;
+        let minutes = (total_seconds % 3600) / 60;
+        let seconds = total_seconds % 60;
+    
+        format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
     }
 
     fn convert_time_delta_to_human_time(chrono_duration: TimeDelta) -> Option<String>{
@@ -229,12 +248,18 @@ impl ProcessedLogFile {
 
 }
 
+enum TimestampStringType {
+    Human,
+    Hours
+}
+
 #[derive(Debug, Clone)]
 pub struct QuickStats {
     pub filename: String,
     pub min_timestamp: String,
     pub max_timestamp: String,
-    pub largest_gap_duration: String,
+    pub largest_gap_duration_hours: String,
+    pub largest_gap_duration_human: String,
     pub num_records: String,
 }
 
