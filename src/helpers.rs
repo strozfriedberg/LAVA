@@ -285,7 +285,7 @@ pub fn print_pretty_quick_stats(results: &Vec<ProcessedLogFile>) -> Result<()> {
             Cell::new("Min Timestamp"),
             Cell::new("Max Timestamp"),
             Cell::new("Record Count"),
-            Cell::new("Largest Gap Duration (Hours)"),
+            Cell::new("Largest Gap Duration"),
         ]);
         for result in first_five_slice.iter() {
             output_table.add_row(vec![
