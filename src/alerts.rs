@@ -53,7 +53,7 @@ pub fn get_message_for_alert_comfy_table(
 ) -> String {
     match alert_type {
         AlertType::SusTimeGap => format!(
-            "{} files had a largest time gap greater than {} standard deviations above the average",
+            "{} files had a largest time gap greater than {} standard deviations above the average time gap",
             number_of_files,
             get_alert_threshold_value(alert_level, alert_type)
         ),
@@ -79,7 +79,7 @@ pub fn get_message_for_alert_comfy_table(
 pub fn get_message_for_alert_output_file(alert_level: AlertLevel, alert_type: AlertType) -> String {
     match alert_type {
         AlertType::SusTimeGap => format!(
-            "Largest time gap greater than {} standard deviations above the average",
+            "Largest time gap greater than {} standard deviations above the average time gap",
             get_alert_threshold_value(alert_level, alert_type)
         ),
         AlertType::SusEventCount => format!(
