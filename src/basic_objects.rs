@@ -88,19 +88,28 @@ pub struct ProcessedLogFile {
     pub first_data_row_used: Option<String>,
     pub time_header: Option<String>,
     pub time_format: Option<String>,
-    pub min_timestamp: Option<String>,
-    pub max_timestamp: Option<String>,
-    pub min_max_duration: Option<String>,
-    pub largest_gap: Option<String>,
-    pub largest_gap_duration: Option<String>,
-    pub mean_time_gap: Option<String>,
-    pub std_dev_time_gap: Option<String>,
-    pub number_of_std_devs_above: Option<String>,
-    pub num_records: Option<String>,
-    pub num_dupes: Option<String>,
-    pub num_redactions: Option<String>,
+    pub min_timestamp: Option<NaiveDateTime>,
+    pub max_timestamp: Option<NaiveDateTime>,
+    // pub min_max_duration: Option<String>,
+    pub largest_gap: Option<TimeGap>,
+    // pub largest_gap_duration: Option<String>,
+    pub mean_time_gap: Option<f64>,
+    pub std_dev_time_gap: Option<f64>,
+    // pub number_of_std_devs_above: Option<String>,
+    pub num_records: Option<usize>,
+    pub num_dupes: Option<usize>,
+    pub num_redactions: Option<usize>,
     pub errors: Vec<LavaError>,
     pub alerts: Option<Vec<Alert>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct QuickStats {
+    pub filename: String,
+    pub min_timestamp: String,
+    pub max_timestamp: String,
+    pub largest_gap_duration: String,
+    pub num_records: String,
 }
 
 #[derive(Debug, Default)]
@@ -215,13 +224,4 @@ pub struct IdentifiedTimeInformation {
 pub struct HeaderInfo {
     pub first_data_row: usize,
     pub headers: StringRecord,
-}
-
-#[derive(Debug, Clone)]
-pub struct QuickStats {
-    pub filename: String,
-    pub min_timestamp: String,
-    pub max_timestamp: String,
-    pub largest_gap_duration: String,
-    pub num_records: String,
 }
