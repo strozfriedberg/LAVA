@@ -268,14 +268,6 @@ pub fn process_file(
     let alerts = generate_alerts(values_to_alert_on);
     base_processed_file.alerts = Some(alerts);
 
-    // // Get the formatted stats from the stats object
-    // let formatted_statistics = match completed_statistics_object.get_statistics() {
-    //     Ok(result) => result,
-    //     Err(e) => {
-    //         base_processed_file.errors.push(e);
-    //         return Ok(base_processed_file);
-    //     }
-    // };
 
     base_processed_file.largest_gap = completed_statistics_object.largest_time_gap;
     base_processed_file.min_timestamp = completed_statistics_object.min_timestamp;
@@ -287,9 +279,6 @@ pub fn process_file(
         base_processed_file.std_dev_time_gap = Some(std_dev_time_gap);
     }
 
-    // base_processed_file.largest_gap_duration = formatted_statistics.largest_gap_duration;
-
-    // base_processed_file.min_max_duration = formatted_statistics.min_max_duration;
     base_processed_file.total_num_records = completed_statistics_object.total_num_records;
     base_processed_file.timestamp_num_records = completed_statistics_object.timestamp_num_records;
 
@@ -298,7 +287,6 @@ pub fn process_file(
         base_processed_file.num_redactions = Some(completed_statistics_object.num_redactions);
     }
 
-    // base_processed_file.number_of_std_devs_above = formatted_statistics.number_of_std_devs_above;
     base_processed_file
         .errors
         .extend(completed_statistics_object.errors);
