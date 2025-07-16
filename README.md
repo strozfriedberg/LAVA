@@ -14,7 +14,7 @@ Useful statistics include:
 - Duplicate Records
 - Potential Redactions
 
-![LAVA-terminal-output](images\lava_terminal_output.png)
+![LAVA-terminal-output](images/lava_terminal_output.png)
 
 ## Supported Log Files
 - CSV
