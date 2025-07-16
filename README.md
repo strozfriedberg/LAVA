@@ -14,7 +14,9 @@ Useful statistics include:
 - Duplicate Records
 - Potential Redactions
 
+## Terminal Output
 ![LAVA-terminal-output](images/lava_terminal_output.png)
+Note: More in depth statistics are written to a CSV in the output directory
 
 ## Supported Log Files
 - CSV
