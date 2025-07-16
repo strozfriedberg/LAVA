@@ -19,8 +19,8 @@ pub enum AlertType {
 fn get_alert_threshold_value(alert_level: AlertLevel, alert_type: AlertType) -> usize {
     match alert_type {
         AlertType::SusTimeGap => match alert_level {
-            AlertLevel::High => 100,
-            AlertLevel::Medium => 30,
+            AlertLevel::High => 30,
+            AlertLevel::Medium => 20,
             AlertLevel::Low => 10,
         },
         AlertType::SusEventCount => match alert_level {

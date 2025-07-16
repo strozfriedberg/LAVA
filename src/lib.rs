@@ -334,7 +334,7 @@ fn get_hash(file_path: &PathBuf) -> Result<String> {
 
     let mut hasher = Sha256::new();
 
-    let mut buffer = [0u8; 1024 * 1024]; //bump up a little but, might have to change back to 4096 if this breakes with the threading
+    let mut buffer = [0u8; 4096]; //bump up a little but, might have to change back to 4096 if this breakes with the threading
     loop {
         let bytes_read = file.read(&mut buffer).map_err(|e| {
             LavaError::new(
