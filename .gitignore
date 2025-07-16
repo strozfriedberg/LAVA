@@ -1,4 +1,5 @@
 /target
+/LAVA_Output
 *.csv
 *.txt
 *.xlsx
