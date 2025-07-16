@@ -118,14 +118,19 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
                 .map(|f| f.timestamp_num_records)
                 .sum::<usize>()
                 .to_formatted_string(&Locale::en);
+            let num_records_processed_for_timestamp_analysis = results.iter().filter(|item| item.largest_gap.is_some()).count();
+            
             let duration = start.elapsed();
             let minutes = duration.as_secs_f64() / 60.0;
             println!("Finished in {:.2} minutes", minutes);
             println!(
                 "Processed a total of {} records with timestamps across {} log files",
                 formatted_total_of_records_with_timestamps,
-                results.len()
-            )
+                num_records_processed_for_timestamp_analysis.to_formatted_string(&Locale::en)
+            );
+            if num_records_processed_for_timestamp_analysis < results.len(){
+                println!("\x1b[31m{} log files could not be processed for timestamp analysis. Check LAVA_Errors.log for reason\x1b[0m", (results.len() - num_records_processed_for_timestamp_analysis).to_formatted_string(&Locale::en));
+            }
         }
     };
 }
