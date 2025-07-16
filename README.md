@@ -14,6 +14,8 @@ Useful statistics include:
 - Duplicate Records
 - Potential Redactions
 
+![LAVA-terminal-output](images\lava_terminal_output.png)
+
 ## Supported Log Files
 - CSV
     - LAVA attempts to handle CSVs where there is garbage data above the header row, although this is not guaranteed to work in all cases. You may need to manually fix the CSV before processing.
