@@ -119,10 +119,18 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
                 .sum::<usize>()
                 .to_formatted_string(&Locale::en);
             let num_records_processed_for_timestamp_analysis = results.iter().filter(|item| item.largest_gap.is_some()).count();
-            
-            let duration = start.elapsed();
-            let minutes = duration.as_secs_f64() / 60.0;
-            println!("Finished in {:.2} minutes", minutes);
+
+            let duration_in_secs = start.elapsed().as_secs_f64();
+            match duration_in_secs < 60.0 {
+                true => {
+                    println!("Finished in {:.2} seconds", duration_in_secs);
+                },
+                false =>{
+                    println!("Finished in {:.2} minutes", duration_in_secs / 60.0);
+
+                }
+            }
+
             println!(
                 "Processed a total of {} records with timestamps across {} log files",
                 formatted_total_of_records_with_timestamps,
