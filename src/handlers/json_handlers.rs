@@ -3,9 +3,9 @@ use crate::errors::*;
 use crate::helpers::get_file_stem;
 use crate::processing_objects::*;
 use csv::StringRecord;
-use serde_json::Value;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use serde_json::{Deserializer, Value};
 
 fn parse_json_line_into_json(line: &str, index: usize) -> Result<Value> {
     let trimmed = line.trim();
@@ -246,47 +246,64 @@ pub fn stream_json_file(
         )
     })?;
     let reader = BufReader::new(file);
-    for (index, line_result) in reader.lines().enumerate() {
-        let line = line_result.map_err(|e| {
-            LavaError::new(
-                format!("Error reading line because of {}", e),
-                LavaErrorLevel::Critical,
-            )
-        })?;
-        if line.trim().is_empty() {
-            continue;
-        }
-        let serialized_line = parse_json_line_into_json(&line, index)?;
-        let current_datetime = match timestamp_hit {
-            None => None,
-            Some(timestamp_hit) => {
-                if let Some(value_of_key) =
-                    serialized_line.pointer(timestamp_hit.column_name.as_ref().unwrap())
-                {
-                    match value_of_key {
-                        Value::String(string) => timestamp_hit
-                            .regex_info
-                            .get_timestamp_object_from_string_contianing_date(string.clone())?,
-                        _ => {
-                            return Err(LavaError::new(
-                                format!(
-                                    "Non String timestamp field extracted during JSON direction scanning"
-                                ),
-                                LavaErrorLevel::Critical,
-                            ));
+    let stream = Deserializer::from_reader(reader).into_iter::<Value>();
+    for (index, line_result) in stream.enumerate() {
+        match line_result {
+            Ok(serialized_line) => {
+                let current_datetime = match timestamp_hit {
+                    None => None,
+                    Some(timestamp_hit) => {
+                        if let Some(value_of_key) =
+                            serialized_line.pointer(timestamp_hit.column_name.as_ref().unwrap())
+                        {
+                            match value_of_key {
+                                Value::String(string) => timestamp_hit
+                                    .regex_info
+                                    .get_timestamp_object_from_string_contianing_date(string.clone())?,
+                                _ => {
+                                    return Err(LavaError::new(
+                                        format!(
+                                            "Non String timestamp field extracted during JSON direction scanning"
+                                        ),
+                                        LavaErrorLevel::Critical,
+                                    ));
+                                }
+                            }
+                        } else {
+                            None
                         }
                     }
-                } else {
-                    None
-                }
+                };
+                processing_object.process_record(LogFileRecord::new(
+                    index,
+                    current_datetime,
+                    StringRecord::from(vec!["test"]),
+                ))?;
             }
-        };
-        processing_object.process_record(LogFileRecord::new(
-            index,
-            current_datetime,
-            StringRecord::from(vec![line]),
-        ))?;
+            Err(e) => {
+                // Check if it's just an empty line error
+                if e.is_eof() {
+                    continue; // skip empty lines
+                } 
+                // Here is where I can add to the invalid json count
+                eprintln!("Skipping invalid JSON: {}", e);
+                continue;
+            }
+        }
     }
+    // for (index, line_result) in reader.lines().enumerate() {
+    //     let line = line_result.map_err(|e| {
+    //         LavaError::new(
+    //             format!("Error reading line because of {}", e),
+    //             LavaErrorLevel::Critical,
+    //         )
+    //     })?;
+    //     if line.trim().is_empty() {
+    //         continue;
+    //     }
+    //     let serialized_line = parse_json_line_into_json(&line, index)?;
+
+    // }
     Ok(processing_object)
 }
 
