@@ -7,10 +7,10 @@ use serde_json::Value;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-fn parse_json_line_into_json(line: String, index: usize) -> Result<Value> {
+fn parse_json_line_into_json(line: &str, index: usize) -> Result<Value> {
     let trimmed = line.trim();
     if trimmed.len() > 0 {
-        match serde_json::from_str(&line) {
+        match serde_json::from_str(line) {
             Ok(val) => Ok(val),
             Err(e) => Err(LavaError::new(
                 format!("Unable to parse JSON at line {} because of {}", index, e),
@@ -110,7 +110,7 @@ fn try_to_get_timestamp_hit_for_json_functionality(
     line: String,
     execution_settings: &ExecutionSettings,
 ) -> Result<Option<IdentifiedTimeInformation>> {
-    let serialized_line = parse_json_line_into_json(line, 0);
+    let serialized_line = parse_json_line_into_json(&line, 0);
     match serialized_line {
         Err(e) => {
             if e.level == LavaErrorLevel::Critical {
@@ -183,7 +183,7 @@ pub fn set_time_direction_by_scanning_json_file(
         if line.trim().is_empty() {
             continue;
         }
-        let serialized_line = parse_json_line_into_json(line, index)?;
+        let serialized_line = parse_json_line_into_json(&line, index)?;
         let extracted_timestamp =
             serialized_line.pointer(timestamp_hit.column_name.as_ref().ok_or_else(|| {
                 LavaError::new(
@@ -256,7 +256,7 @@ pub fn stream_json_file(
         if line.trim().is_empty() {
             continue;
         }
-        let serialized_line = parse_json_line_into_json(line.clone(), index)?;
+        let serialized_line = parse_json_line_into_json(&line, index)?;
         let current_datetime = match timestamp_hit {
             None => None,
             Some(timestamp_hit) => {
@@ -425,7 +425,7 @@ mod json_handler_tests {
                 }
             }
         }"#;
-        let response = parse_json_line_into_json(json_str.to_string(), 1);
+        let response = parse_json_line_into_json(json_str, 1);
         println!("{:?}", response);
         assert!(response.is_ok());
     }
@@ -441,7 +441,7 @@ mod json_handler_tests {
                     "email": "alice@example.com"
                             }
         }"#;
-        let response = parse_json_line_into_json(json_str.to_string(), 1);
+        let response = parse_json_line_into_json(json_str, 1);
         println!("{:?}", response);
         assert!(response.is_err());
     }
@@ -458,7 +458,7 @@ mod json_handler_tests {
                 }
             }
         }"#;
-        let response = parse_json_line_into_json(json_str.to_string(), 1).unwrap();
+        let response = parse_json_line_into_json(json_str, 1).unwrap();
         let converted = collect_json_values_with_paths(&response);
         println!("{:?}", converted);
         assert_eq!(3, converted.len())
@@ -476,7 +476,7 @@ mod json_handler_tests {
                 }
             }
         }"#;
-        let response = parse_json_line_into_json(json_str.to_string(), 1).unwrap();
+        let response = parse_json_line_into_json(json_str, 1).unwrap();
         assert_eq!("Alice", response.pointer("/user/profile/name").unwrap())
     }
 
