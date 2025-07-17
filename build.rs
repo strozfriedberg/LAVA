@@ -37,7 +37,7 @@ impl fmt::Display for RawRedactionWithTests {
 fn main() {
     let out_dir = env::var_os("OUT_DIR").unwrap();
 
-    let date_regex_yaml_path = Path::new("build_yml_files\\dates.yml");
+    let date_regex_yaml_path = Path::new("build_yml_files/dates.yml");
     let date_regex_content =
         fs::read_to_string(date_regex_yaml_path).expect("Failed to read YAML file");
     let date_regex_parsed: Vec<RawDateRegexWithTests> =
@@ -46,7 +46,7 @@ fn main() {
     generate_date_regex_vector(&date_regex_parsed, &out_dir);
     generate_date_regex_tests(&date_regex_parsed, &out_dir);
 
-    let redactions_regex_yaml_path = Path::new("build_yml_files\\redactions.yml");
+    let redactions_regex_yaml_path = Path::new("build_yml_files/redactions.yml");
     let redactions_regex_content =
         fs::read_to_string(redactions_regex_yaml_path).expect("Failed to read YAML file");
     let redactions_regex_parsed: Vec<RawRedactionWithTests> =
