@@ -274,12 +274,10 @@ impl LogRecordProcessor {
                 self.largest_time_gap = Some(TimeGap::new(previous_datetime, current_timestamp));
             }
         } else {
-            // This is the first row, inialize either the min or max timestamp
-            if self.order == Some(TimeDirection::Ascending) {
-                self.min_timestamp = Some(current_timestamp)
-            } else if self.order == Some(TimeDirection::Descending) {
-                self.max_timestamp = Some(current_timestamp)
-            }
+            // This is the first row, inialize both min and max to this value
+            self.min_timestamp = Some(current_timestamp);
+            self.max_timestamp = Some(current_timestamp);
+
         }
         self.previous_timestamp = Some(current_timestamp);
         Ok(())

@@ -212,10 +212,9 @@ pub fn set_time_direction_by_scanning_csv_file(
             return Ok(());
         }
     }
-    Err(LavaError::new(
-        "Could not determine order, all timestamps may have been equal.",
-        LavaErrorLevel::Critical,
-    ))
+    timestamp_hit.direction = Some(TimeDirection::Descending);
+    Ok(())
+    
 }
 
 pub fn stream_csv_file(

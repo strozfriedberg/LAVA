@@ -65,6 +65,77 @@ fn integration_test_successful_run_no_errors() {
 }
 
 #[test]
+fn integration_test_successful_run_one_record_csv() {
+    let data = "\
+    id,name,date\n\
+    1,John,2025-05-09 10:00:00\n";
+
+    let temp_log_file = TempInputFile::new(LogType::Csv, data);
+    let log_file = temp_log_file.get_log_file_object();
+    let settings = ExecutionSettings::create_integration_test_object(None, false);
+
+    let output = process_file(log_file, &settings);
+    let processed = output.expect("Failed to get Proceesed Log File");
+    println!("{:?}", processed.errors);
+    assert_eq!(0, processed.errors.len());
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        processed.min_timestamp.unwrap()
+    );
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        processed.max_timestamp.unwrap()
+    );
+    temp_log_file.delete_temp_file();
+}
+
+#[test]
+fn integration_test_successful_run_one_record_json() {
+    let data = r#"{"user": {"time": "2021-05-09 10:00:00","profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:00:00"}"#;
+
+    let temp_log_file = TempInputFile::new(LogType::Json, data);
+    let log_file = temp_log_file.get_log_file_object();
+    let settings = ExecutionSettings::create_integration_test_object(None, false);
+
+    let output = process_file(log_file, &settings);
+    let processed = output.expect("Failed to get Proceesed Log File");
+    println!("{:?}", processed.errors);
+    assert_eq!(0, processed.errors.len());
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        processed.min_timestamp.unwrap()
+    );
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        processed.max_timestamp.unwrap()
+    );
+    temp_log_file.delete_temp_file();
+}
+
+#[test]
+fn integration_test_successful_run_one_record_unstructured() {
+    let data = "timestamp: 2025-05-09 10:00:00\n";
+
+    let temp_log_file = TempInputFile::new(LogType::Unstructured, data);
+    let log_file = temp_log_file.get_log_file_object();
+    let settings = ExecutionSettings::create_integration_test_object(None, false);
+
+    let output = process_file(log_file, &settings);
+    let processed = output.expect("Failed to get Proceesed Log File");
+    println!("{:?}", processed.errors);
+    assert_eq!(0, processed.errors.len());
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        processed.min_timestamp.unwrap()
+    );
+    assert_eq!(
+        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        processed.max_timestamp.unwrap()
+    );
+    temp_log_file.delete_temp_file();
+}
+
+#[test]
 fn integration_test_successful_run_no_errors_junk_value() {
     let data = "\
     garbage\n\
