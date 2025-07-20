@@ -90,6 +90,8 @@ For timestamp analysis, LAVA relies on pairs of regex and strftime format string
 
 `should_not_match` - List of strings that should fail one of conditions needed for should_match. 
 
+## Design Decisions
+- If a file is is out of order at any point, the time processing will halt, and the "number of records processed for time analysis" will be set to 0 for that file. The file will still continue to be processed for duplicates and redactions as long as quick mode is not enabled. 
 
 ## Disclaimer
 
