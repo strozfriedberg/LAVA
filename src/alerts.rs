@@ -72,7 +72,7 @@ pub fn get_message_for_alert_comfy_table(
             number_of_files,
             get_alert_threshold_value(alert_level, alert_type)
         ),
-        AlertType::JsonError => format!("{} files had json syntax errors", number_of_files),
+        AlertType::JsonError => format!("{} files had JSON syntax errors", number_of_files),
     }
 }
 
@@ -154,6 +154,15 @@ pub fn generate_alerts(things_to_alert_on: PossibleAlertValues) -> Vec<Alert> {
             alerts.push(Alert::new(level, AlertType::SusTimeGap));
         };
     };
+
+    // JSON errors
+    if things_to_alert_on
+        .errors
+        .iter()
+        .any(|e| e.reason.contains("Unable to parse JSON")) 
+    {
+        alerts.push(Alert::new(AlertLevel::High, AlertType::JsonError));
+    }
 
     alerts
 }

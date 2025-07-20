@@ -284,8 +284,7 @@ pub fn process_file(
     };
     base_processed_file.first_data_row_used = header_info.map(|n| n.first_data_row.to_string());
     let values_to_alert_on = completed_statistics_object.get_possible_alert_values();
-    let alerts = generate_alerts(values_to_alert_on);
-    base_processed_file.alerts = Some(alerts);
+    base_processed_file.alerts = Some(generate_alerts(values_to_alert_on));
 
     base_processed_file.largest_gap = completed_statistics_object.largest_time_gap;
     base_processed_file.min_timestamp = completed_statistics_object.min_timestamp;
