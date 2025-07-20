@@ -95,11 +95,12 @@ For timestamp analysis, LAVA relies on pairs of regex and strftime format string
 
 ## Compiling Tips
 Building for the local architecture is very easy, just run `cargo build --release`
-Follow the steps below to cross compile for linux / any other architecture
+
+To cross compile for linux / any other architecture, follow the steps below
 1. Install and have docker running on your system
 2. Use cargo to install cross with `cargo install cross`
-3. Add the profile that you want to compile to rust `rustup target add x86_64-unknown-linux-gnu`
-4. compile with `cross build --target x86_64-unknown-linux-gnu --release`
+3. Add the profile that you want to compile to rust `rustup target add x86_64-unknown-linux-gnu`. (List availible targets with `rustup target list`)
+4. Compile with `cross build --target x86_64-unknown-linux-gnu --release`
 
 
 ## Disclaimer
