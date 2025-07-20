@@ -277,7 +277,6 @@ impl LogRecordProcessor {
             // This is the first row, inialize both min and max to this value
             self.min_timestamp = Some(current_timestamp);
             self.max_timestamp = Some(current_timestamp);
-
         }
         self.previous_timestamp = Some(current_timestamp);
         Ok(())

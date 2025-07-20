@@ -514,7 +514,6 @@ fn json_integration_test_structure_erro_line_1() {
     temp_log_file.delete_temp_file();
 }
 
-
 #[test]
 fn json_integration_test_structure_erro_line_0() {
     let data = r#"{"user": {"time": "2021-05-09 10:00:00","profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:00:00"

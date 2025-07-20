@@ -118,16 +118,18 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
                 .map(|f| f.timestamp_num_records)
                 .sum::<usize>()
                 .to_formatted_string(&Locale::en);
-            let num_records_processed_for_timestamp_analysis = results.iter().filter(|item| item.largest_gap.is_some()).count();
+            let num_records_processed_for_timestamp_analysis = results
+                .iter()
+                .filter(|item| item.largest_gap.is_some())
+                .count();
 
             let duration_in_secs = start.elapsed().as_secs_f64();
             match duration_in_secs < 60.0 {
                 true => {
                     println!("Finished in {:.2} seconds", duration_in_secs);
-                },
-                false =>{
+                }
+                false => {
                     println!("Finished in {:.2} minutes", duration_in_secs / 60.0);
-
                 }
             }
 
@@ -136,8 +138,12 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
                 formatted_total_of_records_with_timestamps,
                 num_records_processed_for_timestamp_analysis.to_formatted_string(&Locale::en)
             );
-            if num_records_processed_for_timestamp_analysis < results.len(){
-                println!("\x1b[31m{} log files could not be processed for timestamp analysis. Check LAVA_Errors.log for reason\x1b[0m", (results.len() - num_records_processed_for_timestamp_analysis).to_formatted_string(&Locale::en));
+            if num_records_processed_for_timestamp_analysis < results.len() {
+                println!(
+                    "\x1b[31m{} log files could not be processed for timestamp analysis. Check LAVA_Errors.log for reason\x1b[0m",
+                    (results.len() - num_records_processed_for_timestamp_analysis)
+                        .to_formatted_string(&Locale::en)
+                );
             }
         }
     };
@@ -280,7 +286,6 @@ pub fn process_file(
     let values_to_alert_on = completed_statistics_object.get_possible_alert_values();
     let alerts = generate_alerts(values_to_alert_on);
     base_processed_file.alerts = Some(alerts);
-
 
     base_processed_file.largest_gap = completed_statistics_object.largest_time_gap;
     base_processed_file.min_timestamp = completed_statistics_object.min_timestamp;
