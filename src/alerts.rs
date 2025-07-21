@@ -94,7 +94,7 @@ pub fn get_message_for_alert_output_file(alert_level: AlertLevel, alert_type: Al
             "Greater than {} records with potential redactions",
             get_alert_threshold_value(alert_level, alert_type)
         ),
-        AlertType::JsonError => format!(" had json syntax errors"),
+        AlertType::JsonError => format!("File had json syntax errors that may interfere with parsing in other tools"),
     }
 }
 
