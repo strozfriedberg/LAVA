@@ -72,7 +72,10 @@ impl LogRecordProcessor {
             None => StringRecord::from(vec!["Record"]),
         };
         let process_timestamps = match timestamp_hit {
-            Some(_) => true,
+            Some(hit) => match hit.direction{
+                Some(_) => true,
+                None => false,
+            },
             None => false,
         };
         let order = match timestamp_hit {

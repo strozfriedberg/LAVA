@@ -1,8 +1,14 @@
 use crate::basic_objects::{IdentifiedTimeInformation, LogFileRecord, TimeDirection};
 use crate::date_regex::DateRegex;
 use chrono::NaiveDateTime;
+use comfy_table::presets::NOTHING;
 use csv::StringRecord;
 use regex::Regex;
+
+
+pub fn get_time_from_hardcoded_time_format(time: &str) -> NaiveDateTime {
+    NaiveDateTime::parse_from_str(time, "%Y-%m-%d %H:%M:%S").unwrap()
+}
 
 pub fn make_fake_record(index: usize, timestamp_str: Option<&str>, record: StringRecord) -> LogFileRecord {
     LogFileRecord::new(
@@ -16,7 +22,7 @@ pub fn make_fake_record(index: usize, timestamp_str: Option<&str>, record: Strin
 }
 
 pub fn build_fake_timestamp_hit_from_direction(
-    direction: TimeDirection,
+    direction: Option<TimeDirection>,
 ) -> Option<IdentifiedTimeInformation> {
     let regex = Regex::new(".*").ok()?; // Match anything
 
@@ -29,7 +35,7 @@ pub fn build_fake_timestamp_hit_from_direction(
         column_name: None,
         column_index: None,
         regex_info: fake_regex_info, // Assumes DateRegex implements Default
-        direction: Some(direction),
+        direction: direction,
     })
 }
 pub fn dt(s: &str) -> NaiveDateTime {

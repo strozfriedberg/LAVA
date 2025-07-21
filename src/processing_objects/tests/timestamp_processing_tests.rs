@@ -7,7 +7,7 @@ use csv::StringRecord;
 fn processes_ascending_records_correctly() {
     let settings = ExecutionSettings::default();
     let mut processor = LogRecordProcessor::new(
-        &build_fake_timestamp_hit_from_direction(TimeDirection::Ascending),
+        &build_fake_timestamp_hit_from_direction(Some(TimeDirection::Ascending)),
         &settings,
         "Test".to_string(),
         None,
@@ -55,7 +55,7 @@ fn processes_ascending_records_correctly() {
 fn processes_ascending_records_same_time_gap_correctly() {
     let settings = ExecutionSettings::default();
     let mut processor = LogRecordProcessor::new(
-        &build_fake_timestamp_hit_from_direction(TimeDirection::Ascending),
+        &build_fake_timestamp_hit_from_direction(Some(TimeDirection::Ascending)),
         &settings,
         "Test".to_string(),
         None,
@@ -103,7 +103,7 @@ fn processes_ascending_records_same_time_gap_correctly() {
 fn processes_descending_records_correctly() {
     let settings = ExecutionSettings::default();
     let mut processor = LogRecordProcessor::new(
-        &build_fake_timestamp_hit_from_direction(TimeDirection::Descending),
+        &build_fake_timestamp_hit_from_direction(Some(TimeDirection::Descending)),
         &settings,
         "Test".to_string(),
         None,
@@ -151,7 +151,7 @@ fn processes_descending_records_correctly() {
 fn detects_out_of_order_in_ascending() {
     let settings = ExecutionSettings::default();
     let mut processor = LogRecordProcessor::new(
-        &build_fake_timestamp_hit_from_direction(TimeDirection::Ascending),
+        &build_fake_timestamp_hit_from_direction(Some(TimeDirection::Ascending)),
         &settings,
         "Test".to_string(),
         None,
@@ -182,7 +182,7 @@ fn detects_out_of_order_in_ascending() {
 fn detects_out_of_order_in_descending() {
     let settings = ExecutionSettings::default();
     let mut processor = LogRecordProcessor::new(
-        &build_fake_timestamp_hit_from_direction(TimeDirection::Descending),
+        &build_fake_timestamp_hit_from_direction(Some(TimeDirection::Descending)),
         &settings,
         "Test".to_string(),
         None,
@@ -208,3 +208,48 @@ fn detects_out_of_order_in_descending() {
         "File was not sorted on the identified timestamp. Out of order record at index 1"
     );
 }
+
+
+#[test]
+fn replicate_min_max_issue() {
+    let settings = ExecutionSettings::default();
+    let mut processor = LogRecordProcessor::new(
+        &build_fake_timestamp_hit_from_direction(None),
+        &settings,
+        "Test".to_string(),
+        None,
+    );
+
+    processor
+        .process_record(make_fake_record(
+            0,
+            Some("2024-05-01 12:00:00"),
+            StringRecord::from(vec!["test"]),
+        ))
+        .unwrap();
+    processor
+        .process_record(make_fake_record(
+            1,
+            None,
+            StringRecord::from(vec!["test1"]),
+        ))
+        .unwrap();
+    processor
+        .process_record(make_fake_record(
+            2,
+            Some("2024-05-01 12:05:00"),
+            StringRecord::from(vec!["test2"]),
+        ))
+        .unwrap();
+
+    assert_eq!(
+        None,
+        processor.min_timestamp
+    );
+    assert_eq!(
+        None,
+        processor.max_timestamp
+    );
+
+}
+

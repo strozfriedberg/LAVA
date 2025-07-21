@@ -92,7 +92,7 @@ For timestamp analysis, LAVA relies on pairs of regex and strftime format string
 
 ## Design Decisions
 - If a file is is out of order at any point, the time processing will halt, and any time related statistics that file will be disregarded (min/max time, largest time gap, number of time records). The file will still continue to be processed for duplicates and redactions as long as quick mode is not enabled. 
-- If the first few lines of JSONL are not formatted properly, LAVA will alert on that fact, but not attempt to parse the file. If the first few lines are formatted properly (enough to determine the timestamp format, and direction), but a line farther into the file is not formatted properly, LAVA will alert on this fact every line, but attemp to continue parsing with the previously determined timestamp format and direction.  
+- If the first line of JSONL is not formatted properly, LAVA will alert on that fact, but not attempt to parse the file. If the first few lines are formatted properly (enough to determine the timestamp format, and direction), but a line farther into the file is not formatted properly, LAVA will alert on this fact every line, but attempt to continue parsing with the previously determined timestamp format and direction.  
 
 ## Compiling Tips
 To assist in this process I wrote a powershell script at build.ps1 that will compile the tool for windows and linux. The `-increment` command line will increment the version number, and the `-publish` command line arg will publish a github release with the resulting executables. For the publish functionality you must install the github CLI `https://cli.github.com/`

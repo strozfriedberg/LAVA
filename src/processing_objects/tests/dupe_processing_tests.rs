@@ -7,7 +7,7 @@ use csv::StringRecord;
 fn test_process_record_no_duplicate() {
     let settings = ExecutionSettings::default();
     let mut processor = LogRecordProcessor::new(
-        &build_fake_timestamp_hit_from_direction(TimeDirection::Descending),
+        &build_fake_timestamp_hit_from_direction(Some(TimeDirection::Descending)),
         &settings,
         "Test".to_string(),
         None,
@@ -23,7 +23,7 @@ fn test_process_record_no_duplicate() {
 fn test_process_record_with_one_duplicate() {
     let settings = ExecutionSettings::default();
     let mut processor = LogRecordProcessor::new(
-        &build_fake_timestamp_hit_from_direction(TimeDirection::Descending),
+        &build_fake_timestamp_hit_from_direction(Some(TimeDirection::Descending)),
         &settings,
         "Test".to_string(),
         None,
@@ -44,7 +44,7 @@ fn test_process_record_with_one_duplicate() {
 fn test_process_record_with_two_duplicate() {
     let settings = ExecutionSettings::default();
     let mut processor = LogRecordProcessor::new(
-        &build_fake_timestamp_hit_from_direction(TimeDirection::Descending),
+        &build_fake_timestamp_hit_from_direction(Some(TimeDirection::Descending)),
         &settings,
         "Test".to_string(),
         None,
@@ -65,7 +65,7 @@ fn test_process_record_with_two_duplicate() {
 fn test_process_record_with_no_dupe_multiple_values() {
     let settings = ExecutionSettings::default();
     let mut processor = LogRecordProcessor::new(
-        &build_fake_timestamp_hit_from_direction(TimeDirection::Descending),
+        &build_fake_timestamp_hit_from_direction(Some(TimeDirection::Descending)),
         &settings,
         "Test".to_string(),
         None,
@@ -98,7 +98,7 @@ fn test_process_record_with_no_dupe_multiple_values() {
 fn test_process_record_with_dupe_multiple_values() {
     let settings = ExecutionSettings::default();
     let mut processor = LogRecordProcessor::new(
-        &build_fake_timestamp_hit_from_direction(TimeDirection::Descending),
+        &build_fake_timestamp_hit_from_direction(Some(TimeDirection::Descending)),
         &settings,
         "Test".to_string(),
         None,

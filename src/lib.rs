@@ -33,7 +33,7 @@ include!(concat!(env!("OUT_DIR"), "/generated_date_regexes.rs"));
 static VERBOSE: OnceCell<bool> = OnceCell::new();
 
 #[cfg(test)]
-mod test_helpers;
+pub mod test_helpers;
 
 #[cfg(test)]
 include!(concat!(env!("OUT_DIR"), "/generated_date_tests.rs"));

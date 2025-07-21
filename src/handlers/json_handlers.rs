@@ -177,7 +177,10 @@ pub fn set_time_direction_by_scanning_json_file(
         if line.trim().is_empty() {
             continue;
         }
-        let serialized_line = parse_json_line_into_json(&line, index)?;
+        let serialized_line = match parse_json_line_into_json(&line, index){
+            Ok(line) => line,
+            Err(_) => continue
+        };
         let extracted_timestamp =
             serialized_line.pointer(timestamp_hit.column_name.as_ref().ok_or_else(|| {
                 LavaError::new(
@@ -227,6 +230,7 @@ pub fn stream_json_file(
     timestamp_hit: &Option<IdentifiedTimeInformation>,
     execution_settings: &ExecutionSettings,
 ) -> Result<LogRecordProcessor> {
+    println!("{:?}", timestamp_hit.as_ref().unwrap());
     let mut processing_object = LogRecordProcessor::new(
         timestamp_hit,
         execution_settings,
@@ -239,6 +243,7 @@ pub fn stream_json_file(
             LavaErrorLevel::Critical,
         )
     })?;
+
     let reader = BufReader::new(file);
     for (index, line_result) in reader.lines().enumerate() {
         let line = line_result.map_err(|e| {
@@ -253,6 +258,7 @@ pub fn stream_json_file(
         let serialized_line = match parse_json_line_into_json(&line, index) {
             Ok(serialized_line) => serialized_line,
             Err(e) => {
+                println!("Processing line {} WITHOUT a timestamp {}",index, line);
                 processing_object.process_record(LogFileRecord::new(
                     index,
                     None,
@@ -286,6 +292,7 @@ pub fn stream_json_file(
                 }
             }
         };
+        println!("Processing line {} WITH a timestamp {}",index, line);
         processing_object.process_record(LogFileRecord::new(
             index,
             current_datetime,
