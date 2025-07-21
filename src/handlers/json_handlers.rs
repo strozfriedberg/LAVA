@@ -222,6 +222,7 @@ pub fn set_time_direction_by_scanning_json_file(
             },
         }
     }
+    timestamp_hit.direction = Some(TimeDirection::Descending);
     Ok(())
 }
 
@@ -422,7 +423,7 @@ mod json_handler_tests {
 
         // Step 4: Assert success and expected direction
         assert!(result.is_ok());
-        assert_eq!(identified_time_info.direction, None); // or whatever is expected
+        assert_eq!(identified_time_info.direction, Some(TimeDirection::Descending));
     }
 
     #[test]
