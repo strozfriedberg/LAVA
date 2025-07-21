@@ -120,7 +120,7 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
                 .to_formatted_string(&Locale::en);
             let num_records_processed_for_timestamp_analysis = results
                 .iter()
-                .filter(|item| item.largest_gap.is_some())
+                .filter(|item| item.min_timestamp.is_some())
                 .count();
 
             let duration_in_secs = start.elapsed().as_secs_f64();
