@@ -212,7 +212,6 @@ pub fn set_time_direction_by_scanning_csv_file(
             return Ok(());
         }
     }
-    timestamp_hit.direction = Some(TimeDirection::Descending);
     Ok(())
 }
 

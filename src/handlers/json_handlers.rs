@@ -222,7 +222,6 @@ pub fn set_time_direction_by_scanning_json_file(
             },
         }
     }
-    timestamp_hit.direction = Some(TimeDirection::Descending);
     Ok(())
 }
 
@@ -231,7 +230,6 @@ pub fn stream_json_file(
     timestamp_hit: &Option<IdentifiedTimeInformation>,
     execution_settings: &ExecutionSettings,
 ) -> Result<LogRecordProcessor> {
-    println!("{:?}", timestamp_hit.as_ref().unwrap());
     let mut processing_object = LogRecordProcessor::new(
         timestamp_hit,
         execution_settings,
@@ -259,7 +257,6 @@ pub fn stream_json_file(
         let serialized_line = match parse_json_line_into_json(&line, index) {
             Ok(serialized_line) => serialized_line,
             Err(e) => {
-                println!("Processing line {} WITHOUT a timestamp {}",index, line);
                 processing_object.process_record(LogFileRecord::new(
                     index,
                     None,
@@ -293,7 +290,6 @@ pub fn stream_json_file(
                 }
             }
         };
-        println!("Processing line {} WITH a timestamp {}",index, line);
         processing_object.process_record(LogFileRecord::new(
             index,
             current_datetime,
@@ -423,7 +419,7 @@ mod json_handler_tests {
 
         // Step 4: Assert success and expected direction
         assert!(result.is_ok());
-        assert_eq!(identified_time_info.direction, Some(TimeDirection::Descending));
+        assert_eq!(identified_time_info.direction, None); // if this is None (and all values are equal), this will get set to Descending at the higher level
     }
 
     #[test]

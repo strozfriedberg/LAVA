@@ -252,6 +252,9 @@ pub fn process_file(
                 ) {
                     base_processed_file.errors.push(e);
                 }
+                if timestamp_hit.direction.is_none() {
+                    timestamp_hit.direction = Some(TimeDirection::Descending); // All timestamps are the same, doesn't matter which direction, but need to pick one
+                }
 
                 Some(timestamp_hit)
             }

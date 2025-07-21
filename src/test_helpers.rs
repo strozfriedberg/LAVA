@@ -1,7 +1,6 @@
 use crate::basic_objects::{IdentifiedTimeInformation, LogFileRecord, TimeDirection};
 use crate::date_regex::DateRegex;
 use chrono::NaiveDateTime;
-use comfy_table::presets::NOTHING;
 use csv::StringRecord;
 use regex::Regex;
 

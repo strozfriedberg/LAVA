@@ -588,14 +588,14 @@ fn json_integration_test_no_direction() {
     let processed = output.expect("Failed to get Proceesed Log File");
     println!("{:?}", processed.errors);
     assert_eq!(4, processed.total_num_records);
-    assert_eq!(0, processed.timestamp_num_records);
+    assert_eq!(4, processed.timestamp_num_records);
     assert_eq!(
-        None,
-        processed.min_timestamp
+        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        processed.min_timestamp.unwrap()
     );
     assert_eq!(
-        None,
-        processed.max_timestamp
+        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        processed.max_timestamp.unwrap()
     );
 
     temp_log_file.delete_temp_file();
