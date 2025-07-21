@@ -98,7 +98,7 @@ pub fn get_message_for_alert_output_file(alert_level: AlertLevel, alert_type: Al
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Alert {
     pub alert_level: AlertLevel,
     pub alert_type: AlertType,
@@ -159,7 +159,7 @@ pub fn generate_alerts(things_to_alert_on: PossibleAlertValues) -> Vec<Alert> {
     if things_to_alert_on
         .errors
         .iter()
-        .any(|e| e.reason.contains("Unable to parse JSON")) 
+        .any(|e| e.reason.contains("Unable to parse JSON"))
     {
         alerts.push(Alert::new(AlertLevel::High, AlertType::JsonError));
     }

@@ -251,7 +251,6 @@ pub fn process_file(
                     header_info.clone(),
                 ) {
                     base_processed_file.errors.push(e);
-                    return Ok(base_processed_file);
                 }
 
                 Some(timestamp_hit)
@@ -265,7 +264,9 @@ pub fn process_file(
             }
             Err(e) => {
                 base_processed_file.errors.push(e);
-                return Ok(base_processed_file);
+                println!("{:?} ", base_processed_file.errors);
+                None
+                // return Ok(base_processed_file);
             }
         };
 

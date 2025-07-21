@@ -112,13 +112,7 @@ fn try_to_get_timestamp_hit_for_json_functionality(
 ) -> Result<Option<IdentifiedTimeInformation>> {
     let serialized_line = parse_json_line_into_json(&line, 0);
     match serialized_line {
-        Err(e) => {
-            if e.level == LavaErrorLevel::Critical {
-                return Err(e);
-            } else {
-                return Ok(None);
-            }
-        }
+        Err(e) => return Err(e),
         Ok(serialized_line) => {
             if let Some(field_to_use) = &execution_settings.timestamp_field {
                 let correct_formatted_path = convert_arrow_path_to_json_pointer(&field_to_use);
@@ -256,7 +250,18 @@ pub fn stream_json_file(
         if line.trim().is_empty() {
             continue;
         }
-        let serialized_line = parse_json_line_into_json(&line, index)?;
+        let serialized_line = match parse_json_line_into_json(&line, index) {
+            Ok(serialized_line) => serialized_line,
+            Err(e) => {
+                processing_object.process_record(LogFileRecord::new(
+                    index,
+                    None,
+                    StringRecord::from(vec![line]),
+                ))?;
+                processing_object.add_error(e);
+                continue;
+            }
+        };
         let current_datetime = match timestamp_hit {
             None => None,
             Some(timestamp_hit) => {

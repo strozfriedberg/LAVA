@@ -306,6 +306,9 @@ impl LogRecordProcessor {
             std: standard_deviation,
         }
     }
+    pub fn add_error(&mut self, error_to_add : LavaError){
+        self.errors.push(error_to_add);
+    }
 }
 
 #[derive(Debug)]
