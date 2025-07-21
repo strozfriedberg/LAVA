@@ -72,7 +72,7 @@ impl LogRecordProcessor {
             None => StringRecord::from(vec!["Record"]),
         };
         let process_timestamps = match timestamp_hit {
-            Some(hit) => match hit.direction{
+            Some(hit) => match hit.direction {
                 Some(_) => true,
                 None => false,
             },
@@ -309,7 +309,7 @@ impl LogRecordProcessor {
             std: standard_deviation,
         }
     }
-    pub fn add_error(&mut self, error_to_add : LavaError){
+    pub fn add_error(&mut self, error_to_add: LavaError) {
         self.errors.push(error_to_add);
     }
 }

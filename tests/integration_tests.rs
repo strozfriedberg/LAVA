@@ -1,9 +1,9 @@
 use chrono::NaiveDateTime;
 use lava::{
+    alerts::Alert,
     basic_objects::{ExecutionSettings, LogFile, LogType},
     helpers::print_pretty_alerts_and_write_to_output_file,
-    alerts::Alert,
-    process_file
+    process_file,
 };
 use std::fs;
 use tempfile::NamedTempFile;
@@ -38,7 +38,6 @@ impl TempInputFile {
 fn get_time_from_hardcoded_time_format(time: &str) -> NaiveDateTime {
     NaiveDateTime::parse_from_str(time, "%Y-%m-%d %H:%M:%S").unwrap()
 }
-
 
 #[test]
 fn integration_test_successful_run_no_errors() {
@@ -505,7 +504,13 @@ fn json_integration_test_structure_error_line_0() {
     let output = process_file(log_file, &settings);
     let processed = output.expect("Failed to get Proceesed Log File");
 
-    assert_eq!(Alert::new(lava::alerts::AlertLevel::High, lava::alerts::AlertType::JsonError), processed.alerts.clone().unwrap()[0]);
+    assert_eq!(
+        Alert::new(
+            lava::alerts::AlertLevel::High,
+            lava::alerts::AlertType::JsonError
+        ),
+        processed.alerts.clone().unwrap()[0]
+    );
     assert_eq!(None, processed.largest_gap);
     assert_eq!(None, processed.min_timestamp);
     assert_eq!(None, processed.max_timestamp);
@@ -525,7 +530,13 @@ fn json_integration_test_structure_error_line_1() {
     let output = process_file(log_file, &settings);
     let processed = output.expect("Failed to get Proceesed Log File");
     println!("{:?}", processed.errors);
-    assert_eq!(Alert::new(lava::alerts::AlertLevel::High, lava::alerts::AlertType::JsonError), processed.alerts.clone().unwrap()[0]);
+    assert_eq!(
+        Alert::new(
+            lava::alerts::AlertLevel::High,
+            lava::alerts::AlertType::JsonError
+        ),
+        processed.alerts.clone().unwrap()[0]
+    );
     assert_eq!(1, processed.alerts.unwrap().len());
     assert_eq!(3, processed.total_num_records);
     assert_eq!(2, processed.timestamp_num_records);
@@ -555,7 +566,13 @@ fn json_integration_test_structure_error_line_4() {
     let output = process_file(log_file, &settings);
     let processed = output.expect("Failed to get Proceesed Log File");
     println!("{:?}", processed.errors);
-    assert_eq!(Alert::new(lava::alerts::AlertLevel::High, lava::alerts::AlertType::JsonError), processed.alerts.clone().unwrap()[0]);
+    assert_eq!(
+        Alert::new(
+            lava::alerts::AlertLevel::High,
+            lava::alerts::AlertType::JsonError
+        ),
+        processed.alerts.clone().unwrap()[0]
+    );
     assert_eq!(1, processed.alerts.unwrap().len());
     assert_eq!(4, processed.total_num_records);
     assert_eq!(3, processed.timestamp_num_records);
@@ -570,7 +587,6 @@ fn json_integration_test_structure_error_line_4() {
 
     temp_log_file.delete_temp_file();
 }
-
 
 #[test]
 fn json_integration_test_no_direction() {

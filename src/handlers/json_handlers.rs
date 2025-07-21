@@ -177,9 +177,9 @@ pub fn set_time_direction_by_scanning_json_file(
         if line.trim().is_empty() {
             continue;
         }
-        let serialized_line = match parse_json_line_into_json(&line, index){
+        let serialized_line = match parse_json_line_into_json(&line, index) {
             Ok(line) => line,
-            Err(_) => continue
+            Err(_) => continue,
         };
         let extracted_timestamp =
             serialized_line.pointer(timestamp_hit.column_name.as_ref().ok_or_else(|| {

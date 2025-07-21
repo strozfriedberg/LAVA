@@ -4,17 +4,22 @@ use chrono::NaiveDateTime;
 use csv::StringRecord;
 use regex::Regex;
 
-
 pub fn get_time_from_hardcoded_time_format(time: &str) -> NaiveDateTime {
     NaiveDateTime::parse_from_str(time, "%Y-%m-%d %H:%M:%S").unwrap()
 }
 
-pub fn make_fake_record(index: usize, timestamp_str: Option<&str>, record: StringRecord) -> LogFileRecord {
+pub fn make_fake_record(
+    index: usize,
+    timestamp_str: Option<&str>,
+    record: StringRecord,
+) -> LogFileRecord {
     LogFileRecord::new(
         index,
         match timestamp_str {
-            Some(timestamp) => Some(NaiveDateTime::parse_from_str(timestamp, "%Y-%m-%d %H:%M:%S").unwrap()),
-            None => None
+            Some(timestamp) => {
+                Some(NaiveDateTime::parse_from_str(timestamp, "%Y-%m-%d %H:%M:%S").unwrap())
+            }
+            None => None,
         },
         record,
     )

@@ -209,7 +209,6 @@ fn detects_out_of_order_in_descending() {
     );
 }
 
-
 #[test]
 fn replicate_min_max_issue() {
     let settings = ExecutionSettings::default();
@@ -228,11 +227,7 @@ fn replicate_min_max_issue() {
         ))
         .unwrap();
     processor
-        .process_record(make_fake_record(
-            1,
-            None,
-            StringRecord::from(vec!["test1"]),
-        ))
+        .process_record(make_fake_record(1, None, StringRecord::from(vec!["test1"])))
         .unwrap();
     processor
         .process_record(make_fake_record(
@@ -242,14 +237,6 @@ fn replicate_min_max_issue() {
         ))
         .unwrap();
 
-    assert_eq!(
-        None,
-        processor.min_timestamp
-    );
-    assert_eq!(
-        None,
-        processor.max_timestamp
-    );
-
+    assert_eq!(None, processor.min_timestamp);
+    assert_eq!(None, processor.max_timestamp);
 }
-
