@@ -16,21 +16,21 @@ fn processes_ascending_records_correctly() {
     processor
         .process_timestamp(&make_fake_record(
             0,
-            "2024-05-01 12:00:00",
+            Some("2024-05-01 12:00:00"),
             StringRecord::from(vec!["test"]),
         ))
         .unwrap();
     processor
         .process_timestamp(&make_fake_record(
             1,
-            "2024-05-01 13:00:00",
+            Some("2024-05-01 13:00:00"),
             StringRecord::from(vec!["test"]),
         ))
         .unwrap();
     processor
         .process_timestamp(&make_fake_record(
             2,
-            "2024-05-01 15:00:00",
+            Some("2024-05-01 15:00:00"),
             StringRecord::from(vec!["test"]),
         ))
         .unwrap();
@@ -64,21 +64,21 @@ fn processes_ascending_records_same_time_gap_correctly() {
     processor
         .process_timestamp(&make_fake_record(
             0,
-            "2024-05-01 12:00:00",
+            Some("2024-05-01 12:00:00"),
             StringRecord::from(vec!["test"]),
         ))
         .unwrap();
     processor
         .process_timestamp(&make_fake_record(
             1,
-            "2024-05-01 13:00:00",
+            Some("2024-05-01 13:00:00"),
             StringRecord::from(vec!["test"]),
         ))
         .unwrap();
     processor
         .process_timestamp(&make_fake_record(
             2,
-            "2024-05-01 14:00:00",
+            Some("2024-05-01 14:00:00"),
             StringRecord::from(vec!["test"]),
         ))
         .unwrap();
@@ -112,21 +112,21 @@ fn processes_descending_records_correctly() {
     processor
         .process_timestamp(&make_fake_record(
             0,
-            "2024-05-01 14:00:00",
+            Some("2024-05-01 14:00:00"),
             StringRecord::from(vec!["test"]),
         ))
         .unwrap();
     processor
         .process_timestamp(&make_fake_record(
             1,
-            "2024-05-01 13:00:00",
+            Some("2024-05-01 13:00:00"),
             StringRecord::from(vec!["test"]),
         ))
         .unwrap();
     processor
         .process_timestamp(&make_fake_record(
             2,
-            "2024-05-01 11:00:00",
+            Some("2024-05-01 11:00:00"),
             StringRecord::from(vec!["test"]),
         ))
         .unwrap();
@@ -160,13 +160,13 @@ fn detects_out_of_order_in_ascending() {
     processor
         .process_timestamp(&make_fake_record(
             0,
-            "2024-05-01 12:00:00",
+            Some("2024-05-01 12:00:00"),
             StringRecord::from(vec!["test"]),
         ))
         .unwrap();
     let _ = processor.process_timestamp(&make_fake_record(
         1,
-        "2024-05-01 11:00:00",
+        Some("2024-05-01 11:00:00"),
         StringRecord::from(vec!["test"]),
     ));
 
@@ -191,13 +191,13 @@ fn detects_out_of_order_in_descending() {
     processor
         .process_timestamp(&make_fake_record(
             0,
-            "2024-05-01 12:00:00",
+            Some("2024-05-01 12:00:00"),
             StringRecord::from(vec!["test"]),
         ))
         .unwrap();
     let _ = processor.process_timestamp(&make_fake_record(
         1,
-        "2024-05-01 13:00:00",
+        Some("2024-05-01 13:00:00"),
         StringRecord::from(vec!["test"]),
     ));
 

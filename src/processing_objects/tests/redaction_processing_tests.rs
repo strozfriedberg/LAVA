@@ -14,12 +14,12 @@ fn test_process_record_contains_redaction() {
     );
     let record2 = make_fake_record(
         0,
-        "2024-05-01 14:00:00",
+        Some("2024-05-01 14:00:00"),
         StringRecord::from(vec!["********"]),
     );
     let record3 = make_fake_record(
         0,
-        "2024-05-01 14:00:00",
+        Some("2024-05-01 14:00:00"),
         StringRecord::from(vec![
             "[Jan 11, 2025 3:50:56 PM  ] -  REMOVED HTTP/1.1 200 76 [0]",
         ]),
@@ -41,7 +41,7 @@ fn test_process_record_contains_redactions_multiple_columns() {
     );
     let record3 = make_fake_record(
         0,
-        "2024-05-01 14:00:00",
+        Some("2024-05-01 14:00:00"),
         StringRecord::from(vec![
             "Test row",
             "[Jan 11, 2025 3:50:56 PM  ] - ********** HTTP/1.1 200 76 [0]",
