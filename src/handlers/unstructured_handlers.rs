@@ -21,7 +21,7 @@ pub fn try_to_get_timestamp_hit_for_unstructured(
     for line_result in reader.lines() {
         let line = line_result.map_err(|e| {
             LavaError::new(
-                format!("Error reading line because of {}", e),
+                format!("Error reading line because of {} at index 0", e),
                 LavaErrorLevel::Critical,
             )
         })?;
@@ -51,10 +51,10 @@ pub fn set_time_direction_by_scanning_unstructured_file(
     })?;
     let reader = BufReader::new(file);
     let mut direction_checker = TimeDirectionChecker::default();
-    for line_result in reader.lines() {
+    for (index, line_result) in reader.lines().enumerate() {
         let line = line_result.map_err(|e| {
             LavaError::new(
-                format!("Error reading line because of {}", e),
+                format!("Error reading line because of {} at index {}", e, index),
                 LavaErrorLevel::Critical,
             )
         })?;
@@ -92,7 +92,7 @@ pub fn stream_unstructured_file(
     for (index, line_result) in reader.lines().enumerate() {
         let line = line_result.map_err(|e| {
             LavaError::new(
-                format!("Error reading line because of {}", e),
+                format!("Error reading line because of {} at index {}", e, index),
                 LavaErrorLevel::Critical,
             )
         })?;

@@ -95,7 +95,7 @@ pub fn try_to_get_timestamp_hit_for_json(
     if let Some(line_result) = lines.next() {
         let line = line_result.map_err(|e| {
             LavaError::new(
-                format!("Error reading line because of {}", e),
+                format!("Error reading line because of {} at index 0", e),
                 LavaErrorLevel::Critical,
             )
         })?;
@@ -170,7 +170,7 @@ pub fn set_time_direction_by_scanning_json_file(
     for (index, line_result) in reader.lines().enumerate() {
         let line = line_result.map_err(|e| {
             LavaError::new(
-                format!("Error reading line because of {}", e),
+                format!("Error reading line because of {} at index {}", e, index),
                 LavaErrorLevel::Critical,
             )
         })?;
@@ -247,7 +247,7 @@ pub fn stream_json_file(
     for (index, line_result) in reader.lines().enumerate() {
         let line = line_result.map_err(|e| {
             LavaError::new(
-                format!("Error reading line because of {}", e),
+                format!("Error reading line because of {} at index {}", e, index),
                 LavaErrorLevel::Critical,
             )
         })?;
