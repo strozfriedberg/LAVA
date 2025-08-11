@@ -294,7 +294,7 @@ pub fn print_pretty_quick_stats(results: &Vec<ProcessedLogFile>) -> Result<()> {
         );
         println!("{output_table}");
     } else {
-        println!("Time analysis did not complete successfully for any input file")
+        println!("Time analysis failed to complete for all input files")
     }
 
     Ok(())
