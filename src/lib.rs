@@ -101,6 +101,7 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
             if let Err(e) = write_errors_to_error_log(&results, &execution_settings) {
                 eprintln!("Failed to write errors to error log {}", e);
             }
+
             if let Err(e) = write_output_to_csv(&results, &execution_settings) {
                 eprintln!("Failed to write to CSV: {}", e);
             }
@@ -196,7 +197,7 @@ pub fn process_file(
         }
     };
     base_processed_file.size = Some(size.to_string());
-    base_processed_file.filename = Some(file_name);
+    base_processed_file.filename = Some(file_name.clone());
     base_processed_file.file_path = Some(file_path);
 
     //Get hash if not quick mode
@@ -229,7 +230,7 @@ pub fn process_file(
                         println!(
                             "Found match for '{}' time format in {}",
                             timestamp_hit.regex_info.pretty_format,
-                            log_file.file_path.to_string_lossy().to_string()
+                            &file_name
                         );
                     }
                     Some(column_name) => {
@@ -237,7 +238,7 @@ pub fn process_file(
                             "Found match for '{}' time format in the '{}' column of {}",
                             timestamp_hit.regex_info.pretty_format,
                             column_name,
-                            log_file.file_path.to_string_lossy().to_string()
+                            &file_name
                         );
                     }
                 }
@@ -263,6 +264,7 @@ pub fn process_file(
                     "Could not find a supported timestamp, try providing your own custom regex.",
                     LavaErrorLevel::Medium,
                 ));
+                println!("\x1b[31mCould not find a supported timestamp in {}\x1b[0m",&file_name);
                 None
             }
             Err(e) => {
