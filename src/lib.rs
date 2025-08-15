@@ -104,29 +104,29 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
 
             let results_to_actually_do_stats_on: &Vec<ProcessedLogFile> = match execution_settings.multipart_mode {
                 true => {
-                    &Vec(convert_vector_of_processed_log_files_into_one_for_multipart(&results));
+                    &vec![convert_vector_of_processed_log_files_into_one_for_multipart(&results)]
                 },
                 false => &results
             };
 
-            if let Err(e) = write_output_to_csv(&results, &execution_settings) {
+            if let Err(e) = write_output_to_csv(&results_to_actually_do_stats_on, &execution_settings) {
                 eprintln!("Failed to write to CSV: {}", e);
             }
-            if let Err(e) = print_pretty_quick_stats(&results) {
+            if let Err(e) = print_pretty_quick_stats(&results_to_actually_do_stats_on) {
                 eprintln!("Failed to print pretty quick stats {}", e);
             }
             if let Err(e) =
-                print_pretty_alerts_and_write_to_alerts_output_file(&results, &execution_settings)
+                print_pretty_alerts_and_write_to_alerts_output_file(&results_to_actually_do_stats_on, &execution_settings)
             {
                 eprintln!("Failed to output alerts: {}", e);
             }
 
-            let formatted_total_of_records_with_timestamps = results
+            let formatted_total_of_records_with_timestamps = results_to_actually_do_stats_on
                 .iter()
                 .map(|f| f.timestamp_num_records)
                 .sum::<usize>()
                 .to_formatted_string(&Locale::en);
-            let num_records_processed_for_timestamp_analysis = results
+            let num_input_files_processed_for_timestamp_analysis = results
                 .iter()
                 .filter(|item| item.min_timestamp.is_some())
                 .count();
@@ -144,12 +144,12 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
             println!(
                 "Processed a total of {} records with timestamps across {} log files",
                 formatted_total_of_records_with_timestamps,
-                num_records_processed_for_timestamp_analysis.to_formatted_string(&Locale::en)
+                num_input_files_processed_for_timestamp_analysis.to_formatted_string(&Locale::en)
             );
-            if num_records_processed_for_timestamp_analysis < results.len() {
+            if num_input_files_processed_for_timestamp_analysis < results.len() {
                 println!(
                     "\x1b[31m{} log files could not be processed for timestamp analysis. Check LAVA_Errors.log for reason\x1b[0m",
-                    (results.len() - num_records_processed_for_timestamp_analysis)
+                    (results.len() - num_input_files_processed_for_timestamp_analysis)
                         .to_formatted_string(&Locale::en)
                 );
             }
