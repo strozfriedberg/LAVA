@@ -97,10 +97,17 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
                 .par_iter()
                 .map(|path| process_file(path, &execution_settings).expect("Error processing file"))
                 .collect();
-            // Make a line here to go through each ProcessedLogFile, and write that to the error log
+            
             if let Err(e) = write_errors_to_error_log(&results, &execution_settings) {
                 eprintln!("Failed to write errors to error log {}", e);
             }
+
+            let results_to_actually_do_stats_on: &Vec<ProcessedLogFile> = match execution_settings.multipart_mode {
+                true => {
+                    &Vec(convert_vector_of_processed_log_files_into_one_for_multipart(&results));
+                },
+                false => &results
+            };
 
             if let Err(e) = write_output_to_csv(&results, &execution_settings) {
                 eprintln!("Failed to write to CSV: {}", e);

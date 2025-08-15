@@ -43,6 +43,10 @@ pub fn get_file_stem(log_file: &LogFile) -> Result<String> {
     Ok(file_name.to_string_lossy().to_string())
 }
 
+pub fn convert_vector_of_processed_log_files_into_one_for_multipart(all_processed_logs: &Vec<ProcessedLogFile>) -> ProcessedLogFile {
+
+}
+
 pub fn write_output_to_csv(
     processed_log_files: &Vec<ProcessedLogFile>,
     execution_settings: &ExecutionSettings,
@@ -317,4 +321,48 @@ fn alert_level_color(alert_level: &AlertLevel) -> comfy_table::Color {
         AlertLevel::Medium => comfy_table::Color::Yellow,
         AlertLevel::Low => comfy_table::Color::Green,
     }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::alerts::tests::dummy_timegap;
+    use chrono::NaiveDateTime;
+
+    fn sample_processed_log_file(start_time: Option<&str>, end_time: Option<&str>, largest_gap: Option<i64>, mean_time_gap: Option<f64>, std_dev_time_gap: Option<f64>, count:usize) -> ProcessedLogFile {
+    ProcessedLogFile {
+        sha256hash: Some("d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2".to_string()),
+        filename: Some("example_log.csv".to_string()),
+        file_path: Some("C:/logs/example_log.csv".to_string()),
+        size: Some("1.2 MB".to_string()),
+        first_data_row_used: Some("2".to_string()),
+        time_header: Some("timestamp".to_string()),
+        time_format: Some("%Y-%m-%d %H:%M:%S".to_string()),
+        min_timestamp: start_time.map(|et| NaiveDateTime::parse_from_str(&et, "%Y-%m-%d %H:%M:%S").unwrap()),
+        max_timestamp: end_time.map(|et| NaiveDateTime::parse_from_str(&et, "%Y-%m-%d %H:%M:%S").unwrap()),
+        largest_gap: largest_gap.map(|et| dummy_timegap(et)), // Example: 1 hour gap
+        mean_time_gap: mean_time_gap,
+        std_dev_time_gap: std_dev_time_gap, // 1 minute
+        total_num_records: 480,
+        timestamp_num_records: count,
+        num_dupes: Some(2),
+        num_redactions: Some(0),
+        errors: vec![
+            LavaError::new("Invalid timestamp format in row 23".to_string(), LavaErrorLevel::High)
+        ],
+        alerts: Some(vec![
+            Alert::new(AlertLevel::High, AlertType::DupeEvents)
+        ]),
+    }
+}
+    #[test]
+    fn test_combine_processed_log_files_basic() {
+        let log_files: Vec<ProcessedLogFile> = vec![
+            sample_processed_log_file(Some("2025-08-13 05:00:00"), Some("2025-08-13 05:10:00"), Some(12000), Some(53037.0), Some(153231.8047), 11778),
+            sample_processed_log_file(Some("2025-08-13 05:00:00"), Some("2025-08-13 05:10:00"), Some(12000), Some(53037.0), Some(153231.8047), 18362),
+        ];
+
+    }
+
 }

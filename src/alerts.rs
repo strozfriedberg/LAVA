@@ -203,14 +203,14 @@ fn get_alert_level_remainder_zero(n: usize, alert_type: AlertType) -> Option<Ale
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use crate::basic_objects::TimeGap;
     use crate::processing_objects::PossibleAlertValues;
     use chrono::NaiveDate;
     use chrono::TimeDelta;
 
-    fn dummy_timegap(gap_secs: i64) -> TimeGap {
+    pub fn dummy_timegap(gap_secs: i64) -> TimeGap {
         let start = NaiveDate::from_ymd_opt(2024, 1, 1)
             .unwrap()
             .and_hms_opt(0, 0, 0)
