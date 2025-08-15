@@ -14,6 +14,7 @@ pub enum AlertType {
     DupeEvents,
     RedactionEvents,
     JsonError,
+    MultipartOverlap
 }
 
 fn get_alert_threshold_value(alert_level: AlertLevel, alert_type: AlertType) -> usize {
@@ -39,9 +40,14 @@ fn get_alert_threshold_value(alert_level: AlertLevel, alert_type: AlertType) -> 
             AlertLevel::Low => 0,
         },
         AlertType::JsonError => match alert_level {
-            AlertLevel::High => 100,
-            AlertLevel::Medium => 30,
-            AlertLevel::Low => 10,
+            AlertLevel::High => 0,
+            AlertLevel::Medium => 0,
+            AlertLevel::Low => 0,
+        },
+        AlertType::MultipartOverlap => match alert_level {
+            AlertLevel::High => 0,
+            AlertLevel::Medium => 0,
+            AlertLevel::Low => 0,
         },
     }
 }
@@ -73,6 +79,7 @@ pub fn get_message_for_alert_comfy_table(
             get_alert_threshold_value(alert_level, alert_type)
         ),
         AlertType::JsonError => format!("{} files had JSON syntax errors", number_of_files),
+        AlertType::MultipartOverlap => format!("{} files contain overlapping time ranges", number_of_files),
     }
 }
 
@@ -95,6 +102,7 @@ pub fn get_message_for_alert_output_file(alert_level: AlertLevel, alert_type: Al
             get_alert_threshold_value(alert_level, alert_type)
         ),
         AlertType::JsonError => format!("File had json syntax errors that may interfere with parsing in other tools"),
+        AlertType::MultipartOverlap => format!("Time range of this file overlaps with another"),
     }
 }
 
