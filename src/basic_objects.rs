@@ -249,21 +249,6 @@ pub struct QuickStats {
     pub num_records: String,
 }
 
-// #[derive(Debug, Default)]
-// pub struct TimeStatisticsFields {
-//     // pub num_records: Option<String>,
-//     // pub min_timestamp: Option<String>,
-//     // pub max_timestamp: Option<String>,
-//     // pub min_max_duration: Option<String>,
-//     // pub largest_gap: Option<String>,
-//     // pub largest_gap_duration: Option<String>,
-//     pub num_dupes: Option<usize>,
-//     pub num_redactions: Option<usize>,
-//     pub mean_time_gap: Option<f64>,
-//     pub std_dev_time_gap: Option<f64>,
-//     // pub number_of_std_devs_above: Option<String>,
-// }
-
 #[derive(PartialEq, Debug)]
 pub struct LogFileRecord {
     pub hash_of_entire_record: u64,
