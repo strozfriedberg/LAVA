@@ -251,7 +251,9 @@ pub fn print_pretty_alerts_and_write_to_alerts_output_file(
     Ok(())
 }
 
-pub fn print_pretty_quick_stats(results: &Vec<ProcessedLogFile>, execution_settings: &ExecutionSettings,) -> Result<()> {
+
+
+pub fn print_pretty_quick_stats(results: &Vec<ProcessedLogFile>) -> Result<()> {
 
     let mut successful_time_processed_data: Vec<QuickStats> = results
         .iter()

@@ -105,7 +105,7 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
             if let Err(e) = write_output_to_csv(&results, &execution_settings) {
                 eprintln!("Failed to write to CSV: {}", e);
             }
-            if let Err(e) = print_pretty_quick_stats(&results, &execution_settings) {
+            if let Err(e) = print_pretty_quick_stats(&results) {
                 eprintln!("Failed to print pretty quick stats {}", e);
             }
             if let Err(e) =
