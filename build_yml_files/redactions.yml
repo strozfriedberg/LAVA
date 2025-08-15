@@ -7,6 +7,15 @@
     - "**"
     - "*masked*"
 
+- name: XXXX
+  pattern: "X{4,}"
+  should_match:
+    - "XXXX"
+    - "sadasdaXXXXadsd"
+  should_not_match:
+    - "XXX"
+    - "XmaskedX"
+
 - name: Sensitive Data Removed
   pattern: "<sensitiveDataRemoved>"
   should_match:
