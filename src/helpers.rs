@@ -158,7 +158,7 @@ pub fn write_errors_to_error_log(
     Ok(())
 }
 
-pub fn print_pretty_alerts_and_write_to_output_file(
+pub fn print_pretty_alerts_and_write_to_alerts_output_file(
     results: &Vec<ProcessedLogFile>,
     execution_settings: &ExecutionSettings,
 ) -> Result<()> {
@@ -251,7 +251,8 @@ pub fn print_pretty_alerts_and_write_to_output_file(
     Ok(())
 }
 
-pub fn print_pretty_quick_stats(results: &Vec<ProcessedLogFile>) -> Result<()> {
+pub fn print_pretty_quick_stats(results: &Vec<ProcessedLogFile>, execution_settings: &ExecutionSettings,) -> Result<()> {
+
     let mut successful_time_processed_data: Vec<QuickStats> = results
         .iter()
         .filter_map(|item| {

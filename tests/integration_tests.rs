@@ -2,7 +2,7 @@ use chrono::NaiveDateTime;
 use lava::{
     alerts::Alert,
     basic_objects::{ExecutionSettings, LogFile, LogType},
-    helpers::print_pretty_alerts_and_write_to_output_file,
+    helpers::print_pretty_alerts_and_write_to_alerts_output_file,
     process_file,
 };
 use std::fs;
@@ -398,7 +398,7 @@ fn integration_test_print_alerts() {
         process_file(log_file, &settings).expect("Failed to get Proceesed Log File"),
         process_file(log_file2, &settings).expect("Failed to get Proceesed Log File"),
     ];
-    if let Err(e) = print_pretty_alerts_and_write_to_output_file(&output, &settings) {
+    if let Err(e) = print_pretty_alerts_and_write_to_alerts_output_file(&output, &settings) {
         eprintln!("Failed to output alerts: {}", e);
     }
 
