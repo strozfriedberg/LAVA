@@ -323,13 +323,34 @@ fn alert_level_color(alert_level: &AlertLevel) -> comfy_table::Color {
     }
 }
 
+fn combine_mean_values(count1: usize, mean1: f64, count2: usize, mean2: f64) -> Option<f64> {
+    let total_count = count1 + count2;
+    if total_count == 0 {
+        return None; // avoid division by zero
+    }
 
+    let combined_mean = ((count1 as f64 * mean1) + (count2 as f64 * mean2)) / total_count as f64;
+    Some(combined_mean)
+}
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::alerts::tests::dummy_timegap;
     use chrono::NaiveDateTime;
 
+
+    #[test]
+    fn test_combine_mean_basic_combination() {
+        let mean = combine_mean_values(2, 10.0, 2, 20.0);
+        assert_eq!(mean, Some(15.0));
+    }
+
+    #[test]
+    fn test_combine_mean_different_counts() {
+        let mean = combine_mean_values(3, 5.0, 1, 9.0);
+        // (3*5 + 1*9) / 4 = (15 + 9) / 4 = 24 / 4 = 6
+        assert_eq!(mean, Some(6.0));
+    }
     fn sample_processed_log_file(start_time: Option<&str>, end_time: Option<&str>, largest_gap: Option<i64>, mean_time_gap: Option<f64>, std_dev_time_gap: Option<f64>, count:usize) -> ProcessedLogFile {
     ProcessedLogFile {
         sha256hash: Some("d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2".to_string()),
