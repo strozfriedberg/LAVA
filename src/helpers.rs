@@ -44,7 +44,7 @@ pub fn get_file_stem(log_file: &LogFile) -> Result<String> {
 }
 
 pub fn convert_vector_of_processed_log_files_into_one_for_multipart(all_processed_logs: &Vec<ProcessedLogFile>) -> ProcessedLogFile {
-
+    ProcessedLogFile::default()
 }
 
 pub fn write_output_to_csv(
