@@ -35,6 +35,7 @@ pub struct ExecutionSettings {
     pub regexes: Vec<DateRegex>,
     pub timestamp_field: Option<String>,
     pub quick_mode: bool,
+    pub multipart_mode: bool,
     pub verbose_mode: bool,
     pub actually_write_to_files: bool,
 }

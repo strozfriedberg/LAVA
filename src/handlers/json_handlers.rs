@@ -508,6 +508,7 @@ mod json_handler_tests {
             }],
             timestamp_field: None,
             quick_mode: false,
+            multipart_mode: false,
             verbose_mode: true,
             actually_write_to_files: false,
         };
@@ -541,6 +542,7 @@ mod json_handler_tests {
             }],
             timestamp_field: Some("second_timestamp->test".to_string()),
             quick_mode: false,
+            multipart_mode: false,
             verbose_mode: true,
             actually_write_to_files: false,
         };
