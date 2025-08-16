@@ -332,7 +332,7 @@ fn combine_mean_values(count1: usize, mean1: f64, count2: usize, mean2: f64) -> 
     Some(combined_mean)
 }
 
-fn get_combined_count_mean_and_var_of_two_sets(count1: usize, mean1: f64, var1: f64, count2: usize, mean2: f64, var2: f64) -> Option<f64> {
+fn get_combined_count_mean_and_var_of_two_sets(count1: usize, mean1: f64, var1: f64, count2: usize, mean2: f64, var2: f64) -> Option<(usize, f64, f64)> {
     let total_count = count1 + count2;
     if total_count == 0 {
         return None;
@@ -348,8 +348,26 @@ fn get_combined_count_mean_and_var_of_two_sets(count1: usize, mean1: f64, var1: 
     // total variance = ( (ss1 + ss2) / total_count ) - (combined_mean)^2
     let combined_var = ((ss1 + ss2) / total_count as f64) - combined_mean.powi(2);
 
-    Some(combined_var)
+    Some((total_count, combined_mean, combined_var))
 }
+
+fn get_updated_count_mean_var_when_add_value_to_set(initial_count: usize, initial_mean: f64, initial_var: f64, value_to_add: f64) -> (usize, f64, f64) {
+    if initial_count == 0 {
+        // base case: variance is 0 when only one sample
+        return (1 as usize, value_to_add, 0.0 as f64);
+    }
+
+    let new_count = initial_count + 1;
+    let delta = value_to_add - initial_mean;
+    let new_mean = initial_mean + delta / new_count as f64;
+
+    // variance update (sample variance definition)
+    let new_var = ((initial_count as f64) * initial_var + delta * (value_to_add - new_mean))
+        / (new_count as f64);
+
+    (new_count, new_mean, new_var)
+}
+
 
 
 
@@ -374,10 +392,19 @@ mod tests {
     }
 
     #[test]
-    fn test_combine_var_different_counts() {
-        let var = get_combined_count_mean_and_var_of_two_sets(5, 4.6, 4.64, 4, 6.5, 12.25);
-        let var = var.expect("mean was None");
+    fn test_combine_var_count_mean_different_counts() {
+        let (count, mean, var) = get_combined_count_mean_and_var_of_two_sets(5, 4.6, 4.64, 4, 6.5, 12.25).unwrap();
         assert_eq!(var, 8.913580246913579);
+        assert_eq!(count, 9);
+        assert_eq!(mean, 5.444444444444445);
+    }
+
+    #[test]
+    fn test_add_value_to_set_and_get_updated_count_mean_var() {
+        let (count, mean, var) = get_updated_count_mean_var_when_add_value_to_set(9, 5.444444444444445, 8.913580246913579, 15.0);
+        assert_eq!(var, 16.24);
+        assert_eq!(count, 10);
+        assert_eq!(mean, 6.4);
     }
 
     fn sample_processed_log_file(start_time: Option<&str>, end_time: Option<&str>, largest_gap: Option<i64>, mean_time_gap: Option<f64>, variance: Option<f64>, count:usize) -> ProcessedLogFile {
