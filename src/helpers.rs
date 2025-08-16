@@ -328,10 +328,31 @@ fn combine_mean_values(count1: usize, mean1: f64, count2: usize, mean2: f64) -> 
     if total_count == 0 {
         return None; // avoid division by zero
     }
-
     let combined_mean = ((count1 as f64 * mean1) + (count2 as f64 * mean2)) / total_count as f64;
     Some(combined_mean)
 }
+
+fn get_combined_count_mean_and_var_of_two_sets(count1: usize, mean1: f64, var1: f64, count2: usize, mean2: f64, var2: f64) -> Option<f64> {
+    let total_count = count1 + count2;
+    if total_count == 0 {
+        return None;
+    }
+
+    // get combined mean
+    let combined_mean = combine_mean_values(count1, mean1, count2, mean2)?;
+
+    // sum of squares for each sample: n * (var + mean^2)
+    let ss1 = count1 as f64 * (var1 + mean1.powi(2));
+    let ss2 = count2 as f64 * (var2 + mean2.powi(2));
+
+    // total variance = ( (ss1 + ss2) / total_count ) - (combined_mean)^2
+    let combined_var = ((ss1 + ss2) / total_count as f64) - combined_mean.powi(2);
+
+    Some(combined_var)
+}
+
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -347,10 +368,18 @@ mod tests {
 
     #[test]
     fn test_combine_mean_different_counts() {
-        let mean = combine_mean_values(3, 5.0, 1, 9.0);
-        // (3*5 + 1*9) / 4 = (15 + 9) / 4 = 24 / 4 = 6
-        assert_eq!(mean, Some(6.0));
+        let mean = combine_mean_values(5, 4.6, 4, 6.5);
+        let mean = mean.expect("mean was None");
+        assert_eq!(mean, 5.444444444444445);
     }
+
+    #[test]
+    fn test_combine_var_different_counts() {
+        let var = get_combined_count_mean_and_var_of_two_sets(5, 4.6, 4.64, 4, 6.5, 12.25);
+        let var = var.expect("mean was None");
+        assert_eq!(var, 8.913580246913579);
+    }
+
     fn sample_processed_log_file(start_time: Option<&str>, end_time: Option<&str>, largest_gap: Option<i64>, mean_time_gap: Option<f64>, variance: Option<f64>, count:usize) -> ProcessedLogFile {
     ProcessedLogFile {
         sha256hash: Some("d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2".to_string()),
