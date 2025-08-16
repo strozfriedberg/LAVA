@@ -179,6 +179,31 @@ impl ProcessedLogFile {
             num_records: self.timestamp_num_records.to_formatted_string(&Locale::en),
         })
     }
+    
+    pub fn get_processed_log_file_combination_essentials(&self) -> Option<ProcessedLogFileComboEssentials> {
+        if self.timestamp_num_records == 0 {
+            return None;
+        }
+        else if self.timestamp_num_records == 1 {
+            return Some(ProcessedLogFileComboEssentials {
+                min_timestamp: self.min_timestamp?,
+                max_timestamp: self.max_timestamp?,
+                num_time_gaps: 0,
+                largest_gap: None,
+                time_gap_mean: 0.0,
+                time_gap_var: 0.0,
+            })
+        }else{
+            return Some(ProcessedLogFileComboEssentials {
+                min_timestamp: self.min_timestamp?,
+                max_timestamp: self.max_timestamp?,
+                num_time_gaps: self.timestamp_num_records - 1,
+                largest_gap: self.largest_gap,
+                time_gap_mean: self.mean_time_gap?,
+                time_gap_var: self.variance_time_gap?,
+            })
+        }
+    }
 
     fn get_min_max_duration(&self, time_type: TimestampStringType) -> Option<String> {
         let chrono_duration = self.max_timestamp? - self.min_timestamp?;
@@ -248,6 +273,16 @@ pub struct QuickStats {
     pub largest_gap_duration: TimeDelta,
     pub largest_gap_duration_human: String,
     pub num_records: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct ProcessedLogFileComboEssentials {
+    pub min_timestamp: NaiveDateTime,
+    pub max_timestamp: NaiveDateTime,
+    pub num_time_gaps: usize,
+    pub largest_gap: Option<TimeGap>,
+    pub time_gap_mean: f64,
+    pub time_gap_var: f64,
 }
 
 #[derive(PartialEq, Debug)]
