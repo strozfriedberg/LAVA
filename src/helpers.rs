@@ -338,12 +338,14 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(all_processe
 
     for clean_processed_log_file in list_of_clean_data_for_individual_processed_log_files {
         if let Some(previous_stats_essentials) = combined_processed_files_essentials{
-            let combined_count
+            //combine the mean count and var
+            // if the largest gap of the next one is larger than update it
 
-
+            //if the two file overlap then add an alert and DON"T add in the time gap
             if &previous_stats_essentials.max_timestamp > &clean_processed_log_file.min_timestamp {
                 combined_processed_log_file.alerts.push(Alert::new(AlertLevel::High, AlertType::MultipartOverlap))
             }else{
+                //If the two files do not overlap, then update the count mean var. AND if this gap is larger than the current one, update it
                 let gap_between_files = TimeGap::new(previous_stats_essentials.max_timestamp,  clean_processed_log_file.min_timestamp)
             }
 
