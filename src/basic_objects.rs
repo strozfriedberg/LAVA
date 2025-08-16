@@ -101,7 +101,7 @@ pub struct ProcessedLogFile {
     pub num_dupes: Option<usize>,
     pub num_redactions: Option<usize>,
     pub errors: Vec<LavaError>,
-    pub alerts: Option<Vec<Alert>>,
+    pub alerts: Vec<Alert>,
 }
 
 impl ProcessedLogFile {

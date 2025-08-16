@@ -183,8 +183,7 @@ pub fn print_pretty_alerts_and_write_to_alerts_output_file(
     let mut alert_table_structure: HashMap<AlertLevel, HashMap<AlertType, Vec<&String>>> =
         HashMap::new();
     for processed in results.iter() {
-        if let Some(alerts) = &processed.alerts {
-            for alert in alerts.iter() {
+            for alert in processed.alerts.iter() {
                 if let Some(writer) = writer.as_mut() {
                     writeln!(
                         writer,
@@ -203,7 +202,6 @@ pub fn print_pretty_alerts_and_write_to_alerts_output_file(
                     .or_insert_with(Vec::new)
                     .push(processed.file_path.as_ref().unwrap());
             }
-        }
     }
     let levels = [AlertLevel::High, AlertLevel::Medium, AlertLevel::Low];
 
@@ -428,9 +426,9 @@ mod tests {
         errors: vec![
             LavaError::new("Invalid timestamp format in row 23".to_string(), LavaErrorLevel::High)
         ],
-        alerts: Some(vec![
+        alerts: vec![
             Alert::new(AlertLevel::High, AlertType::DupeEvents)
-        ]),
+        ],
     }
 }
     #[test]
