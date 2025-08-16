@@ -1,6 +1,7 @@
 use crate::alerts::*;
 use crate::basic_objects::*;
 use crate::errors::*;
+use chrono::NaiveDateTime;
 use chrono::Utc;
 use comfy_table::modifiers::UTF8_ROUND_CORNERS;
 use comfy_table::presets::UTF8_FULL;
@@ -41,10 +42,6 @@ pub fn get_file_stem(log_file: &LogFile) -> Result<String> {
         .file_stem()
         .ok_or_else(|| LavaError::new("Could not get file stem.", LavaErrorLevel::Critical))?;
     Ok(file_name.to_string_lossy().to_string())
-}
-
-pub fn convert_vector_of_processed_log_files_into_one_for_multipart(all_processed_logs: &Vec<ProcessedLogFile>) -> ProcessedLogFile {
-    ProcessedLogFile::default()
 }
 
 pub fn write_output_to_csv(
@@ -319,6 +316,43 @@ fn alert_level_color(alert_level: &AlertLevel) -> comfy_table::Color {
         AlertLevel::Medium => comfy_table::Color::Yellow,
         AlertLevel::Low => comfy_table::Color::Green,
     }
+}
+
+pub fn convert_vector_of_processed_log_files_into_one_for_multipart(all_processed_logs: &Vec<ProcessedLogFile>) -> ProcessedLogFile {
+
+    let mut combined_processed_log_file = ProcessedLogFile::default();
+    let mut list_of_clean_data_for_individual_processed_log_files: Vec<ProcessedLogFileComboEssentials> = vec![];
+    for processed_log_file in all_processed_logs{
+        // Right now the errors and alerts themselves don't have the filename associated with it, so will have to change that maybe?
+        combined_processed_log_file.alerts.extend(processed_log_file.alerts.clone());
+        combined_processed_log_file.errors.extend(processed_log_file.errors.clone());
+        if let Some(log_combo_essentials) = processed_log_file.get_processed_log_file_combination_essentials(){
+            list_of_clean_data_for_individual_processed_log_files.push(log_combo_essentials);
+        }
+    }
+    list_of_clean_data_for_individual_processed_log_files.sort_by(|a, b| a.min_timestamp.cmp(&b.min_timestamp));
+    combined_processed_log_file.filename = Some(format!("{}_SUCCESSFUL_INPUT_FILES_COMBINED", list_of_clean_data_for_individual_processed_log_files.len()));
+    
+    //Combine stats and alert if overlapped
+    let mut combined_processed_files_essentials: Option<ProcessedLogFileComboEssentials> = None;
+
+    for clean_processed_log_file in list_of_clean_data_for_individual_processed_log_files {
+        if let Some(previous_stats_essentials) = combined_processed_files_essentials{
+            let combined_count
+
+
+            if &previous_stats_essentials.max_timestamp > &clean_processed_log_file.min_timestamp {
+                combined_processed_log_file.alerts.push(Alert::new(AlertLevel::High, AlertType::MultipartOverlap))
+            }else{
+                let gap_between_files = TimeGap::new(previous_stats_essentials.max_timestamp,  clean_processed_log_file.min_timestamp)
+            }
+
+
+        }else{ // This is the first one
+            combined_processed_files_essentials = Some(clean_processed_log_file)
+        }
+    }
+    combined_processed_log_file
 }
 
 fn combine_mean_values(count1: usize, mean1: f64, count2: usize, mean2: f64) -> Option<f64> {

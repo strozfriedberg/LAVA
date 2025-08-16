@@ -275,7 +275,7 @@ pub struct QuickStats {
     pub num_records: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct ProcessedLogFileComboEssentials {
     pub min_timestamp: NaiveDateTime,
     pub max_timestamp: NaiveDateTime,
