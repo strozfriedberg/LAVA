@@ -95,7 +95,7 @@ pub struct ProcessedLogFile {
     pub max_timestamp: Option<NaiveDateTime>,
     pub largest_gap: Option<TimeGap>,
     pub mean_time_gap: Option<f64>,
-    pub std_dev_time_gap: Option<f64>,
+    pub variance_time_gap: Option<f64>,
     pub total_num_records: usize,
     pub timestamp_num_records: usize,
     pub num_dupes: Option<usize>,
@@ -154,8 +154,8 @@ impl ProcessedLogFile {
             self.mean_time_gap
                 .map(|v| v.to_string())
                 .unwrap_or_default(),
-            self.std_dev_time_gap
-                .map(|v| v.to_string())
+            self.variance_time_gap
+                .map(|v| v.sqrt().to_string())
                 .unwrap_or_default(),
             self.get_num_std_devs_above_mean().unwrap_or("".to_string()),
             self.num_dupes
@@ -208,7 +208,7 @@ impl ProcessedLogFile {
     fn get_num_std_devs_above_mean(&self) -> Option<String> {
         Some(
             ((self.largest_gap?.get_time_duration_number() as f64 - self.mean_time_gap?)
-                / self.std_dev_time_gap?)
+                / self.variance_time_gap?.sqrt())
                 .to_string(),
         )
     }

@@ -286,19 +286,19 @@ impl LogRecordProcessor {
         Ok(())
     }
 
-    pub fn get_mean_and_standard_deviation(&self) -> (f64, f64) {
+    pub fn get_mean_and_variance(&self) -> (f64, f64) {
         let mean = match self.welford_calculator.mean() {
             Some(real_mean) => real_mean as f64,
             None => 0.0,
         };
-        let standard_deviation = match self.welford_calculator.var() {
-            Some(variance) => (variance as f64).sqrt(),
+        let variance = match self.welford_calculator.var() {
+            Some(variance) => variance as f64,
             None => 0.0,
         };
-        (mean, standard_deviation)
+        (mean, variance)
     }
     pub fn get_possible_alert_values(&self) -> PossibleAlertValues {
-        let (mean, standard_deviation) = self.get_mean_and_standard_deviation();
+        let (mean, variance) = self.get_mean_and_variance();
         // println!("mean: {:?}, standard deviation: {:?}", mean, standard_deviation);
         PossibleAlertValues {
             num_records: self.timestamp_num_records,
@@ -307,7 +307,7 @@ impl LogRecordProcessor {
             largest_time_gap: self.largest_time_gap,
             errors: self.errors.clone(),
             mean: mean,
-            std: standard_deviation,
+            std: variance.sqrt(),
         }
     }
     pub fn add_error(&mut self, error_to_add: LavaError) {

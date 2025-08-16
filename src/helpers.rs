@@ -351,7 +351,7 @@ mod tests {
         // (3*5 + 1*9) / 4 = (15 + 9) / 4 = 24 / 4 = 6
         assert_eq!(mean, Some(6.0));
     }
-    fn sample_processed_log_file(start_time: Option<&str>, end_time: Option<&str>, largest_gap: Option<i64>, mean_time_gap: Option<f64>, std_dev_time_gap: Option<f64>, count:usize) -> ProcessedLogFile {
+    fn sample_processed_log_file(start_time: Option<&str>, end_time: Option<&str>, largest_gap: Option<i64>, mean_time_gap: Option<f64>, variance: Option<f64>, count:usize) -> ProcessedLogFile {
     ProcessedLogFile {
         sha256hash: Some("d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2".to_string()),
         filename: Some("example_log.csv".to_string()),
@@ -364,7 +364,7 @@ mod tests {
         max_timestamp: end_time.map(|et| NaiveDateTime::parse_from_str(&et, "%Y-%m-%d %H:%M:%S").unwrap()),
         largest_gap: largest_gap.map(|et| dummy_timegap(et)), // Example: 1 hour gap
         mean_time_gap: mean_time_gap,
-        std_dev_time_gap: std_dev_time_gap, // 1 minute
+        variance_time_gap: variance,
         total_num_records: 480,
         timestamp_num_records: count,
         num_dupes: Some(2),

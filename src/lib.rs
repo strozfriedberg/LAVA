@@ -303,10 +303,10 @@ pub fn process_file(
     base_processed_file.min_timestamp = completed_statistics_object.min_timestamp;
     base_processed_file.max_timestamp = completed_statistics_object.max_timestamp;
     if completed_statistics_object.largest_time_gap.is_some() {
-        let (mean_time_gap, std_dev_time_gap) =
-            completed_statistics_object.get_mean_and_standard_deviation();
+        let (mean_time_gap, variance) =
+            completed_statistics_object.get_mean_and_variance();
         base_processed_file.mean_time_gap = Some(mean_time_gap);
-        base_processed_file.std_dev_time_gap = Some(std_dev_time_gap);
+        base_processed_file.variance_time_gap = Some(variance);
     }
 
     base_processed_file.total_num_records = completed_statistics_object.total_num_records;
