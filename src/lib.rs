@@ -97,27 +97,31 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
                 .par_iter()
                 .map(|path| process_file(path, &execution_settings).expect("Error processing file"))
                 .collect();
-            
+
             if let Err(e) = write_errors_to_error_log(&results, &execution_settings) {
                 eprintln!("Failed to write errors to error log {}", e);
             }
 
-            let results_to_actually_do_stats_on: &Vec<ProcessedLogFile> = match execution_settings.multipart_mode {
-                true => {
-                    &vec![convert_vector_of_processed_log_files_into_one_for_multipart(&results)]
-                },
-                false => &results
-            };
+            let results_to_actually_do_stats_on: &Vec<ProcessedLogFile> =
+                match execution_settings.multipart_mode {
+                    true => &vec![
+                        convert_vector_of_processed_log_files_into_one_for_multipart(&results),
+                    ],
+                    false => &results,
+                };
 
-            if let Err(e) = write_output_to_csv(&results_to_actually_do_stats_on, &execution_settings) {
+            if let Err(e) =
+                write_output_to_csv(&results_to_actually_do_stats_on, &execution_settings)
+            {
                 eprintln!("Failed to write to CSV: {}", e);
             }
             if let Err(e) = print_pretty_quick_stats(&results_to_actually_do_stats_on) {
                 eprintln!("Failed to print pretty quick stats {}", e);
             }
-            if let Err(e) =
-                print_pretty_alerts_and_write_to_alerts_output_file(&results_to_actually_do_stats_on, &execution_settings)
-            {
+            if let Err(e) = print_pretty_alerts_and_write_to_alerts_output_file(
+                &results_to_actually_do_stats_on,
+                &execution_settings,
+            ) {
                 eprintln!("Failed to output alerts: {}", e);
             }
 
@@ -236,16 +240,13 @@ pub fn process_file(
                     None => {
                         println!(
                             "Found match for '{}' time format in {}",
-                            timestamp_hit.regex_info.pretty_format,
-                            &file_name
+                            timestamp_hit.regex_info.pretty_format, &file_name
                         );
                     }
                     Some(column_name) => {
                         println!(
                             "Found match for '{}' time format in the '{}' column of {}",
-                            timestamp_hit.regex_info.pretty_format,
-                            column_name,
-                            &file_name
+                            timestamp_hit.regex_info.pretty_format, column_name, &file_name
                         );
                     }
                 }
@@ -271,7 +272,10 @@ pub fn process_file(
                     "Could not find a supported timestamp, try providing your own custom regex.",
                     LavaErrorLevel::Medium,
                 ));
-                println!("\x1b[31mCould not find a supported timestamp in {}\x1b[0m",&file_name);
+                println!(
+                    "\x1b[31mCould not find a supported timestamp in {}\x1b[0m",
+                    &file_name
+                );
                 None
             }
             Err(e) => {
@@ -297,14 +301,15 @@ pub fn process_file(
     };
     base_processed_file.first_data_row_used = header_info.map(|n| n.first_data_row.to_string());
     let values_to_alert_on = completed_statistics_object.get_possible_alert_values();
-    base_processed_file.alerts.extend(generate_alerts(values_to_alert_on));
+    base_processed_file
+        .alerts
+        .extend(generate_alerts(values_to_alert_on));
 
     base_processed_file.largest_gap = completed_statistics_object.largest_time_gap;
     base_processed_file.min_timestamp = completed_statistics_object.min_timestamp;
     base_processed_file.max_timestamp = completed_statistics_object.max_timestamp;
     if completed_statistics_object.largest_time_gap.is_some() {
-        let (mean_time_gap, variance) =
-            completed_statistics_object.get_mean_and_variance();
+        let (mean_time_gap, variance) = completed_statistics_object.get_mean_and_variance();
         base_processed_file.mean_time_gap = Some(mean_time_gap);
         base_processed_file.variance_time_gap = Some(variance);
     }

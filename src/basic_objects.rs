@@ -179,12 +179,13 @@ impl ProcessedLogFile {
             num_records: self.timestamp_num_records.to_formatted_string(&Locale::en),
         })
     }
-    
-    pub fn get_processed_log_file_combination_essentials(&self) -> Option<ProcessedLogFileComboEssentials> {
+
+    pub fn get_processed_log_file_combination_essentials(
+        &self,
+    ) -> Option<ProcessedLogFileComboEssentials> {
         if self.timestamp_num_records == 0 {
             return None;
-        }
-        else if self.timestamp_num_records == 1 {
+        } else if self.timestamp_num_records == 1 {
             return Some(ProcessedLogFileComboEssentials {
                 min_timestamp: self.min_timestamp?,
                 max_timestamp: self.max_timestamp?,
@@ -192,8 +193,8 @@ impl ProcessedLogFile {
                 largest_gap: None,
                 time_gap_mean: 0.0,
                 time_gap_var: 0.0,
-            })
-        }else{
+            });
+        } else {
             return Some(ProcessedLogFileComboEssentials {
                 min_timestamp: self.min_timestamp?,
                 max_timestamp: self.max_timestamp?,
@@ -201,7 +202,7 @@ impl ProcessedLogFile {
                 largest_gap: self.largest_gap,
                 time_gap_mean: self.mean_time_gap?,
                 time_gap_var: self.variance_time_gap?,
-            })
+            });
         }
     }
 
@@ -234,7 +235,7 @@ impl ProcessedLogFile {
         Some(
             ((self.largest_gap?.get_time_duration_number() as f64 - self.mean_time_gap?)
                 / self.variance_time_gap?.sqrt())
-                .to_string(),
+            .to_string(),
         )
     }
 
