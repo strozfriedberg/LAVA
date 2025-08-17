@@ -180,25 +180,25 @@ pub fn print_pretty_alerts_and_write_to_alerts_output_file(
     let mut alert_table_structure: HashMap<AlertLevel, HashMap<AlertType, Vec<&String>>> =
         HashMap::new();
     for processed in results.iter() {
-            for alert in processed.alerts.iter() {
-                if let Some(writer) = writer.as_mut() {
-                    writeln!(
-                        writer,
-                        "File Path:{} | Level: {:?} | Type {:?} | Message: {}",
-                        processed.file_path.as_ref().unwrap(),
-                        alert.alert_level,
-                        alert.alert_type,
-                        get_message_for_alert_output_file(alert.alert_level, alert.alert_type)
-                    )
-                    .expect("Failed to write to alert output file");
-                }
-                alert_table_structure
-                    .entry(alert.alert_level)
-                    .or_insert_with(HashMap::new)
-                    .entry(alert.alert_type)
-                    .or_insert_with(Vec::new)
-                    .push(processed.file_path.as_ref().unwrap());
+        for alert in processed.alerts.iter() {
+            if let Some(writer) = writer.as_mut() {
+                writeln!(
+                    writer,
+                    "File Path:{} | Level: {:?} | Type {:?} | Message: {}",
+                    processed.file_path.as_ref().unwrap(),
+                    alert.alert_level,
+                    alert.alert_type,
+                    get_message_for_alert_output_file(alert.alert_level, alert.alert_type)
+                )
+                .expect("Failed to write to alert output file");
             }
+            alert_table_structure
+                .entry(alert.alert_level)
+                .or_insert_with(HashMap::new)
+                .entry(alert.alert_type)
+                .or_insert_with(Vec::new)
+                .push(processed.file_path.as_ref().unwrap());
+        }
     }
     let levels = [AlertLevel::High, AlertLevel::Medium, AlertLevel::Low];
 
@@ -250,10 +250,7 @@ pub fn print_pretty_alerts_and_write_to_alerts_output_file(
     Ok(())
 }
 
-
-
 pub fn print_pretty_quick_stats(results: &Vec<ProcessedLogFile>) -> Result<()> {
-
     let mut successful_time_processed_data: Vec<QuickStats> = results
         .iter()
         .filter_map(|item| {
@@ -318,39 +315,88 @@ fn alert_level_color(alert_level: &AlertLevel) -> comfy_table::Color {
     }
 }
 
-pub fn convert_vector_of_processed_log_files_into_one_for_multipart(all_processed_logs: &Vec<ProcessedLogFile>) -> ProcessedLogFile {
-
+pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
+    all_processed_logs: &Vec<ProcessedLogFile>,
+) -> ProcessedLogFile {
     let mut combined_processed_log_file = ProcessedLogFile::default();
-    let mut list_of_clean_data_for_individual_processed_log_files: Vec<ProcessedLogFileComboEssentials> = vec![];
-    for processed_log_file in all_processed_logs{
+    let mut list_of_clean_data_for_individual_processed_log_files: Vec<
+        ProcessedLogFileComboEssentials,
+    > = vec![];
+    for processed_log_file in all_processed_logs {
         // Right now the errors and alerts themselves don't have the filename associated with it, so will have to change that maybe?
-        combined_processed_log_file.alerts.extend(processed_log_file.alerts.clone());
-        combined_processed_log_file.errors.extend(processed_log_file.errors.clone());
-        if let Some(log_combo_essentials) = processed_log_file.get_processed_log_file_combination_essentials(){
+        combined_processed_log_file
+            .alerts
+            .extend(processed_log_file.alerts.clone());
+        combined_processed_log_file
+            .errors
+            .extend(processed_log_file.errors.clone());
+        if let Some(log_combo_essentials) =
+            processed_log_file.get_processed_log_file_combination_essentials()
+        {
             list_of_clean_data_for_individual_processed_log_files.push(log_combo_essentials);
         }
     }
-    list_of_clean_data_for_individual_processed_log_files.sort_by(|a, b| a.min_timestamp.cmp(&b.min_timestamp));
-    combined_processed_log_file.filename = Some(format!("{}_SUCCESSFUL_INPUT_FILES_COMBINED", list_of_clean_data_for_individual_processed_log_files.len()));
-    
+    list_of_clean_data_for_individual_processed_log_files
+        .sort_by(|a, b| a.min_timestamp.cmp(&b.min_timestamp));
+    combined_processed_log_file.filename = Some(format!(
+        "{}_SUCCESSFUL_INPUT_FILES_COMBINED",
+        list_of_clean_data_for_individual_processed_log_files.len()
+    ));
+
     //Combine stats and alert if overlapped
     let mut combined_processed_files_essentials: Option<ProcessedLogFileComboEssentials> = None;
 
     for clean_processed_log_file in list_of_clean_data_for_individual_processed_log_files {
-        if let Some(previous_stats_essentials) = combined_processed_files_essentials{
+        if let Some(previous_stats_essentials) = combined_processed_files_essentials.as_mut() {
             //combine the mean count and var
+            if let Some((count, mean, var)) = get_combined_count_mean_and_var_of_two_sets(
+                previous_stats_essentials.num_time_gaps,
+                previous_stats_essentials.time_gap_mean,
+                previous_stats_essentials.time_gap_var,
+                clean_processed_log_file.num_time_gaps,
+                clean_processed_log_file.time_gap_mean,
+                clean_processed_log_file.time_gap_var,
+            ) {
+                previous_stats_essentials.num_time_gaps = count;
+                previous_stats_essentials.time_gap_mean = mean;
+                previous_stats_essentials.time_gap_var = var;
+            }
             // if the largest gap of the next one is larger than update it
+            if let Some(current_time_gap) = clean_processed_log_file.largest_gap {
+                if let Some(prev_time_gap) = previous_stats_essentials.largest_gap {
+                    // both time gaps
+                    if current_time_gap > prev_time_gap {
+                        previous_stats_essentials.largest_gap = Some(current_time_gap)
+                    }
+                } else {
+                    // there is a current time gap but no previous
+                    previous_stats_essentials.largest_gap = Some(current_time_gap);
+                }
+            }
 
             //if the two file overlap then add an alert and DON"T add in the time gap
             if &previous_stats_essentials.max_timestamp > &clean_processed_log_file.min_timestamp {
-                combined_processed_log_file.alerts.push(Alert::new(AlertLevel::High, AlertType::MultipartOverlap))
-            }else{
-                //If the two files do not overlap, then update the count mean var. AND if this gap is larger than the current one, update it
-                let gap_between_files = TimeGap::new(previous_stats_essentials.max_timestamp,  clean_processed_log_file.min_timestamp)
+                combined_processed_log_file
+                    .alerts
+                    .push(Alert::new(AlertLevel::High, AlertType::MultipartOverlap))
+            } else {
+                //If the two files do not overlap, then update the count mean var with the gap between files. AND if this gap is larger than the current one, update it
+                let gap_between_files = TimeGap::new(
+                    previous_stats_essentials.max_timestamp,
+                    clean_processed_log_file.min_timestamp,
+                );
+                let (count, mean, var) = get_updated_count_mean_var_when_add_value_to_set(
+                    previous_stats_essentials.num_time_gaps,
+                    previous_stats_essentials.time_gap_mean,
+                    previous_stats_essentials.time_gap_var,
+                    gap_between_files.get_time_duration_number() as f64,
+                );
+                previous_stats_essentials.num_time_gaps = count;
+                previous_stats_essentials.time_gap_mean = mean;
+                previous_stats_essentials.time_gap_var = var;
             }
-
-
-        }else{ // This is the first one
+        } else {
+            // This is the first one
             combined_processed_files_essentials = Some(clean_processed_log_file)
         }
     }
@@ -366,7 +412,14 @@ fn combine_mean_values(count1: usize, mean1: f64, count2: usize, mean2: f64) -> 
     Some(combined_mean)
 }
 
-fn get_combined_count_mean_and_var_of_two_sets(count1: usize, mean1: f64, var1: f64, count2: usize, mean2: f64, var2: f64) -> Option<(usize, f64, f64)> {
+fn get_combined_count_mean_and_var_of_two_sets(
+    count1: usize,
+    mean1: f64,
+    var1: f64,
+    count2: usize,
+    mean2: f64,
+    var2: f64,
+) -> Option<(usize, f64, f64)> {
     let total_count = count1 + count2;
     if total_count == 0 {
         return None;
@@ -385,7 +438,12 @@ fn get_combined_count_mean_and_var_of_two_sets(count1: usize, mean1: f64, var1: 
     Some((total_count, combined_mean, combined_var))
 }
 
-fn get_updated_count_mean_var_when_add_value_to_set(initial_count: usize, initial_mean: f64, initial_var: f64, value_to_add: f64) -> (usize, f64, f64) {
+fn get_updated_count_mean_var_when_add_value_to_set(
+    initial_count: usize,
+    initial_mean: f64,
+    initial_var: f64,
+    value_to_add: f64,
+) -> (usize, f64, f64) {
     if initial_count == 0 {
         // base case: variance is 0 when only one sample
         return (1 as usize, value_to_add, 0.0 as f64);
@@ -402,15 +460,11 @@ fn get_updated_count_mean_var_when_add_value_to_set(initial_count: usize, initia
     (new_count, new_mean, new_var)
 }
 
-
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::alerts::tests::dummy_timegap;
     use chrono::NaiveDateTime;
-
 
     #[test]
     fn test_combine_mean_basic_combination() {
@@ -427,7 +481,8 @@ mod tests {
 
     #[test]
     fn test_combine_var_count_mean_different_counts() {
-        let (count, mean, var) = get_combined_count_mean_and_var_of_two_sets(5, 4.6, 4.64, 4, 6.5, 12.25).unwrap();
+        let (count, mean, var) =
+            get_combined_count_mean_and_var_of_two_sets(5, 4.6, 4.64, 4, 6.5, 12.25).unwrap();
         assert_eq!(var, 8.913580246913579);
         assert_eq!(count, 9);
         assert_eq!(mean, 5.444444444444445);
@@ -435,45 +490,72 @@ mod tests {
 
     #[test]
     fn test_add_value_to_set_and_get_updated_count_mean_var() {
-        let (count, mean, var) = get_updated_count_mean_var_when_add_value_to_set(9, 5.444444444444445, 8.913580246913579, 15.0);
+        let (count, mean, var) = get_updated_count_mean_var_when_add_value_to_set(
+            9,
+            5.444444444444445,
+            8.913580246913579,
+            15.0,
+        );
         assert_eq!(var, 16.24);
         assert_eq!(count, 10);
         assert_eq!(mean, 6.4);
     }
 
-    fn sample_processed_log_file(start_time: Option<&str>, end_time: Option<&str>, largest_gap: Option<i64>, mean_time_gap: Option<f64>, variance: Option<f64>, count:usize) -> ProcessedLogFile {
-    ProcessedLogFile {
-        sha256hash: Some("d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2".to_string()),
-        filename: Some("example_log.csv".to_string()),
-        file_path: Some("C:/logs/example_log.csv".to_string()),
-        size: Some("1.2 MB".to_string()),
-        first_data_row_used: Some("2".to_string()),
-        time_header: Some("timestamp".to_string()),
-        time_format: Some("%Y-%m-%d %H:%M:%S".to_string()),
-        min_timestamp: start_time.map(|et| NaiveDateTime::parse_from_str(&et, "%Y-%m-%d %H:%M:%S").unwrap()),
-        max_timestamp: end_time.map(|et| NaiveDateTime::parse_from_str(&et, "%Y-%m-%d %H:%M:%S").unwrap()),
-        largest_gap: largest_gap.map(|et| dummy_timegap(et)), // Example: 1 hour gap
-        mean_time_gap: mean_time_gap,
-        variance_time_gap: variance,
-        total_num_records: 480,
-        timestamp_num_records: count,
-        num_dupes: Some(2),
-        num_redactions: Some(0),
-        errors: vec![
-            LavaError::new("Invalid timestamp format in row 23".to_string(), LavaErrorLevel::High)
-        ],
-        alerts: vec![
-            Alert::new(AlertLevel::High, AlertType::DupeEvents)
-        ],
+    fn sample_processed_log_file(
+        start_time: Option<&str>,
+        end_time: Option<&str>,
+        largest_gap: Option<i64>,
+        mean_time_gap: Option<f64>,
+        variance: Option<f64>,
+        count: usize,
+    ) -> ProcessedLogFile {
+        ProcessedLogFile {
+            sha256hash: Some(
+                "d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2".to_string(),
+            ),
+            filename: Some("example_log.csv".to_string()),
+            file_path: Some("C:/logs/example_log.csv".to_string()),
+            size: Some("1.2 MB".to_string()),
+            first_data_row_used: Some("2".to_string()),
+            time_header: Some("timestamp".to_string()),
+            time_format: Some("%Y-%m-%d %H:%M:%S".to_string()),
+            min_timestamp: start_time
+                .map(|et| NaiveDateTime::parse_from_str(&et, "%Y-%m-%d %H:%M:%S").unwrap()),
+            max_timestamp: end_time
+                .map(|et| NaiveDateTime::parse_from_str(&et, "%Y-%m-%d %H:%M:%S").unwrap()),
+            largest_gap: largest_gap.map(|et| dummy_timegap(et)), // Example: 1 hour gap
+            mean_time_gap: mean_time_gap,
+            variance_time_gap: variance,
+            total_num_records: 480,
+            timestamp_num_records: count,
+            num_dupes: Some(2),
+            num_redactions: Some(0),
+            errors: vec![LavaError::new(
+                "Invalid timestamp format in row 23".to_string(),
+                LavaErrorLevel::High,
+            )],
+            alerts: vec![Alert::new(AlertLevel::High, AlertType::DupeEvents)],
+        }
     }
-}
     #[test]
     fn test_combine_processed_log_files_basic() {
         let log_files: Vec<ProcessedLogFile> = vec![
-            sample_processed_log_file(Some("2025-08-13 05:00:00"), Some("2025-08-13 05:10:00"), Some(12000), Some(53037.0), Some(153231.8047), 11778),
-            sample_processed_log_file(Some("2025-08-13 05:00:00"), Some("2025-08-13 05:10:00"), Some(12000), Some(53037.0), Some(153231.8047), 18362),
+            sample_processed_log_file(
+                Some("2025-08-13 05:00:00"),
+                Some("2025-08-13 05:10:00"),
+                Some(12000),
+                Some(53037.0),
+                Some(153231.8047),
+                11778,
+            ),
+            sample_processed_log_file(
+                Some("2025-08-13 05:00:00"),
+                Some("2025-08-13 05:10:00"),
+                Some(12000),
+                Some(53037.0),
+                Some(153231.8047),
+                18362,
+            ),
         ];
-
     }
-
 }
