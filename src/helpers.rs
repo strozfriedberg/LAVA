@@ -330,6 +330,8 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
         combined_processed_log_file
             .errors
             .extend(processed_log_file.errors.clone());
+        combined_processed_log_file.total_num_records += processed_log_file.total_num_records;
+        combined_processed_log_file.timestamp_num_records += processed_log_file.timestamp_num_records;
         if let Some(log_combo_essentials) =
             processed_log_file.get_processed_log_file_combination_essentials()
         {
@@ -338,10 +340,13 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
     }
     list_of_clean_data_for_individual_processed_log_files
         .sort_by(|a, b| a.min_timestamp.cmp(&b.min_timestamp));
-    combined_processed_log_file.filename = Some(format!(
+    let combined_name = format!(
         "{}_SUCCESSFUL_INPUT_FILES_COMBINED",
         list_of_clean_data_for_individual_processed_log_files.len()
-    ));
+    );
+
+    combined_processed_log_file.filename = Some(combined_name.clone());
+    combined_processed_log_file.file_path = Some(combined_name);
 
     //Combine stats and alert if overlapped
     let mut combined_processed_files_essentials: Option<ProcessedLogFileComboEssentials> = None;
@@ -361,6 +366,14 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
                 previous_stats_essentials.time_gap_mean = mean;
                 previous_stats_essentials.time_gap_var = var;
             }
+            // Update min an max timestmap
+            if clean_processed_log_file.min_timestamp < previous_stats_essentials.min_timestamp {
+                previous_stats_essentials.min_timestamp = clean_processed_log_file.min_timestamp
+            }
+            if clean_processed_log_file.max_timestamp > previous_stats_essentials.max_timestamp {
+                previous_stats_essentials.max_timestamp = clean_processed_log_file.max_timestamp
+            }
+
             // if the largest gap of the next one is larger than update it
             if let Some(current_time_gap) = clean_processed_log_file.largest_gap {
                 if let Some(prev_time_gap) = previous_stats_essentials.largest_gap {
@@ -400,6 +413,14 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
             combined_processed_files_essentials = Some(clean_processed_log_file)
         }
     }
+    if let Some(final_combined_essentials) = combined_processed_files_essentials{
+        combined_processed_log_file.min_timestamp = Some(final_combined_essentials.min_timestamp);
+        combined_processed_log_file.max_timestamp = Some(final_combined_essentials.max_timestamp);
+        combined_processed_log_file.largest_gap = final_combined_essentials.largest_gap;
+        combined_processed_log_file.mean_time_gap = Some(final_combined_essentials.time_gap_mean);
+        combined_processed_log_file.variance_time_gap = Some(final_combined_essentials.time_gap_var);
+    }
+    
     combined_processed_log_file
 }
 
