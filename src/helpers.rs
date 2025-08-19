@@ -365,7 +365,6 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
     for clean_processed_log_file in list_of_clean_data_for_individual_processed_log_files {
         if let Some(previous_stats_essentials) = combined_processed_files_essentials.as_mut() {
             //combine the mean count and var
-            println!("Next one: {:?}", clean_processed_log_file);
             if let Some((count, mean, var)) = get_combined_count_mean_and_var_of_two_sets(
                 previous_stats_essentials.num_time_gaps,
                 previous_stats_essentials.time_gap_mean,
