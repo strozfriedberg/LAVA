@@ -324,14 +324,25 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
     > = vec![];
     for processed_log_file in all_processed_logs {
         // Right now the errors and alerts themselves don't have the filename associated with it, so will have to change that maybe?
+        //here tag them with their original filepath
         combined_processed_log_file
             .alerts
             .extend(processed_log_file.alerts.clone());
         combined_processed_log_file
             .errors
             .extend(processed_log_file.errors.clone());
+        //append number of records
         combined_processed_log_file.total_num_records += processed_log_file.total_num_records;
         combined_processed_log_file.timestamp_num_records += processed_log_file.timestamp_num_records;
+
+        //update dupes
+        if let Some(current_num_dupes) = processed_log_file.num_dupes {
+            *combined_processed_log_file.num_dupes.get_or_insert(0) += current_num_dupes;
+        }
+        if let Some(current_num_redactions) = processed_log_file.num_redactions {
+            *combined_processed_log_file.num_redactions.get_or_insert(0) += current_num_redactions;
+        }
+        
         if let Some(log_combo_essentials) =
             processed_log_file.get_processed_log_file_combination_essentials()
         {
@@ -354,6 +365,7 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
     for clean_processed_log_file in list_of_clean_data_for_individual_processed_log_files {
         if let Some(previous_stats_essentials) = combined_processed_files_essentials.as_mut() {
             //combine the mean count and var
+            println!("Next one: {:?}", clean_processed_log_file);
             if let Some((count, mean, var)) = get_combined_count_mean_and_var_of_two_sets(
                 previous_stats_essentials.num_time_gaps,
                 previous_stats_essentials.time_gap_mean,
@@ -365,13 +377,6 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
                 previous_stats_essentials.num_time_gaps = count;
                 previous_stats_essentials.time_gap_mean = mean;
                 previous_stats_essentials.time_gap_var = var;
-            }
-            // Update min an max timestmap
-            if clean_processed_log_file.min_timestamp < previous_stats_essentials.min_timestamp {
-                previous_stats_essentials.min_timestamp = clean_processed_log_file.min_timestamp
-            }
-            if clean_processed_log_file.max_timestamp > previous_stats_essentials.max_timestamp {
-                previous_stats_essentials.max_timestamp = clean_processed_log_file.max_timestamp
             }
 
             // if the largest gap of the next one is larger than update it
@@ -407,7 +412,27 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
                 previous_stats_essentials.num_time_gaps = count;
                 previous_stats_essentials.time_gap_mean = mean;
                 previous_stats_essentials.time_gap_var = var;
+
+                match previous_stats_essentials.largest_gap {
+                    Some(prev_largest_gap) => {
+                        if gap_between_files > prev_largest_gap {
+                            previous_stats_essentials.largest_gap = Some(gap_between_files);
+                        }
+                    },
+                    None => {
+                        previous_stats_essentials.largest_gap = Some(gap_between_files);}
+                }
+
             }
+
+            // Update min an max timestmap
+            if clean_processed_log_file.min_timestamp < previous_stats_essentials.min_timestamp {
+                previous_stats_essentials.min_timestamp = clean_processed_log_file.min_timestamp
+            }
+            if clean_processed_log_file.max_timestamp > previous_stats_essentials.max_timestamp {
+                previous_stats_essentials.max_timestamp = clean_processed_log_file.max_timestamp
+            }
+
         } else {
             // This is the first one
             combined_processed_files_essentials = Some(clean_processed_log_file)
@@ -523,19 +548,22 @@ mod tests {
     }
 
     fn sample_processed_log_file(
+        name: &str,
         start_time: Option<&str>,
         end_time: Option<&str>,
         largest_gap: Option<i64>,
         mean_time_gap: Option<f64>,
         variance: Option<f64>,
         count: usize,
+        errors: Vec<LavaError>,
+        alerts: Vec<Alert>
     ) -> ProcessedLogFile {
         ProcessedLogFile {
             sha256hash: Some(
                 "d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2".to_string(),
             ),
-            filename: Some("example_log.csv".to_string()),
-            file_path: Some("C:/logs/example_log.csv".to_string()),
+            filename: Some(name.to_string()),
+            file_path: Some(format!("C:/logs/{}", name)),
             size: Some("1.2 MB".to_string()),
             first_data_row_used: Some("2".to_string()),
             time_header: Some("timestamp".to_string()),
@@ -547,36 +575,51 @@ mod tests {
             largest_gap: largest_gap.map(|et| dummy_timegap(et)), // Example: 1 hour gap
             mean_time_gap: mean_time_gap,
             variance_time_gap: variance,
-            total_num_records: 480,
+            total_num_records: count,
             timestamp_num_records: count,
             num_dupes: Some(2),
-            num_redactions: Some(0),
-            errors: vec![LavaError::new(
-                "Invalid timestamp format in row 23".to_string(),
-                LavaErrorLevel::High,
-            )],
-            alerts: vec![Alert::new(AlertLevel::High, AlertType::DupeEvents)],
+            num_redactions: Some(1),
+            errors: errors,
+            alerts: alerts,
         }
     }
     #[test]
     fn test_combine_processed_log_files_basic() {
         let log_files: Vec<ProcessedLogFile> = vec![
             sample_processed_log_file(
+                "test1",
                 Some("2025-08-13 05:00:00"),
                 Some("2025-08-13 05:10:00"),
                 Some(12000),
                 Some(53037.0),
                 Some(153231.8047),
-                11778,
+                12,
+                vec![LavaError::new("Some error", LavaErrorLevel::Critical)],
+                vec![]
             ),
             sample_processed_log_file(
-                Some("2025-08-13 05:00:00"),
-                Some("2025-08-13 05:10:00"),
-                Some(12000),
-                Some(53037.0),
+                "test2",
+                Some("2025-08-13 05:11:00"),
+                Some("2025-08-13 05:15:00"),
+                Some(12001),
+                Some(53039.0),
                 Some(153231.8047),
-                18362,
+                45,
+                vec![],
+                vec![Alert::new(AlertLevel::High, AlertType::DupeEvents)]
             ),
         ];
+        let result = convert_vector_of_processed_log_files_into_one_for_multipart(&log_files);
+        assert_eq!(result.min_timestamp, Some(NaiveDateTime::parse_from_str("2025-08-13 05:00:00", "%Y-%m-%d %H:%M:%S").unwrap()));
+        assert_eq!(result.max_timestamp, Some(NaiveDateTime::parse_from_str("2025-08-13 05:15:00", "%Y-%m-%d %H:%M:%S").unwrap()));
+        assert_eq!(result.largest_gap.unwrap().get_time_duration_number(), 12001000);
+        assert_eq!(result.variance_time_gap, Some(1000419.603786759));
+        assert_eq!(result.mean_time_gap, Some(53162.91071428571));
+        assert_eq!(result.timestamp_num_records, 57);
+        assert_eq!(result.alerts.len(), 1);
+        assert_eq!(result.errors.len(), 1);
+        assert_eq!(result.num_redactions, Some(2));
+        assert_eq!(result.num_dupes, Some(4));
+        println!("{:?}",result.alerts);
     }
 }
