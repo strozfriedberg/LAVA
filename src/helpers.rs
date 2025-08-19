@@ -185,7 +185,10 @@ pub fn print_pretty_alerts_and_write_to_alerts_output_file(
                 writeln!(
                     writer,
                     "File Path:{} | Level: {:?} | Type {:?} | Message: {}",
-                    processed.file_path.as_ref().unwrap(),
+                    match &alert.original_filepath{
+                        Some(original_file_path) => original_file_path,
+                        None => processed.file_path.as_ref().unwrap(),
+                    },
                     alert.alert_level,
                     alert.alert_type,
                     get_message_for_alert_output_file(alert.alert_level, alert.alert_type)
@@ -324,10 +327,16 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
     > = vec![];
     for processed_log_file in all_processed_logs {
         // Right now the errors and alerts themselves don't have the filename associated with it, so will have to change that maybe?
+        //tag the alerts with their file paths
+
         //here tag them with their original filepath
-        combined_processed_log_file
-            .alerts
-            .extend(processed_log_file.alerts.clone());
+        for alert in processed_log_file.alerts.iter(){
+            let mut temp_alert = alert.clone();
+            if let Some(current_log_file_path) = &processed_log_file.file_path{
+                temp_alert.add_original_file_path(current_log_file_path.to_string());
+            }
+            combined_processed_log_file.alerts.push(temp_alert);
+        };
         combined_processed_log_file
             .errors
             .extend(processed_log_file.errors.clone());

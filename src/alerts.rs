@@ -114,6 +114,7 @@ pub fn get_message_for_alert_output_file(alert_level: AlertLevel, alert_type: Al
 pub struct Alert {
     pub alert_level: AlertLevel,
     pub alert_type: AlertType,
+    pub original_filepath: Option<String>,
 }
 
 impl Alert {
@@ -121,7 +122,11 @@ impl Alert {
         Self {
             alert_level,
             alert_type,
+            original_filepath: None,
         }
+    }
+    pub fn add_original_file_path(&mut self, file_path: String){
+        self.original_filepath = Some(file_path);
     }
 }
 
