@@ -166,7 +166,7 @@ pub fn print_pretty_alerts_and_write_to_alerts_output_file(
     let mut writer = match execution_settings.actually_write_to_files {
         false => None,
         true => {
-            let output_file_path: PathBuf = execution_settings.output_dir.join("alerts_output.txt");
+            let output_file_path: PathBuf = execution_settings.output_dir.join("LAVA_Alerts.log");
             let alert_output_file = OpenOptions::new()
                 .create(true)
                 .append(true)
