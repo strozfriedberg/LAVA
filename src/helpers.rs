@@ -329,13 +329,13 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
         //tag the alerts with their file paths
 
         //here tag them with their original filepath
-        for alert in processed_log_file.alerts.iter(){
-            let mut temp_alert = alert.clone();
-            if let Some(current_log_file_path) = &processed_log_file.file_path{
-                temp_alert.add_original_file_path(current_log_file_path.to_string());
-            }
-            combined_processed_log_file.alerts.push(temp_alert);
-        };
+        // for alert in processed_log_file.alerts.iter(){
+        //     let mut temp_alert = alert.clone();
+        //     if let Some(current_log_file_path) = &processed_log_file.file_path{
+        //         temp_alert.add_original_file_path(current_log_file_path.to_string());
+        //     }
+        //     combined_processed_log_file.alerts.push(temp_alert);
+        // };
         combined_processed_log_file
             .errors
             .extend(processed_log_file.errors.clone());
@@ -452,8 +452,23 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
         combined_processed_log_file.mean_time_gap = Some(final_combined_essentials.time_gap_mean);
         combined_processed_log_file.variance_time_gap = Some(final_combined_essentials.time_gap_var);
     }
-    
+    add_alerts_for_processed_log_file(&mut combined_processed_log_file);
+
     combined_processed_log_file
+}
+
+fn add_alerts_for_processed_log_file(processed_log_file: &mut ProcessedLogFile) {
+        let temp_possible_alert_values = PossibleAlertValues {
+            num_records: processed_log_file.timestamp_num_records,
+            num_dupes: processed_log_file.num_dupes.unwrap_or(0),
+            num_redactions: processed_log_file.num_redactions.unwrap_or(0),
+            largest_time_gap: processed_log_file.largest_gap,
+            errors: processed_log_file.errors.clone(),
+            mean: processed_log_file.mean_time_gap.unwrap_or(0.0),
+            std: processed_log_file.variance_time_gap.unwrap_or(0.0).sqrt(),
+        };
+        println!("{:?}",temp_possible_alert_values );
+        processed_log_file.alerts.extend( generate_alerts(temp_possible_alert_values));
 }
 
 fn combine_mean_values(count1: usize, mean1: f64, count2: usize, mean2: f64) -> Option<f64> {
@@ -623,7 +638,8 @@ mod tests {
         assert_eq!(result.variance_time_gap, Some(1000419.603786759));
         assert_eq!(result.mean_time_gap, Some(53162.91071428571));
         assert_eq!(result.timestamp_num_records, 57);
-        assert_eq!(result.alerts.len(), 1);
+        println!("{:?}", result.alerts);
+        assert_eq!(result.alerts.len(), 3);
         assert_eq!(result.errors.len(), 1);
         assert_eq!(result.num_redactions, Some(2));
         assert_eq!(result.num_dupes, Some(4));
@@ -676,7 +692,7 @@ mod tests {
                 Some(120),
                 Some(100.0),
                 Some(10000.0),
-                12,
+                1204,
                 vec![LavaError::new("Some error", LavaErrorLevel::Critical)],
                 vec![]
             ),
@@ -687,18 +703,19 @@ mod tests {
                 Some(160),
                 Some(100.0),
                 Some(10000.0),
-                45,
+                4521,
                 vec![],
                 vec![]
             ),
         ];
         let result = convert_vector_of_processed_log_files_into_one_for_multipart(&log_files);
         assert_eq!(result.largest_gap.unwrap().get_time_duration_number(), 3660000);
+        println!("{:?}",result.alerts);
+        println!("{:?}", result.largest_gap);
         assert_eq!(
             result.alerts.iter().filter(|a| a.alert_type == AlertType::SusTimeGap).count(),
             1
         );
-        println!("{:?}",result.alerts);
     }
 
 
