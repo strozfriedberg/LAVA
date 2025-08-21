@@ -1,7 +1,6 @@
 use crate::alerts::*;
 use crate::basic_objects::*;
 use crate::errors::*;
-use chrono::NaiveDateTime;
 use chrono::Utc;
 use comfy_table::modifiers::UTF8_ROUND_CORNERS;
 use comfy_table::presets::UTF8_FULL;
@@ -629,5 +628,112 @@ mod tests {
         assert_eq!(result.num_redactions, Some(2));
         assert_eq!(result.num_dupes, Some(4));
         println!("{:?}",result.alerts);
+    }
+
+
+    #[test]
+    fn test_combine_processed_log_files_overlap() {
+        let log_files: Vec<ProcessedLogFile> = vec![
+            sample_processed_log_file(
+                "test1",
+                Some("2025-08-13 05:00:00"),
+                Some("2025-08-13 05:10:00"),
+                Some(120),
+                Some(100.0),
+                Some(10000.0),
+                12,
+                vec![LavaError::new("Some error", LavaErrorLevel::Critical)],
+                vec![]
+            ),
+            sample_processed_log_file(
+                "test2",
+                Some("2025-08-13 05:09:00"),
+                Some("2025-08-13 06:15:00"),
+                Some(160),
+                Some(100.0),
+                Some(10000.0),
+                45,
+                vec![],
+                vec![]
+            ),
+        ];
+        let result = convert_vector_of_processed_log_files_into_one_for_multipart(&log_files);
+        assert_eq!(
+            result.alerts.iter().filter(|a| a.alert_type == AlertType::MultipartOverlap).count(),
+            1
+        );
+        println!("{:?}",result.alerts);
+    }
+
+
+    #[test]
+    fn test_combine_processed_log_files_time_gap_alert() {
+        let log_files: Vec<ProcessedLogFile> = vec![
+            sample_processed_log_file(
+                "test1",
+                Some("2025-08-13 05:00:00"),
+                Some("2025-08-13 05:10:00"),
+                Some(120),
+                Some(100.0),
+                Some(10000.0),
+                12,
+                vec![LavaError::new("Some error", LavaErrorLevel::Critical)],
+                vec![]
+            ),
+            sample_processed_log_file(
+                "test2",
+                Some("2025-08-13 06:11:00"),
+                Some("2025-08-13 06:15:00"),
+                Some(160),
+                Some(100.0),
+                Some(10000.0),
+                45,
+                vec![],
+                vec![]
+            ),
+        ];
+        let result = convert_vector_of_processed_log_files_into_one_for_multipart(&log_files);
+        assert_eq!(result.largest_gap.unwrap().get_time_duration_number(), 3660000);
+        assert_eq!(
+            result.alerts.iter().filter(|a| a.alert_type == AlertType::SusTimeGap).count(),
+            1
+        );
+        println!("{:?}",result.alerts);
+    }
+
+
+    #[test]
+    fn test_combine_processed_log_files_sus_event_count_alert() {
+        let log_files: Vec<ProcessedLogFile> = vec![
+            sample_processed_log_file(
+                "test1",
+                Some("2025-08-13 05:00:00"),
+                Some("2025-08-13 05:10:00"),
+                Some(120),
+                Some(100.0),
+                Some(10000.0),
+                44,
+                vec![LavaError::new("Some error", LavaErrorLevel::Critical)],
+                vec![]
+            ),
+            sample_processed_log_file(
+                "test2",
+                Some("2025-08-13 05:10:01"),
+                Some("2025-08-13 06:15:00"),
+                Some(160),
+                Some(100.0),
+                Some(10000.0),
+                56,
+                vec![],
+                vec![]
+            ),
+        ];
+        let result = convert_vector_of_processed_log_files_into_one_for_multipart(&log_files);
+        println!("{:?}",result.alerts);
+        assert_eq!(
+            result.alerts.iter().filter(|a| a.alert_type == AlertType::SusEventCount).count(),
+            1
+        );
+        
     }
 }
