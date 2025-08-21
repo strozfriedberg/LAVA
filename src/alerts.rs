@@ -1,4 +1,4 @@
-use crate::processing_objects::PossibleAlertValues;
+use crate::basic_objects::PossibleAlertValues;
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
 pub enum AlertLevel {
@@ -215,7 +215,7 @@ fn get_alert_level_remainder_zero(n: usize, alert_type: AlertType) -> Option<Ale
 pub mod tests {
     use super::*;
     use crate::basic_objects::TimeGap;
-    use crate::processing_objects::PossibleAlertValues;
+    use crate::basic_objects::PossibleAlertValues;
     use chrono::NaiveDate;
     use chrono::TimeDelta;
 
