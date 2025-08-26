@@ -467,7 +467,7 @@ fn add_alerts_for_processed_log_file(processed_log_file: &mut ProcessedLogFile) 
             mean: processed_log_file.mean_time_gap.unwrap_or(0.0),
             std: processed_log_file.variance_time_gap.unwrap_or(0.0).sqrt(),
         };
-        println!("{:?}",temp_possible_alert_values );
+        // println!("{:?}",temp_possible_alert_values );
         processed_log_file.alerts.extend( generate_alerts(temp_possible_alert_values));
 }
 

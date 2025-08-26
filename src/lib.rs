@@ -280,7 +280,7 @@ pub fn process_file(
             }
             Err(e) => {
                 base_processed_file.errors.push(e);
-                println!("{:?} ", base_processed_file.errors);
+                // println!("{:?} ", base_processed_file.errors);
                 None
                 // return Ok(base_processed_file);
             }
