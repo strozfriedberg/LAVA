@@ -106,7 +106,7 @@ pub fn get_message_for_alert_output_file(alert_level: AlertLevel, alert_type: Al
         AlertType::JsonError => {
             format!("File had json syntax errors that may interfere with parsing in other tools")
         }
-        AlertType::MultipartOverlap(_,_) => format!("Time range of this file overlaps with another"),
+        AlertType::MultipartOverlap(file1,file2) => format!("{} overlaps with {}", file1, file2),
     }
 }
 
