@@ -189,15 +189,15 @@ pub fn print_pretty_alerts_and_write_to_alerts_output_file(
                         None => processed.file_path.as_ref().unwrap(),
                     },
                     alert.alert_level,
-                    alert.alert_type,
-                    get_message_for_alert_output_file(alert.alert_level, alert.alert_type)
+                    alert.alert_type.clone(),
+                    get_message_for_alert_output_file(alert.alert_level, alert.alert_type.clone())
                 )
                 .expect("Failed to write to alert output file");
             }
             alert_table_structure
                 .entry(alert.alert_level)
                 .or_insert_with(HashMap::new)
-                .entry(alert.alert_type)
+                .entry(alert.alert_type.clone())
                 .or_insert_with(Vec::new)
                 .push(processed.file_path.as_ref().unwrap());
         }
@@ -403,7 +403,7 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
             if &previous_stats_essentials.max_timestamp > &clean_processed_log_file.min_timestamp {
                 combined_processed_log_file
                     .alerts
-                    .push(Alert::new(AlertLevel::High, AlertType::MultipartOverlap))
+                    .push(Alert::new(AlertLevel::High, AlertType::MultipartOverlap(previous_stats_essentials.filename.clone(), previous_stats_essentials.filepath.clone())))
             } else {
                 //If the two files do not overlap, then update the count mean var with the gap between files. AND if this gap is larger than the current one, update it
                 let gap_between_files = TimeGap::new(
@@ -674,11 +674,17 @@ mod tests {
             ),
         ];
         let result = convert_vector_of_processed_log_files_into_one_for_multipart(&log_files);
+        // assert_eq!(
+        //     result.alerts.iter().filter(|a| a.alert_type == AlertType::MultipartOverlap("test2".to_string(), "test1".to_string())).count(),
+        //     1
+        // );
         assert_eq!(
-            result.alerts.iter().filter(|a| a.alert_type == AlertType::MultipartOverlap).count(),
+            result.alerts.iter().filter(|a| 
+                matches!(a.alert_type, AlertType::MultipartOverlap(_, _))
+            ).count(),
             1
         );
-        println!("{:?}",result.alerts);
+        println!("ALERTS:  {:?}",result.alerts);
     }
 
 

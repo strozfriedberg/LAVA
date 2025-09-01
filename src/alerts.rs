@@ -7,14 +7,14 @@ pub enum AlertLevel {
     Low,
 }
 
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum AlertType {
     SusTimeGap,
     SusEventCount,
     DupeEvents,
     RedactionEvents,
     JsonError,
-    MultipartOverlap,
+    MultipartOverlap(String, String),
 }
 
 fn get_alert_threshold_value(alert_level: AlertLevel, alert_type: AlertType) -> usize {
@@ -44,7 +44,7 @@ fn get_alert_threshold_value(alert_level: AlertLevel, alert_type: AlertType) -> 
             AlertLevel::Medium => 0,
             AlertLevel::Low => 0,
         },
-        AlertType::MultipartOverlap => match alert_level {
+        AlertType::MultipartOverlap(_,_) => match alert_level {
             AlertLevel::High => 0,
             AlertLevel::Medium => 0,
             AlertLevel::Low => 0,
@@ -79,7 +79,7 @@ pub fn get_message_for_alert_comfy_table(
             get_alert_threshold_value(alert_level, alert_type)
         ),
         AlertType::JsonError => format!("{} files had JSON syntax errors", number_of_files),
-        AlertType::MultipartOverlap => {
+        AlertType::MultipartOverlap(_,_) => {
             format!("{} files contain overlapping time ranges", number_of_files)
         }
     }
@@ -106,7 +106,7 @@ pub fn get_message_for_alert_output_file(alert_level: AlertLevel, alert_type: Al
         AlertType::JsonError => {
             format!("File had json syntax errors that may interfere with parsing in other tools")
         }
-        AlertType::MultipartOverlap => format!("Time range of this file overlaps with another"),
+        AlertType::MultipartOverlap(_,_) => format!("Time range of this file overlaps with another"),
     }
 }
 
@@ -188,11 +188,11 @@ fn get_alert_level_greater_than_threshold_values(
     value: usize,
     alert_type: AlertType,
 ) -> Option<AlertLevel> {
-    if value > get_alert_threshold_value(AlertLevel::High, alert_type) {
+    if value > get_alert_threshold_value(AlertLevel::High, alert_type.clone()) {
         Some(AlertLevel::High)
-    } else if value > get_alert_threshold_value(AlertLevel::Medium, alert_type) {
+    } else if value > get_alert_threshold_value(AlertLevel::Medium, alert_type.clone()) {
         Some(AlertLevel::Medium)
-    } else if value > get_alert_threshold_value(AlertLevel::Low, alert_type) {
+    } else if value > get_alert_threshold_value(AlertLevel::Low, alert_type.clone()) {
         Some(AlertLevel::Low)
     } else {
         None
@@ -200,11 +200,11 @@ fn get_alert_level_greater_than_threshold_values(
 }
 
 fn get_alert_level_remainder_zero(n: usize, alert_type: AlertType) -> Option<AlertLevel> {
-    if n % get_alert_threshold_value(AlertLevel::High, alert_type) == 0 {
+    if n % get_alert_threshold_value(AlertLevel::High, alert_type.clone()) == 0 {
         Some(AlertLevel::High)
-    } else if n % get_alert_threshold_value(AlertLevel::Medium, alert_type) == 0 {
+    } else if n % get_alert_threshold_value(AlertLevel::Medium, alert_type.clone()) == 0 {
         Some(AlertLevel::Medium)
-    } else if n % get_alert_threshold_value(AlertLevel::Low, alert_type) == 0 {
+    } else if n % get_alert_threshold_value(AlertLevel::Low, alert_type.clone()) == 0 {
         Some(AlertLevel::Low)
     } else {
         None

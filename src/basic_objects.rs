@@ -198,6 +198,8 @@ impl ProcessedLogFile {
             return None;
         } else if self.timestamp_num_records == 1 {
             return Some(ProcessedLogFileComboEssentials {
+                filename: self.filename.clone()?,
+                filepath: self.file_path.clone()?,
                 min_timestamp: self.min_timestamp?,
                 max_timestamp: self.max_timestamp?,
                 num_time_gaps: 0,
@@ -207,6 +209,8 @@ impl ProcessedLogFile {
             });
         } else {
             return Some(ProcessedLogFileComboEssentials {
+                filename: self.filename.clone()?,
+                filepath: self.file_path.clone()?,
                 min_timestamp: self.min_timestamp?,
                 max_timestamp: self.max_timestamp?,
                 num_time_gaps: self.timestamp_num_records - 1,
@@ -287,8 +291,10 @@ pub struct QuickStats {
     pub num_records: String,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct ProcessedLogFileComboEssentials {
+    pub filename: String,
+    pub filepath: String, 
     pub min_timestamp: NaiveDateTime,
     pub max_timestamp: NaiveDateTime,
     pub num_time_gaps: usize,
