@@ -171,7 +171,7 @@ fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile> {
                     log_type: LogType::Csv,
                     file_path: file_path.to_path_buf(),
                 })
-            } else if extension == "json" {
+            } else if extension == "json" || extension == "jsonl" {
                 supported_files.push(LogFile {
                     log_type: LogType::Json,
                     file_path: file_path.to_path_buf(),
