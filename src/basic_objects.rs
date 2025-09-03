@@ -294,7 +294,7 @@ pub struct QuickStats {
 #[derive(Debug, Clone)]
 pub struct ProcessedLogFileComboEssentials {
     pub filename: String,
-    pub filepath: String, 
+    pub filepath: String,
     pub min_timestamp: NaiveDateTime,
     pub max_timestamp: NaiveDateTime,
     pub num_time_gaps: usize,

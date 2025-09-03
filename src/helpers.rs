@@ -184,7 +184,7 @@ pub fn print_pretty_alerts_and_write_to_alerts_output_file(
                 writeln!(
                     writer,
                     "File Path:{} | Level: {:?} | Type {:?} | Message: {}",
-                    match &alert.original_filepath{
+                    match &alert.original_filepath {
                         Some(original_file_path) => original_file_path,
                         None => processed.file_path.as_ref().unwrap(),
                     },
@@ -341,7 +341,8 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
             .extend(processed_log_file.errors.clone());
         //append number of records
         combined_processed_log_file.total_num_records += processed_log_file.total_num_records;
-        combined_processed_log_file.timestamp_num_records += processed_log_file.timestamp_num_records;
+        combined_processed_log_file.timestamp_num_records +=
+            processed_log_file.timestamp_num_records;
 
         //update dupes
         if let Some(current_num_dupes) = processed_log_file.num_dupes {
@@ -350,7 +351,7 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
         if let Some(current_num_redactions) = processed_log_file.num_redactions {
             *combined_processed_log_file.num_redactions.get_or_insert(0) += current_num_redactions;
         }
-        
+
         if let Some(log_combo_essentials) =
             processed_log_file.get_processed_log_file_combination_essentials()
         {
@@ -401,9 +402,13 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
 
             //if the two file overlap then add an alert and DON"T add in the time gap
             if &previous_stats_essentials.max_timestamp > &clean_processed_log_file.min_timestamp {
-                combined_processed_log_file
-                    .alerts
-                    .push(Alert::new(AlertLevel::Medium, AlertType::MultipartOverlap(previous_stats_essentials.filename.clone(), clean_processed_log_file.filename.clone())))
+                combined_processed_log_file.alerts.push(Alert::new(
+                    AlertLevel::Medium,
+                    AlertType::MultipartOverlap(
+                        previous_stats_essentials.filename.clone(),
+                        clean_processed_log_file.filename.clone(),
+                    ),
+                ))
             } else {
                 //If the two files do not overlap, then update the count mean var with the gap between files. AND if this gap is larger than the current one, update it
                 let gap_between_files = TimeGap::new(
@@ -425,11 +430,11 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
                         if gap_between_files > prev_largest_gap {
                             previous_stats_essentials.largest_gap = Some(gap_between_files);
                         }
-                    },
+                    }
                     None => {
-                        previous_stats_essentials.largest_gap = Some(gap_between_files);}
+                        previous_stats_essentials.largest_gap = Some(gap_between_files);
+                    }
                 }
-
             }
 
             // Update min an max timestmap
@@ -439,18 +444,18 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
             if clean_processed_log_file.max_timestamp > previous_stats_essentials.max_timestamp {
                 previous_stats_essentials.max_timestamp = clean_processed_log_file.max_timestamp
             }
-
         } else {
             // This is the first one
             combined_processed_files_essentials = Some(clean_processed_log_file)
         }
     }
-    if let Some(final_combined_essentials) = combined_processed_files_essentials{
+    if let Some(final_combined_essentials) = combined_processed_files_essentials {
         combined_processed_log_file.min_timestamp = Some(final_combined_essentials.min_timestamp);
         combined_processed_log_file.max_timestamp = Some(final_combined_essentials.max_timestamp);
         combined_processed_log_file.largest_gap = final_combined_essentials.largest_gap;
         combined_processed_log_file.mean_time_gap = Some(final_combined_essentials.time_gap_mean);
-        combined_processed_log_file.variance_time_gap = Some(final_combined_essentials.time_gap_var);
+        combined_processed_log_file.variance_time_gap =
+            Some(final_combined_essentials.time_gap_var);
     }
     add_alerts_for_processed_log_file(&mut combined_processed_log_file);
 
@@ -458,17 +463,19 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
 }
 
 fn add_alerts_for_processed_log_file(processed_log_file: &mut ProcessedLogFile) {
-        let temp_possible_alert_values = PossibleAlertValues {
-            num_records: processed_log_file.timestamp_num_records,
-            num_dupes: processed_log_file.num_dupes.unwrap_or(0),
-            num_redactions: processed_log_file.num_redactions.unwrap_or(0),
-            largest_time_gap: processed_log_file.largest_gap,
-            errors: processed_log_file.errors.clone(),
-            mean: processed_log_file.mean_time_gap.unwrap_or(0.0),
-            std: processed_log_file.variance_time_gap.unwrap_or(0.0).sqrt(),
-        };
-        // println!("{:?}",temp_possible_alert_values );
-        processed_log_file.alerts.extend( generate_alerts(temp_possible_alert_values));
+    let temp_possible_alert_values = PossibleAlertValues {
+        num_records: processed_log_file.timestamp_num_records,
+        num_dupes: processed_log_file.num_dupes.unwrap_or(0),
+        num_redactions: processed_log_file.num_redactions.unwrap_or(0),
+        largest_time_gap: processed_log_file.largest_gap,
+        errors: processed_log_file.errors.clone(),
+        mean: processed_log_file.mean_time_gap.unwrap_or(0.0),
+        std: processed_log_file.variance_time_gap.unwrap_or(0.0).sqrt(),
+    };
+    // println!("{:?}",temp_possible_alert_values );
+    processed_log_file
+        .alerts
+        .extend(generate_alerts(temp_possible_alert_values));
 }
 
 fn combine_mean_values(count1: usize, mean1: f64, count2: usize, mean2: f64) -> Option<f64> {
@@ -578,7 +585,7 @@ mod tests {
         variance: Option<f64>,
         count: usize,
         errors: Vec<LavaError>,
-        alerts: Vec<Alert>
+        alerts: Vec<Alert>,
     ) -> ProcessedLogFile {
         ProcessedLogFile {
             sha256hash: Some(
@@ -617,7 +624,7 @@ mod tests {
                 Some(153231.8047),
                 12,
                 vec![LavaError::new("Some error", LavaErrorLevel::Critical)],
-                vec![]
+                vec![],
             ),
             sample_processed_log_file(
                 "test2",
@@ -628,13 +635,26 @@ mod tests {
                 Some(153231.8047),
                 45,
                 vec![],
-                vec![Alert::new(AlertLevel::High, AlertType::DupeEvents)]
+                vec![Alert::new(AlertLevel::High, AlertType::DupeEvents)],
             ),
         ];
         let result = convert_vector_of_processed_log_files_into_one_for_multipart(&log_files);
-        assert_eq!(result.min_timestamp, Some(NaiveDateTime::parse_from_str("2025-08-13 05:00:00", "%Y-%m-%d %H:%M:%S").unwrap()));
-        assert_eq!(result.max_timestamp, Some(NaiveDateTime::parse_from_str("2025-08-13 05:15:00", "%Y-%m-%d %H:%M:%S").unwrap()));
-        assert_eq!(result.largest_gap.unwrap().get_time_duration_number(), 12001000);
+        assert_eq!(
+            result.min_timestamp,
+            Some(
+                NaiveDateTime::parse_from_str("2025-08-13 05:00:00", "%Y-%m-%d %H:%M:%S").unwrap()
+            )
+        );
+        assert_eq!(
+            result.max_timestamp,
+            Some(
+                NaiveDateTime::parse_from_str("2025-08-13 05:15:00", "%Y-%m-%d %H:%M:%S").unwrap()
+            )
+        );
+        assert_eq!(
+            result.largest_gap.unwrap().get_time_duration_number(),
+            12001000
+        );
         assert_eq!(result.variance_time_gap, Some(1000419.603786759));
         assert_eq!(result.mean_time_gap, Some(53162.91071428571));
         assert_eq!(result.timestamp_num_records, 57);
@@ -643,9 +663,8 @@ mod tests {
         assert_eq!(result.errors.len(), 1);
         assert_eq!(result.num_redactions, Some(2));
         assert_eq!(result.num_dupes, Some(4));
-        println!("{:?}",result.alerts);
+        println!("{:?}", result.alerts);
     }
-
 
     #[test]
     fn test_combine_processed_log_files_overlap() {
@@ -659,7 +678,7 @@ mod tests {
                 Some(10000.0),
                 12,
                 vec![LavaError::new("Some error", LavaErrorLevel::Critical)],
-                vec![]
+                vec![],
             ),
             sample_processed_log_file(
                 "test2",
@@ -670,24 +689,29 @@ mod tests {
                 Some(10000.0),
                 45,
                 vec![],
-                vec![]
+                vec![],
             ),
         ];
         let result = convert_vector_of_processed_log_files_into_one_for_multipart(&log_files);
-        println!("ALERTS:  {:?}",result.alerts);
+        println!("ALERTS:  {:?}", result.alerts);
         assert_eq!(
-            result.alerts.iter().filter(|a| a.alert_type == AlertType::MultipartOverlap("test1".to_string(), "test2".to_string())).count(),
+            result
+                .alerts
+                .iter()
+                .filter(|a| a.alert_type
+                    == AlertType::MultipartOverlap("test1".to_string(), "test2".to_string()))
+                .count(),
             1
         );
         assert_eq!(
-            result.alerts.iter().filter(|a| 
-                matches!(a.alert_type, AlertType::MultipartOverlap(_, _))
-            ).count(),
+            result
+                .alerts
+                .iter()
+                .filter(|a| matches!(a.alert_type, AlertType::MultipartOverlap(_, _)))
+                .count(),
             1
         );
-
     }
-
 
     #[test]
     fn test_combine_processed_log_files_time_gap_alert() {
@@ -701,7 +725,7 @@ mod tests {
                 Some(10000.0),
                 1204,
                 vec![LavaError::new("Some error", LavaErrorLevel::Critical)],
-                vec![]
+                vec![],
             ),
             sample_processed_log_file(
                 "test2",
@@ -712,19 +736,25 @@ mod tests {
                 Some(10000.0),
                 4521,
                 vec![],
-                vec![]
+                vec![],
             ),
         ];
         let result = convert_vector_of_processed_log_files_into_one_for_multipart(&log_files);
-        assert_eq!(result.largest_gap.unwrap().get_time_duration_number(), 3660000);
-        println!("{:?}",result.alerts);
+        assert_eq!(
+            result.largest_gap.unwrap().get_time_duration_number(),
+            3660000
+        );
+        println!("{:?}", result.alerts);
         println!("{:?}", result.largest_gap);
         assert_eq!(
-            result.alerts.iter().filter(|a| a.alert_type == AlertType::SusTimeGap).count(),
+            result
+                .alerts
+                .iter()
+                .filter(|a| a.alert_type == AlertType::SusTimeGap)
+                .count(),
             1
         );
     }
-
 
     #[test]
     fn test_combine_processed_log_files_sus_event_count_alert() {
@@ -738,7 +768,7 @@ mod tests {
                 Some(10000.0),
                 44,
                 vec![LavaError::new("Some error", LavaErrorLevel::Critical)],
-                vec![]
+                vec![],
             ),
             sample_processed_log_file(
                 "test2",
@@ -749,15 +779,18 @@ mod tests {
                 Some(10000.0),
                 56,
                 vec![],
-                vec![]
+                vec![],
             ),
         ];
         let result = convert_vector_of_processed_log_files_into_one_for_multipart(&log_files);
-        println!("{:?}",result.alerts);
+        println!("{:?}", result.alerts);
         assert_eq!(
-            result.alerts.iter().filter(|a| a.alert_type == AlertType::SusEventCount).count(),
+            result
+                .alerts
+                .iter()
+                .filter(|a| a.alert_type == AlertType::SusEventCount)
+                .count(),
             1
         );
-        
     }
 }

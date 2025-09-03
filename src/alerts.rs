@@ -44,7 +44,7 @@ fn get_alert_threshold_value(alert_level: AlertLevel, alert_type: AlertType) -> 
             AlertLevel::Medium => 0,
             AlertLevel::Low => 0,
         },
-        AlertType::MultipartOverlap(_,_) => match alert_level {
+        AlertType::MultipartOverlap(_, _) => match alert_level {
             AlertLevel::High => 0,
             AlertLevel::Medium => 0,
             AlertLevel::Low => 0,
@@ -79,7 +79,7 @@ pub fn get_message_for_alert_comfy_table(
             get_alert_threshold_value(alert_level, alert_type)
         ),
         AlertType::JsonError => format!("{} files had JSON syntax errors", number_of_files),
-        AlertType::MultipartOverlap(_,_) => {
+        AlertType::MultipartOverlap(_, _) => {
             format!("{} files contain overlapping time ranges", number_of_files)
         }
     }
@@ -106,7 +106,7 @@ pub fn get_message_for_alert_output_file(alert_level: AlertLevel, alert_type: Al
         AlertType::JsonError => {
             format!("File had json syntax errors that may interfere with parsing in other tools")
         }
-        AlertType::MultipartOverlap(file1,file2) => format!("{} overlaps with {}", file1, file2),
+        AlertType::MultipartOverlap(file1, file2) => format!("{} overlaps with {}", file1, file2),
     }
 }
 
@@ -125,7 +125,7 @@ impl Alert {
             original_filepath: None,
         }
     }
-    pub fn add_original_file_path(&mut self, file_path: String){
+    pub fn add_original_file_path(&mut self, file_path: String) {
         self.original_filepath = Some(file_path);
     }
 }
@@ -214,8 +214,8 @@ fn get_alert_level_remainder_zero(n: usize, alert_type: AlertType) -> Option<Ale
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::basic_objects::TimeGap;
     use crate::basic_objects::PossibleAlertValues;
+    use crate::basic_objects::TimeGap;
     use chrono::NaiveDate;
     use chrono::TimeDelta;
 
