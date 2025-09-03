@@ -57,6 +57,10 @@ Note: More in depth statistics are written to a CSV in the output directory
   
   Quick mode. Skips file hashing, duplicate detection, and redaction detection which are all expensive.
 
+  `-m, --multipart`
+  
+  Multipart mode. Treats all input files as chunks of the same log. Will combine statistics (Count, Mean, Standard Deviation), add in the time gaps between the logs, and regenerate alerts. Will also alert on overlapping log files.
+
   `-v, --verbose`
   
   Verbose mode.
