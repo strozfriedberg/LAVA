@@ -35,6 +35,7 @@ pub struct ExecutionSettings {
     pub regexes: Vec<DateRegex>,
     pub timestamp_field: Option<String>,
     pub quick_mode: bool,
+    pub multipart_mode: bool,
     pub verbose_mode: bool,
     pub actually_write_to_files: bool,
 }
@@ -81,6 +82,17 @@ pub struct LogFile {
     pub file_path: PathBuf,
 }
 
+#[derive(Debug)]
+pub struct PossibleAlertValues {
+    pub num_records: usize,
+    pub num_dupes: usize,
+    pub num_redactions: usize,
+    pub largest_time_gap: Option<TimeGap>,
+    pub errors: Vec<LavaError>,
+    pub mean: f64,
+    pub std: f64,
+}
+
 #[derive(Debug, Default)]
 pub struct ProcessedLogFile {
     pub sha256hash: Option<String>,
@@ -94,13 +106,13 @@ pub struct ProcessedLogFile {
     pub max_timestamp: Option<NaiveDateTime>,
     pub largest_gap: Option<TimeGap>,
     pub mean_time_gap: Option<f64>,
-    pub std_dev_time_gap: Option<f64>,
+    pub variance_time_gap: Option<f64>,
     pub total_num_records: usize,
     pub timestamp_num_records: usize,
     pub num_dupes: Option<usize>,
     pub num_redactions: Option<usize>,
     pub errors: Vec<LavaError>,
-    pub alerts: Option<Vec<Alert>>,
+    pub alerts: Vec<Alert>,
 }
 
 impl ProcessedLogFile {
@@ -153,8 +165,8 @@ impl ProcessedLogFile {
             self.mean_time_gap
                 .map(|v| v.to_string())
                 .unwrap_or_default(),
-            self.std_dev_time_gap
-                .map(|v| v.to_string())
+            self.variance_time_gap
+                .map(|v| v.sqrt().to_string())
                 .unwrap_or_default(),
             self.get_num_std_devs_above_mean().unwrap_or("".to_string()),
             self.num_dupes
@@ -177,6 +189,36 @@ impl ProcessedLogFile {
                 .get_largest_gap_duration(TimestampStringType::Human)?,
             num_records: self.timestamp_num_records.to_formatted_string(&Locale::en),
         })
+    }
+
+    pub fn get_processed_log_file_combination_essentials(
+        &self,
+    ) -> Option<ProcessedLogFileComboEssentials> {
+        if self.timestamp_num_records == 0 {
+            return None;
+        } else if self.timestamp_num_records == 1 {
+            return Some(ProcessedLogFileComboEssentials {
+                filename: self.filename.clone()?,
+                filepath: self.file_path.clone()?,
+                min_timestamp: self.min_timestamp?,
+                max_timestamp: self.max_timestamp?,
+                num_time_gaps: 0,
+                largest_gap: None,
+                time_gap_mean: 0.0,
+                time_gap_var: 0.0,
+            });
+        } else {
+            return Some(ProcessedLogFileComboEssentials {
+                filename: self.filename.clone()?,
+                filepath: self.file_path.clone()?,
+                min_timestamp: self.min_timestamp?,
+                max_timestamp: self.max_timestamp?,
+                num_time_gaps: self.timestamp_num_records - 1,
+                largest_gap: self.largest_gap,
+                time_gap_mean: self.mean_time_gap?,
+                time_gap_var: self.variance_time_gap?,
+            });
+        }
     }
 
     fn get_min_max_duration(&self, time_type: TimestampStringType) -> Option<String> {
@@ -207,8 +249,8 @@ impl ProcessedLogFile {
     fn get_num_std_devs_above_mean(&self) -> Option<String> {
         Some(
             ((self.largest_gap?.get_time_duration_number() as f64 - self.mean_time_gap?)
-                / self.std_dev_time_gap?)
-                .to_string(),
+                / self.variance_time_gap?.sqrt())
+            .to_string(),
         )
     }
 
@@ -249,20 +291,17 @@ pub struct QuickStats {
     pub num_records: String,
 }
 
-// #[derive(Debug, Default)]
-// pub struct TimeStatisticsFields {
-//     // pub num_records: Option<String>,
-//     // pub min_timestamp: Option<String>,
-//     // pub max_timestamp: Option<String>,
-//     // pub min_max_duration: Option<String>,
-//     // pub largest_gap: Option<String>,
-//     // pub largest_gap_duration: Option<String>,
-//     pub num_dupes: Option<usize>,
-//     pub num_redactions: Option<usize>,
-//     pub mean_time_gap: Option<f64>,
-//     pub std_dev_time_gap: Option<f64>,
-//     // pub number_of_std_devs_above: Option<String>,
-// }
+#[derive(Debug, Clone)]
+pub struct ProcessedLogFileComboEssentials {
+    pub filename: String,
+    pub filepath: String,
+    pub min_timestamp: NaiveDateTime,
+    pub max_timestamp: NaiveDateTime,
+    pub num_time_gaps: usize,
+    pub largest_gap: Option<TimeGap>,
+    pub time_gap_mean: f64,
+    pub time_gap_var: f64,
+}
 
 #[derive(PartialEq, Debug)]
 pub struct LogFileRecord {

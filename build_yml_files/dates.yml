@@ -38,6 +38,15 @@
   should_not_match:
     - "Jan 1, 2023 1:00:00 PM"
 
+- pretty_format: "Mon D YYYY HH:MM:SS"
+  regex: "[A-Za-z]{3} \\d{1,2} \\d{4} \\d{1,2}:\\d{2}:\\d{2}"
+  strftime_format: "%b %e %Y %H:%M:%S"
+  should_match:
+    - "Jan 1 2023 01:00:00"
+    - "Jan 1 2023 1:00:00"
+  should_not_match:
+    - "Jun 2, 2025 23:47:23"
+
 - pretty_format: "MM/DD/YYYY hh:MM:SS AM/PM"
   regex: "\\d{2}/\\d{2}/\\d{4} \\d{1,2}:\\d{2}:\\d{2} [AP]M"
   strftime_format: "%m/%d/%Y %I:%M:%S %p"

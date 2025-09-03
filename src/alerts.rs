@@ -1,4 +1,4 @@
-use crate::processing_objects::PossibleAlertValues;
+use crate::basic_objects::PossibleAlertValues;
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
 pub enum AlertLevel {
@@ -7,13 +7,14 @@ pub enum AlertLevel {
     Low,
 }
 
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum AlertType {
     SusTimeGap,
     SusEventCount,
     DupeEvents,
     RedactionEvents,
     JsonError,
+    MultipartOverlap(String, String),
 }
 
 fn get_alert_threshold_value(alert_level: AlertLevel, alert_type: AlertType) -> usize {
@@ -39,9 +40,14 @@ fn get_alert_threshold_value(alert_level: AlertLevel, alert_type: AlertType) -> 
             AlertLevel::Low => 0,
         },
         AlertType::JsonError => match alert_level {
-            AlertLevel::High => 100,
-            AlertLevel::Medium => 30,
-            AlertLevel::Low => 10,
+            AlertLevel::High => 0,
+            AlertLevel::Medium => 0,
+            AlertLevel::Low => 0,
+        },
+        AlertType::MultipartOverlap(_, _) => match alert_level {
+            AlertLevel::High => 0,
+            AlertLevel::Medium => 0,
+            AlertLevel::Low => 0,
         },
     }
 }
@@ -73,6 +79,9 @@ pub fn get_message_for_alert_comfy_table(
             get_alert_threshold_value(alert_level, alert_type)
         ),
         AlertType::JsonError => format!("{} files had JSON syntax errors", number_of_files),
+        AlertType::MultipartOverlap(_, _) => {
+            format!("{} files contain overlapping time ranges", number_of_files)
+        }
     }
 }
 
@@ -94,7 +103,10 @@ pub fn get_message_for_alert_output_file(alert_level: AlertLevel, alert_type: Al
             "Greater than {} records with potential redactions",
             get_alert_threshold_value(alert_level, alert_type)
         ),
-        AlertType::JsonError => format!("File had json syntax errors that may interfere with parsing in other tools"),
+        AlertType::JsonError => {
+            format!("File had json syntax errors that may interfere with parsing in other tools")
+        }
+        AlertType::MultipartOverlap(file1, file2) => format!("{} overlaps with {}", file1, file2),
     }
 }
 
@@ -102,6 +114,7 @@ pub fn get_message_for_alert_output_file(alert_level: AlertLevel, alert_type: Al
 pub struct Alert {
     pub alert_level: AlertLevel,
     pub alert_type: AlertType,
+    pub original_filepath: Option<String>,
 }
 
 impl Alert {
@@ -109,7 +122,11 @@ impl Alert {
         Self {
             alert_level,
             alert_type,
+            original_filepath: None,
         }
+    }
+    pub fn add_original_file_path(&mut self, file_path: String) {
+        self.original_filepath = Some(file_path);
     }
 }
 
@@ -171,11 +188,11 @@ fn get_alert_level_greater_than_threshold_values(
     value: usize,
     alert_type: AlertType,
 ) -> Option<AlertLevel> {
-    if value > get_alert_threshold_value(AlertLevel::High, alert_type) {
+    if value > get_alert_threshold_value(AlertLevel::High, alert_type.clone()) {
         Some(AlertLevel::High)
-    } else if value > get_alert_threshold_value(AlertLevel::Medium, alert_type) {
+    } else if value > get_alert_threshold_value(AlertLevel::Medium, alert_type.clone()) {
         Some(AlertLevel::Medium)
-    } else if value > get_alert_threshold_value(AlertLevel::Low, alert_type) {
+    } else if value > get_alert_threshold_value(AlertLevel::Low, alert_type.clone()) {
         Some(AlertLevel::Low)
     } else {
         None
@@ -183,11 +200,11 @@ fn get_alert_level_greater_than_threshold_values(
 }
 
 fn get_alert_level_remainder_zero(n: usize, alert_type: AlertType) -> Option<AlertLevel> {
-    if n % get_alert_threshold_value(AlertLevel::High, alert_type) == 0 {
+    if n % get_alert_threshold_value(AlertLevel::High, alert_type.clone()) == 0 {
         Some(AlertLevel::High)
-    } else if n % get_alert_threshold_value(AlertLevel::Medium, alert_type) == 0 {
+    } else if n % get_alert_threshold_value(AlertLevel::Medium, alert_type.clone()) == 0 {
         Some(AlertLevel::Medium)
-    } else if n % get_alert_threshold_value(AlertLevel::Low, alert_type) == 0 {
+    } else if n % get_alert_threshold_value(AlertLevel::Low, alert_type.clone()) == 0 {
         Some(AlertLevel::Low)
     } else {
         None
@@ -195,14 +212,14 @@ fn get_alert_level_remainder_zero(n: usize, alert_type: AlertType) -> Option<Ale
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
+    use crate::basic_objects::PossibleAlertValues;
     use crate::basic_objects::TimeGap;
-    use crate::processing_objects::PossibleAlertValues;
     use chrono::NaiveDate;
     use chrono::TimeDelta;
 
-    fn dummy_timegap(gap_secs: i64) -> TimeGap {
+    pub fn dummy_timegap(gap_secs: i64) -> TimeGap {
         let start = NaiveDate::from_ymd_opt(2024, 1, 1)
             .unwrap()
             .and_hms_opt(0, 0, 0)
