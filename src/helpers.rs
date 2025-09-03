@@ -403,7 +403,7 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
             if &previous_stats_essentials.max_timestamp > &clean_processed_log_file.min_timestamp {
                 combined_processed_log_file
                     .alerts
-                    .push(Alert::new(AlertLevel::High, AlertType::MultipartOverlap(previous_stats_essentials.filename.clone(), clean_processed_log_file.filename.clone())))
+                    .push(Alert::new(AlertLevel::Medium, AlertType::MultipartOverlap(previous_stats_essentials.filename.clone(), clean_processed_log_file.filename.clone())))
             } else {
                 //If the two files do not overlap, then update the count mean var with the gap between files. AND if this gap is larger than the current one, update it
                 let gap_between_files = TimeGap::new(
