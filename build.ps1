@@ -1,6 +1,7 @@
 param (
     [switch]$publish,
-    [switch]$increment
+    [switch]$increment,
+    [string]$hardcodeversion
 )
 
 function Increment-Version {
@@ -53,6 +54,10 @@ $version = $previous_tag.Split('-')[0]
 
 if ($increment){
     $version = Increment-Version $version
+}
+
+if ($hardcodeversion) {
+    $version = $hardcodeversion
 }
 
 $current_time = Get-Date -Format "yyyy_MM_dd_HH_mm_ss"
