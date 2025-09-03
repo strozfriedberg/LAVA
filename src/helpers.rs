@@ -325,17 +325,7 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
         ProcessedLogFileComboEssentials,
     > = vec![];
     for processed_log_file in all_processed_logs {
-        // Right now the errors and alerts themselves don't have the filename associated with it, so will have to change that maybe?
-        //tag the alerts with their file paths
-
-        //here tag them with their original filepath
-        // for alert in processed_log_file.alerts.iter(){
-        //     let mut temp_alert = alert.clone();
-        //     if let Some(current_log_file_path) = &processed_log_file.file_path{
-        //         temp_alert.add_original_file_path(current_log_file_path.to_string());
-        //     }
-        //     combined_processed_log_file.alerts.push(temp_alert);
-        // };
+        // add errors from the log files to the combined one. Lowkey don't know if this is needed, since I print errors before, but might as well. 
         combined_processed_log_file
             .errors
             .extend(processed_log_file.errors.clone());
@@ -348,27 +338,32 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
         if let Some(current_num_dupes) = processed_log_file.num_dupes {
             *combined_processed_log_file.num_dupes.get_or_insert(0) += current_num_dupes;
         }
+        //update redactions
         if let Some(current_num_redactions) = processed_log_file.num_redactions {
             *combined_processed_log_file.num_redactions.get_or_insert(0) += current_num_redactions;
         }
 
+        // If it can get a full log essentials object, then add that to the list of them
         if let Some(log_combo_essentials) =
             processed_log_file.get_processed_log_file_combination_essentials()
         {
             list_of_clean_data_for_individual_processed_log_files.push(log_combo_essentials);
         }
     }
+
+    // Sort the clean log files based on min time
     list_of_clean_data_for_individual_processed_log_files
         .sort_by(|a, b| a.min_timestamp.cmp(&b.min_timestamp));
+
+    // Add a generated name as the name and path
     let combined_name = format!(
         "{}_SUCCESSFUL_INPUT_FILES_COMBINED",
         list_of_clean_data_for_individual_processed_log_files.len()
     );
-
     combined_processed_log_file.filename = Some(combined_name.clone());
     combined_processed_log_file.file_path = Some(combined_name);
 
-    //Combine stats and alert if overlapped
+    //Combine stats, add in time gaps between, and alert if overlapped
     let mut combined_processed_files_essentials: Option<ProcessedLogFileComboEssentials> = None;
 
     for clean_processed_log_file in list_of_clean_data_for_individual_processed_log_files {
