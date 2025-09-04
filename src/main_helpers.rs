@@ -10,7 +10,7 @@ use std::path::PathBuf;
 
 pub fn print_compiled_regexes() -> () {
     println!(
-        "Built in regex / strftime pairs for timestamp analysis. To provide your own, use --regexes.\n"
+        "Built in regex / strftime pairs for timestamp analysis. To provide your own, use --regexes, making sure to escape backslashes in yml file like \\\\\n"
     );
     for date_format in PREBUILT_DATE_REGEXES.iter() {
         println!("{}\n", date_format);
