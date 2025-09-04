@@ -713,6 +713,126 @@ mod tests {
     }
 
     #[test]
+    fn test_combine_processed_log_files_overlap_multiple() {
+        let log_files: Vec<ProcessedLogFile> = vec![
+            sample_processed_log_file(
+                "test1",
+                Some("2025-08-13 05:00:00"),
+                Some("2025-08-13 05:10:00"),
+                Some(120),
+                Some(100.0),
+                Some(10000.0),
+                12,
+                vec![LavaError::new("Some error", LavaErrorLevel::Critical)],
+                vec![],
+            ),
+            sample_processed_log_file(
+                "test2",
+                Some("2025-08-13 05:09:00"),
+                Some("2025-08-13 06:15:00"),
+                Some(160),
+                Some(100.0),
+                Some(10000.0),
+                45,
+                vec![],
+                vec![],
+            ),
+            sample_processed_log_file(
+                "test3",
+                Some("2025-08-13 05:14:00"),
+                Some("2025-08-13 06:20:00"),
+                Some(160),
+                Some(100.0),
+                Some(10000.0),
+                45,
+                vec![],
+                vec![],
+            ),
+        ];
+        let result = convert_vector_of_processed_log_files_into_one_for_multipart(&log_files);
+        println!("ALERTS:  {:?}", result.alerts);
+        assert_eq!(
+            result
+                .alerts
+                .iter()
+                .filter(|a| a.alert_type
+                    == AlertType::MultipartOverlap("test1".to_string(), "test2".to_string()))
+                .count(),
+            1
+        );
+        assert_eq!(
+            result
+                .alerts
+                .iter()
+                .filter(|a| a.alert_type
+                    == AlertType::MultipartOverlap("test2".to_string(), "test3".to_string()))
+                .count(),
+            1
+        );
+
+    }
+
+    #[test]
+    fn test_combine_processed_log_files_overlap_multiple_first_spans_all() {
+        let log_files: Vec<ProcessedLogFile> = vec![
+            sample_processed_log_file(
+                "test1",
+                Some("2025-08-13 05:00:00"),
+                Some("2025-08-13 07:10:00"),
+                Some(120),
+                Some(100.0),
+                Some(10000.0),
+                12,
+                vec![LavaError::new("Some error", LavaErrorLevel::Critical)],
+                vec![],
+            ),
+            sample_processed_log_file(
+                "test2",
+                Some("2025-08-13 05:09:00"),
+                Some("2025-08-13 06:15:00"),
+                Some(160),
+                Some(100.0),
+                Some(10000.0),
+                45,
+                vec![],
+                vec![],
+            ),
+            sample_processed_log_file(
+                "test3",
+                Some("2025-08-13 05:14:00"),
+                Some("2025-08-13 06:20:00"),
+                Some(160),
+                Some(100.0),
+                Some(10000.0),
+                45,
+                vec![],
+                vec![],
+            ),
+        ];
+        let result = convert_vector_of_processed_log_files_into_one_for_multipart(&log_files);
+        println!("ALERTS:  {:?}", result.alerts);
+        assert_eq!(
+            result
+                .alerts
+                .iter()
+                .filter(|a| a.alert_type
+                    == AlertType::MultipartOverlap("test1".to_string(), "test2".to_string()))
+                .count(),
+            1
+        );
+        assert_eq!(
+            result
+                .alerts
+                .iter()
+                .filter(|a| a.alert_type
+                    == AlertType::MultipartOverlap("test1".to_string(), "test3".to_string()))
+                .count(),
+            1
+        );
+
+    }
+
+    #[test]
     fn test_combine_processed_log_files_time_gap_alert() {
         let log_files: Vec<ProcessedLogFile> = vec![
             sample_processed_log_file(
