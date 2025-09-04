@@ -70,7 +70,7 @@ pub fn get_index_of_header<R: BufRead>(reader:&mut R) -> Result<usize> {
         })?;
         field_counts.push((index, record.len()));
     }
-    println!("{:?}", field_counts);
+    // println!("{:?}", field_counts);
 
     let (_, expected_field_count) = field_counts.last().ok_or_else(|| {
         LavaError::new(
