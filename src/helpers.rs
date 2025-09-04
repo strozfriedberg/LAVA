@@ -326,7 +326,7 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
         ProcessedLogFileComboEssentials,
     > = vec![];
     for processed_log_file in all_processed_logs {
-        // add errors from the log files to the combined one. Lowkey don't know if this is needed, since I print errors before, but might as well. 
+        // add errors from the log files to the combined one. Lowkey don't know if this is needed, since I print errors before, but might as well.
         combined_processed_log_file
             .errors
             .extend(processed_log_file.errors.clone());
@@ -769,7 +769,6 @@ mod tests {
                 .count(),
             1
         );
-
     }
 
     #[test]
@@ -829,7 +828,6 @@ mod tests {
                 .count(),
             1
         );
-
     }
 
     #[test]

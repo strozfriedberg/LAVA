@@ -53,10 +53,10 @@ pub fn get_header_info_functionality<R: BufRead + Seek>(reader: &mut R) -> Resul
     })
 }
 
-pub fn get_index_of_header<R: BufRead>(reader:&mut R) -> Result<usize> {
+pub fn get_index_of_header<R: BufRead>(reader: &mut R) -> Result<usize> {
     let mut rdr = csv::ReaderBuilder::new()
         .flexible(true)
-        .has_headers(false) 
+        .has_headers(false)
         .from_reader(reader);
 
     let mut field_counts: Vec<(usize, usize)> = Vec::new();

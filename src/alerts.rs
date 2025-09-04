@@ -40,7 +40,6 @@ pub enum AlertKind {
     MultipartOverlap,
 }
 
-
 fn get_alert_threshold_value(alert_level: AlertLevel, alert_type: AlertKind) -> usize {
     match alert_type {
         AlertKind::SusTimeGap => match alert_level {
