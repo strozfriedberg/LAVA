@@ -11,6 +11,7 @@ pub struct RawDateRegex {
     pub pretty_format: String,
     pub regex: String,
     pub strftime_format: String,
+    pub function_to_call: Option<String>
 }
 
 #[derive(Debug, Clone)]
@@ -18,6 +19,7 @@ pub struct DateRegex {
     pub pretty_format: String,
     pub strftime_format: String,
     pub regex: Regex,
+    pub function_to_call: Option<String>
 }
 
 impl DateRegex {
