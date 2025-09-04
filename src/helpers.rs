@@ -434,11 +434,14 @@ pub fn convert_vector_of_processed_log_files_into_one_for_multipart(
             }
 
             // Update min an max timestmap
+            // Min timestamp theoretically should never get updated?? Cause it is sorted to have min first
             if clean_processed_log_file.min_timestamp < previous_stats_essentials.min_timestamp {
                 previous_stats_essentials.min_timestamp = clean_processed_log_file.min_timestamp
             }
             if clean_processed_log_file.max_timestamp > previous_stats_essentials.max_timestamp {
-                previous_stats_essentials.max_timestamp = clean_processed_log_file.max_timestamp
+                previous_stats_essentials.max_timestamp = clean_processed_log_file.max_timestamp;
+                //updating the previous file name is important here for the overlapping alerts. it will allow the alert log to say what files actually overlapped
+                previous_stats_essentials.filename = clean_processed_log_file.filename;
             }
         } else {
             // This is the first one
