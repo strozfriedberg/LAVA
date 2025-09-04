@@ -176,7 +176,7 @@ pub fn print_pretty_alerts_and_write_to_alerts_output_file(
         }
     };
 
-    let mut alert_table_structure: HashMap<AlertLevel, HashMap<AlertType, Vec<&String>>> =
+    let mut alert_table_structure: HashMap<AlertLevel, HashMap<AlertKind, Vec<&String>>> =
         HashMap::new();
     for processed in results.iter() {
         for alert in processed.alerts.iter() {
@@ -189,7 +189,7 @@ pub fn print_pretty_alerts_and_write_to_alerts_output_file(
                         None => processed.file_path.as_ref().unwrap(),
                     },
                     alert.alert_level,
-                    alert.alert_type.clone(),
+                    alert.alert_type.kind().clone(),
                     get_message_for_alert_output_file(alert.alert_level, alert.alert_type.clone())
                 )
                 .expect("Failed to write to alert output file");
@@ -197,11 +197,12 @@ pub fn print_pretty_alerts_and_write_to_alerts_output_file(
             alert_table_structure
                 .entry(alert.alert_level)
                 .or_insert_with(HashMap::new)
-                .entry(alert.alert_type.clone())
+                .entry(alert.alert_type.kind().clone())
                 .or_insert_with(Vec::new)
                 .push(processed.file_path.as_ref().unwrap());
         }
     }
+    // println!("{:?}", alert_table_structure);
     let levels = [AlertLevel::High, AlertLevel::Medium, AlertLevel::Low];
 
     let mut output_table = Table::new();
