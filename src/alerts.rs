@@ -17,34 +17,58 @@ pub enum AlertType {
     MultipartOverlap(String, String),
 }
 
-fn get_alert_threshold_value(alert_level: AlertLevel, alert_type: AlertType) -> usize {
+impl AlertType {
+    pub fn kind(&self) -> AlertKind {
+        match self {
+            AlertType::SusTimeGap => AlertKind::SusTimeGap,
+            AlertType::SusEventCount => AlertKind::SusEventCount,
+            AlertType::DupeEvents => AlertKind::DupeEvents,
+            AlertType::RedactionEvents => AlertKind::RedactionEvents,
+            AlertType::JsonError => AlertKind::JsonError,
+            AlertType::MultipartOverlap(_, _) => AlertKind::MultipartOverlap,
+        }
+    }
+}
+
+#[derive(Hash, Eq, PartialEq, Clone, Debug)]
+pub enum AlertKind {
+    SusTimeGap,
+    SusEventCount,
+    DupeEvents,
+    RedactionEvents,
+    JsonError,
+    MultipartOverlap,
+}
+
+
+fn get_alert_threshold_value(alert_level: AlertLevel, alert_type: AlertKind) -> usize {
     match alert_type {
-        AlertType::SusTimeGap => match alert_level {
+        AlertKind::SusTimeGap => match alert_level {
             AlertLevel::High => 100,
             AlertLevel::Medium => 30,
             AlertLevel::Low => 10,
         },
-        AlertType::SusEventCount => match alert_level {
+        AlertKind::SusEventCount => match alert_level {
             AlertLevel::High => 10000,
             AlertLevel::Medium => 1000,
             AlertLevel::Low => 100,
         },
-        AlertType::DupeEvents => match alert_level {
+        AlertKind::DupeEvents => match alert_level {
             AlertLevel::High => 100,
             AlertLevel::Medium => 10,
             AlertLevel::Low => 0,
         },
-        AlertType::RedactionEvents => match alert_level {
+        AlertKind::RedactionEvents => match alert_level {
             AlertLevel::High => 100,
             AlertLevel::Medium => 10,
             AlertLevel::Low => 0,
         },
-        AlertType::JsonError => match alert_level {
+        AlertKind::JsonError => match alert_level {
             AlertLevel::High => 0,
             AlertLevel::Medium => 0,
             AlertLevel::Low => 0,
         },
-        AlertType::MultipartOverlap(_, _) => match alert_level {
+        AlertKind::MultipartOverlap => match alert_level {
             AlertLevel::High => 0,
             AlertLevel::Medium => 0,
             AlertLevel::Low => 0,
@@ -54,32 +78,32 @@ fn get_alert_threshold_value(alert_level: AlertLevel, alert_type: AlertType) -> 
 
 pub fn get_message_for_alert_comfy_table(
     alert_level: AlertLevel,
-    alert_type: AlertType,
+    alert_type: AlertKind,
     number_of_files: usize,
 ) -> String {
     match alert_type {
-        AlertType::SusTimeGap => format!(
+        AlertKind::SusTimeGap => format!(
             "{} files had a largest time gap greater than {} standard deviations above the average time gap",
             number_of_files,
             get_alert_threshold_value(alert_level, alert_type)
         ),
-        AlertType::SusEventCount => format!(
+        AlertKind::SusEventCount => format!(
             "{} files had an event count divisible by {}",
             number_of_files,
             get_alert_threshold_value(alert_level, alert_type)
         ),
-        AlertType::DupeEvents => format!(
+        AlertKind::DupeEvents => format!(
             "{} files had greater than {} duplicate records",
             number_of_files,
             get_alert_threshold_value(alert_level, alert_type)
         ),
-        AlertType::RedactionEvents => format!(
+        AlertKind::RedactionEvents => format!(
             "{} files had greater than {} records with potential redactions",
             number_of_files,
             get_alert_threshold_value(alert_level, alert_type)
         ),
-        AlertType::JsonError => format!("{} files had JSON syntax errors", number_of_files),
-        AlertType::MultipartOverlap(_, _) => {
+        AlertKind::JsonError => format!("{} files had JSON syntax errors", number_of_files),
+        AlertKind::MultipartOverlap => {
             format!("{} files contain overlapping time ranges", number_of_files)
         }
     }
@@ -89,19 +113,19 @@ pub fn get_message_for_alert_output_file(alert_level: AlertLevel, alert_type: Al
     match alert_type {
         AlertType::SusTimeGap => format!(
             "Largest time gap greater than {} standard deviations above the average time gap",
-            get_alert_threshold_value(alert_level, alert_type)
+            get_alert_threshold_value(alert_level, alert_type.kind())
         ),
         AlertType::SusEventCount => format!(
             "Event count was divisible by {}",
-            get_alert_threshold_value(alert_level, alert_type)
+            get_alert_threshold_value(alert_level, alert_type.kind())
         ),
         AlertType::DupeEvents => format!(
             "Greater than {} duplicate records",
-            get_alert_threshold_value(alert_level, alert_type)
+            get_alert_threshold_value(alert_level, alert_type.kind())
         ),
         AlertType::RedactionEvents => format!(
             "Greater than {} records with potential redactions",
-            get_alert_threshold_value(alert_level, alert_type)
+            get_alert_threshold_value(alert_level, alert_type.kind())
         ),
         AlertType::JsonError => {
             format!("File had json syntax errors that may interfere with parsing in other tools")
@@ -188,11 +212,11 @@ fn get_alert_level_greater_than_threshold_values(
     value: usize,
     alert_type: AlertType,
 ) -> Option<AlertLevel> {
-    if value > get_alert_threshold_value(AlertLevel::High, alert_type.clone()) {
+    if value > get_alert_threshold_value(AlertLevel::High, alert_type.kind().clone()) {
         Some(AlertLevel::High)
-    } else if value > get_alert_threshold_value(AlertLevel::Medium, alert_type.clone()) {
+    } else if value > get_alert_threshold_value(AlertLevel::Medium, alert_type.kind().clone()) {
         Some(AlertLevel::Medium)
-    } else if value > get_alert_threshold_value(AlertLevel::Low, alert_type.clone()) {
+    } else if value > get_alert_threshold_value(AlertLevel::Low, alert_type.kind().clone()) {
         Some(AlertLevel::Low)
     } else {
         None
@@ -200,11 +224,11 @@ fn get_alert_level_greater_than_threshold_values(
 }
 
 fn get_alert_level_remainder_zero(n: usize, alert_type: AlertType) -> Option<AlertLevel> {
-    if n % get_alert_threshold_value(AlertLevel::High, alert_type.clone()) == 0 {
+    if n % get_alert_threshold_value(AlertLevel::High, alert_type.kind().clone()) == 0 {
         Some(AlertLevel::High)
-    } else if n % get_alert_threshold_value(AlertLevel::Medium, alert_type.clone()) == 0 {
+    } else if n % get_alert_threshold_value(AlertLevel::Medium, alert_type.kind().clone()) == 0 {
         Some(AlertLevel::Medium)
-    } else if n % get_alert_threshold_value(AlertLevel::Low, alert_type.clone()) == 0 {
+    } else if n % get_alert_threshold_value(AlertLevel::Low, alert_type.kind().clone()) == 0 {
         Some(AlertLevel::Low)
     } else {
         None
