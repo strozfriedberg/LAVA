@@ -190,37 +190,33 @@ pub fn set_time_direction_by_scanning_json_file(
                     LavaErrorLevel::Critical,
                 )
             })?);
-        match extracted_timestamp {
-            None => {
+        let timestamp_str = match extracted_timestamp {
+            Some(Value::String(s)) => s.clone(),
+            Some(Value::Number(n)) => n.to_string(),
+            Some(_) => {
                 return Err(LavaError::new(
-                    format!("No timestamp field extracted during JSON direction scanning"),
+                    "Unsupported timestamp value type during JSON direction scanning".to_string(),
                     LavaErrorLevel::Critical,
                 ));
             }
-            Some(timestamp) => match timestamp {
-                Value::String(string) => {
-                    if let Some(current_datetime) = timestamp_hit
-                        .regex_info
-                        .get_timestamp_object_from_string_contianing_date(string.clone())?
-                    {
-                        if let Some(direction) =
-                            direction_checker.process_timestamp(current_datetime)
-                        {
-                            timestamp_hit.direction = Some(direction);
-                            return Ok(());
-                        }
-                    };
-                }
-                _ => {
-                    return Err(LavaError::new(
-                        format!(
-                            "Non String timestamp field extracted during JSON direction scanning"
-                        ),
-                        LavaErrorLevel::Critical,
-                    ));
-                }
-            },
-        }
+            None => {
+                return Err(LavaError::new(
+                    "No timestamp field extracted during JSON direction scanning".to_string(),
+                    LavaErrorLevel::Critical,
+                ));
+            }
+        };
+        if let Some(current_datetime) = timestamp_hit
+            .regex_info
+            .get_timestamp_object_from_string_contianing_date(timestamp_str.clone())?
+        {
+            if let Some(direction) =
+                direction_checker.process_timestamp(current_datetime)
+            {
+                timestamp_hit.direction = Some(direction);
+                return Ok(());
+            }
+        };
     }
     Ok(())
 }
@@ -276,6 +272,9 @@ pub fn stream_json_file(
                         Value::String(string) => timestamp_hit
                             .regex_info
                             .get_timestamp_object_from_string_contianing_date(string.clone())?,
+                        Value::Number(number) => timestamp_hit
+                            .regex_info
+                            .get_timestamp_object_from_string_contianing_date(number.to_string().clone())?,
                         _ => {
                             return Err(LavaError::new(
                                 format!(
@@ -361,6 +360,46 @@ mod json_handler_tests {
             json!({"timestamp": "2024-01-01T12:05:00Z"}).to_string(),
             json!({"timestamp": "2024-01-01T12:03:00Z"}).to_string(),
             json!({"timestamp": "2024-01-01T12:02:00Z"}).to_string(),
+        ]
+        .join("\n");
+
+        write(&file_path, json_lines).expect("Failed to write JSON lines to temp file");
+
+        // Step 2: Construct the input structs
+        let log_file = LogFile {
+            log_type: LogType::Json, // Assuming a variant exists
+            file_path: file_path.clone(),
+        };
+
+        let mut identified_time_info = try_to_get_timestamp_hit_for_json(
+            &log_file,
+            &ExecutionSettings::create_integration_test_object(None, false),
+        )
+        .unwrap()
+        .unwrap();
+
+        // Step 3: Call the function
+        let result = set_time_direction_by_scanning_json_file(&log_file, &mut identified_time_info);
+
+        // Step 4: Assert success and expected direction
+        assert!(result.is_ok());
+        assert_eq!(
+            identified_time_info.direction,
+            Some(TimeDirection::Descending)
+        ); // or whatever is expected
+    }
+
+    #[test]
+    fn test_set_time_direction_by_scanning_json_file_number_descending() {
+        // Step 1: Create temporary log file with JSON lines
+        let temp_file = NamedTempFile::new().expect("Failed to create temp file");
+        let file_path = temp_file.path().to_path_buf();
+
+        // Create a few JSON lines with timestamps
+        let json_lines = vec![
+            json!({"timestamp": 1672534900}).to_string(),
+            json!({"timestamp": 1672534800}).to_string(),
+            json!({"timestamp": 1672534700}).to_string(),
         ]
         .join("\n");
 
