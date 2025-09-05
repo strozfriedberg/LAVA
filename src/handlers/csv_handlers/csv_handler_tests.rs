@@ -73,6 +73,52 @@ fn test_get_header_info_on_row_2() {
 }
 
 #[test]
+fn test_get_header_info_izzy_example_broken() {
+    let data = r#"{"criteria":{},"exclusions":{},"query":"device_id:","time_range":{"start":"2024-10-26T14:12:59.042Z","end":"2025-04-24T14:12:59.042Z"},"rows":10000,"fields":["*"],"sort":[{"field":"device_timestamp","order":"DESC"}]}
+alert_category,alert_id,blocked_effective_reputation,blocked_hash,blocked_name,backend_timestamp,device_external_ip,device_group,device_group_id,device_id,device_internal_ip,device_name,device_os,device_policy,device_policy_id,device_sensor_version,device_timestamp,enriched,enriched_event_type,legacy,observation_description
+,,,,,2025-04-24T14:05:58.867Z,,,0,456774Test,,tsys\tsysdc1,WINDOWS,gpn - svr - win - nonprod - le,189117,,2025-04-24T14:04:22.972Z,TRUE,SYSTEM_API_CALL,,"The application ""c:\windows\system32\cmd.exe"" attempted to invoke the application ""c:\windows\system32\windowspowershell\v1.0\powershell.exe"", by calling the function ""CreateProcess"". The operation was successful."
+,,,,,2025-04-24T14:00:42.338Z,,,0,456774Test,,tsys\tsysdc1,WINDOWS,gpn - svr - win - nonprod - le,189117,,2025-04-24T13:59:23.127Z,TRUE,SYSTEM_API_CALL,,"The application ""c:\windows\system32\cmd.exe"" attempted to invoke the application ""c:\windows\system32\windowspowershell\v1.0\powershell.exe"", by calling the function ""CreateProcess"". The operation was successful."
+,,,,,2025-04-24T14:00:42.345Z,,,0,456774Test,,tsys\tsysdc1,WINDOWS,gpn - svr - win - nonprod - le,189117,,2025-04-24T13:56:44.911Z,TRUE,SYSTEM_API_CALL,,"The application ""c:\windows\system32\conhost.exe"" attempted to open the process ""c:\program files\confer\bladerunner.exe"", by calling the function ""OpenProcess"". The operation was successful."
+,,,,,2025-04-24T14:00:42.699Z,,,0,456774Test,,tsys\tsysdc1,WINDOWS,gpn - svr - win - nonprod - le,189117,,2025-04-24T13:56:18.220Z,TRUE,SYSTEM_API_CALL,,"The application ""c:\windows\system32\conhost.exe"" attempted to open the process ""c:\program files\confer\bladerunner.exe"", by calling the function ""OpenProcess"". The operation was successful."
+,,,,,2025-04-24T14:00:42.348Z,,,0,456774Test,,tsys\tsysdc1,WINDOWS,gpn - svr - win - nonprod - le,189117,,2025-04-24T13:56:04.357Z,TRUE,SYSTEM_API_CALL,,"The application ""c:\windows\system32\conhost.exe"" attempted to open the process ""c:\program files\confer\bladerunner.exe"", by calling the function ""OpenProcess"". The operation was successful."
+,,,,,2025-04-24T14:00:42.217Z,,,0,456774Test,,tsys\tsysdc1,WINDOWS,gpn - svr - win - nonprod - le,189117,,2025-04-24T13:54:52.753Z,TRUE,SYSTEM_API_CALL,,"The application ""c:\windows\system32\cmd.exe"" attempted to invoke the application ""c:\windows\system32\netstat.exe"", by calling the function ""CreateProcess"". The operation was successful.""#;
+
+    let cursor = Cursor::new(data);
+    let mut reader = BufReader::new(cursor);
+
+    let result = get_header_info_functionality(&mut reader);
+
+    let expected = HeaderInfo {
+        first_data_row: 2,
+        headers: StringRecord::from(vec![
+            "alert_category",
+            "alert_id",
+            "blocked_effective_reputation",
+            "blocked_hash",
+            "blocked_name",
+            "backend_timestamp",
+            "device_external_ip",
+            "device_group",
+            "device_group_id",
+            "device_id",
+            "device_internal_ip",
+            "device_name",
+            "device_os",
+            "device_policy",
+            "device_policy_id",
+            "device_sensor_version",
+            "device_timestamp",
+            "enriched",
+            "enriched_event_type",
+            "legacy",
+            "observation_description",
+        ]),
+    };
+
+    assert_eq!(expected, result.unwrap());
+}
+
+#[test]
 fn test_get_header_info_no_timestamp() {
     let data = "\
         garbage\n\

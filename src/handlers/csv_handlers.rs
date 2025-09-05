@@ -5,6 +5,7 @@ use crate::processing_objects::*;
 use chrono::NaiveDateTime;
 use csv::Reader;
 use csv::ReaderBuilder;
+use csv::StringRecord;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Seek, SeekFrom};
 #[cfg(test)]
@@ -53,27 +54,33 @@ pub fn get_header_info_functionality<R: BufRead + Seek>(reader: &mut R) -> Resul
 }
 
 pub fn get_index_of_header<R: BufRead>(reader: &mut R) -> Result<usize> {
-    let mut comma_counts: Vec<(usize, usize)> = Vec::new();
+    let mut rdr = csv::ReaderBuilder::new()
+        .flexible(true)
+        .has_headers(false)
+        .from_reader(reader);
 
-    for (index, line_result) in reader.lines().enumerate().take(7) {
-        let line = line_result.map_err(|e| {
+    let mut field_counts: Vec<(usize, usize)> = Vec::new();
+
+    for (index, result) in rdr.records().enumerate().take(7) {
+        let record: StringRecord = result.map_err(|e| {
             LavaError::new(
-                format!("Error reading line {}: {}", index, e),
+                format!("Error reading record {}: {}", index, e),
                 LavaErrorLevel::Critical,
             )
         })?;
-        let count = line.matches(',').count();
-        comma_counts.push((index, count));
+        field_counts.push((index, record.len()));
     }
-    // println!("Comma counts {:?}", comma_counts);
-    let (_, expected_comma_count) = comma_counts.last().ok_or_else(|| {
+    // println!("{:?}", field_counts);
+
+    let (_, expected_field_count) = field_counts.last().ok_or_else(|| {
         LavaError::new(
-            "Vector of comma counts was empty.",
+            "No records found in first 7 lines.",
             LavaErrorLevel::Critical,
         )
     })?;
-    for (index, comma_count) in comma_counts.iter().rev() {
-        if comma_count < expected_comma_count {
+
+    for (index, field_count) in field_counts.iter().rev() {
+        if field_count < expected_field_count {
             return Ok(index + 1);
         }
     }
