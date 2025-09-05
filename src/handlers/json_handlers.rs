@@ -279,7 +279,7 @@ pub fn stream_json_file(
                         _ => {
                             return Err(LavaError::new(
                                 format!(
-                                    "Non String timestamp field extracted during JSON direction scanning"
+                                    "Non String timestamp field extracted during JSON file streaming"
                                 ),
                                 LavaErrorLevel::Critical,
                             ));
