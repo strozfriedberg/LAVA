@@ -3,8 +3,15 @@ use chrono::NaiveDateTime;
 use regex::Regex;
 use serde::Deserialize;
 use std::fmt;
+use phf::phf_map;
+use crate::date_string_mutations::*;
+
 #[cfg(test)]
 mod date_regex_tests;
+
+static FUNCTION_MAP: phf::Map<&'static str, fn(&str)->&str> = phf_map! {
+    "strip_to_10_most_significant_digits" => strip_to_10_most_significant_digits,
+};
 
 #[derive(Deserialize)]
 pub struct RawDateRegex {
@@ -38,7 +45,11 @@ impl DateRegex {
         if let Some(captures) = self.regex.captures(&string_to_extract_from) {
             // Get the matched string (the datetime)
             if let Some(datetime_str) = captures.get(0) {
-                let datetime_str = datetime_str.as_str();
+                let datetime_str = match self.function_to_call.clone() {
+                    None => datetime_str.as_str(),
+                    Some(function_to_call) => FUNCTION_MAP[&function_to_call](datetime_str.as_str()),// Here optionally call the function.
+                };
+
                 // Now, parse the extracted datetime string into NaiveDateTime using the strftime_format
                 let parsed_datetime =
                     NaiveDateTime::parse_from_str(datetime_str, &self.strftime_format).map_err(

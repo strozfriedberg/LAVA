@@ -1,5 +1,5 @@
 
-fn strip_to_10_most_significant_digits(input_string: &str) -> &str {
+pub fn strip_to_10_most_significant_digits(input_string: &str) -> &str {
     if input_string.len() > 10 {
         &input_string[..10]
     } else {
