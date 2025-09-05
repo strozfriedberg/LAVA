@@ -136,10 +136,15 @@ fn generate_date_regex_tests(parsed: &Vec<RawDateRegexWithTests>, out_dir: &OsSt
                 i, should_match_index
             ));
             test_code.push_str(&format!(
-            "   let re = DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"{}\").unwrap(),\n        }};\n",
+            "   let re = DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"{}\").unwrap(),\n            function_to_call: {}\n         }};\n",
             item.pretty_format,
             item.strftime_format,
-            item.regex
+            item.regex,
+            match item.function_to_call.clone() {
+                Some(function)=> format!("Some(\"{}\".to_string())",function),
+                None => "None".to_string()
+                
+            }
         ));
             test_code.push_str("    let date = NaiveDate::from_ymd_opt(2023, 1, 1).unwrap();\n");
             test_code
@@ -158,10 +163,15 @@ fn generate_date_regex_tests(parsed: &Vec<RawDateRegexWithTests>, out_dir: &OsSt
                 i, should_match_not_index
             ));
             test_code.push_str(&format!(
-            "   let re = DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"{}\").unwrap(),\n        }};\n",
+            "   let re = DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"{}\").unwrap(),\n            function_to_call: {}\n        }};\n",
             item.pretty_format,
             item.strftime_format,
-            item.regex
+            item,
+            match item.function_to_call.clone() {
+                Some(function)=> format!("Some(\"{}\".to_string())",function),
+                None => "None".to_string()
+                
+            }
         ));
             test_code.push_str(&format!(
                 r#"     match re.get_timestamp_object_from_string_contianing_date("{}".to_string()) {{
