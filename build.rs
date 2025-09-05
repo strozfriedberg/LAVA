@@ -101,10 +101,15 @@ fn generate_date_regex_vector(parsed: &Vec<RawDateRegexWithTests>, out_dir: &OsS
     for entry in parsed {
         // Write each item in the vec
         generated_code.push_str(&format!(
-            "        DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"({})\").unwrap(),\n        }},\n",
+            "        DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"({})\").unwrap(),\n            function_to_call: {}\n         }},\n",
             entry.pretty_format,
             entry.strftime_format,
-            entry.regex
+            entry.regex,
+            match entry.function_to_call.clone() {
+                Some(function)=> format!("Some(\"{}\".to_string())",function),
+                None => "None".to_string()
+                
+            }
         ));
     }
 
