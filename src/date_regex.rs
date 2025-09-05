@@ -28,6 +28,7 @@ impl DateRegex {
             pretty_format: input.pretty_format,
             strftime_format: input.strftime_format,
             regex: Regex::new(&format!(r"({})", input.regex)).unwrap(),
+            function_to_call: None, // Choosing to not allow users to supply the function to call part
         }
     }
     pub fn get_timestamp_object_from_string_contianing_date(

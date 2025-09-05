@@ -505,6 +505,7 @@ mod json_handler_tests {
                 pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(),
                 strftime_format: "%Y-%m-%d %H:%M:%S".to_string(),
                 regex: Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").unwrap(),
+                function_to_call: None
             }],
             timestamp_field: None,
             quick_mode: false,
@@ -539,6 +540,7 @@ mod json_handler_tests {
                 pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(),
                 strftime_format: "%Y-%m-%d %H:%M:%S".to_string(),
                 regex: Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").unwrap(),
+                function_to_call: None
             }],
             timestamp_field: Some("second_timestamp->test".to_string()),
             quick_mode: false,
