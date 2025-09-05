@@ -86,9 +86,11 @@ For timestamp analysis, LAVA relies on pairs of regex and strftime format string
 ```
 `pretty_format` - Just a human readable representation of the timestamp (Not used for any parsing)
 
-`regex` - regex to capture the timestamp
+`regex` - Regex to capture the timestamp. (backslashes must be escaped in the YML file)
 
-`stftime_format` - format to parse the thing string that is captured. Must follow the formats in https://docs.rs/chrono/latest/chrono/format/strftime/
+`stftime_format` - Format to parse the thing string that is captured. Must follow the formats in https://docs.rs/chrono/latest/chrono/format/strftime/
+
+`function_to_call` - **Optional** - String that references a function name in `date_string_mutations.rs`. This specifies the function that will be called on the captured string, before it is parsed into a datetime object with the specified strftime string. This is necessary for some time formats like Epoch milliseconds, and in the future, Syslog events with no year. Basically any format where the timestamp string on it's own, does not have a valid rust strftime format to parse it. As such you need something to mutate the string so that it can parse properly.
 
 `should_match` - List of strings that should get captured by the regex, successfully parsed by the strftime format, and **match the date January 1st, 2023, at 1 AM**. A test is auto generated for each of these, and if any one of those conditions fail, the test will fail.
 
