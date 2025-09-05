@@ -45,9 +45,18 @@ impl DateRegex {
         if let Some(captures) = self.regex.captures(&string_to_extract_from) {
             // Get the matched string (the datetime)
             if let Some(datetime_str) = captures.get(0) {
-                let datetime_str = match self.function_to_call.clone() {
+                let datetime_str = match &self.function_to_call {
                     None => datetime_str.as_str(),
-                    Some(function_to_call) => FUNCTION_MAP[&function_to_call](datetime_str.as_str()),// Here optionally call the function.
+                    Some(function_to_call) => {
+                        let actual_mutation_function = FUNCTION_MAP
+                            .get(function_to_call)
+                            .ok_or_else(|| LavaError::new(
+                                "Supplied Function to Call on date string was not found in date_string_mutations.rs",
+                                LavaErrorLevel::Critical,
+                            ))?;
+
+                        actual_mutation_function(datetime_str.as_str())
+                    }
                 };
 
                 // Now, parse the extracted datetime string into NaiveDateTime using the strftime_format
