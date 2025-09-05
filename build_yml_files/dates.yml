@@ -14,6 +14,7 @@
   strftime_format: "%Y-%m-%dT%H:%M:%S%.f"
   should_match: 
     - "2023-01-01T01:00:00.000"
+    - "2023-01-01T01:00:00.000-0400"
     - "2023-01-01T01:00:00.000000"
     - "2023-01-01T01:00:00.0"
     - "2023-01-01T01:00:00"
@@ -57,7 +58,7 @@
     - "7/20/2025 2:23:45 PM"
     - "2025-07-20 14:23:45"
 
-- pretty_format: "Epoch Time"
+- pretty_format: "Epoch Time Seconds"
   regex: "\\b\\d{10}\\b"
   strftime_format: "%s"  # Note: %s is platform-dependent
   should_match:
@@ -66,6 +67,19 @@
     - "\\\"ts\\\":1672534800.000000"
   should_not_match:
     - "167253480000"
+
+- pretty_format: "Epoch Time Milliseconds"
+  regex: "\\b\\d{13}\\b"
+  strftime_format: "%s"  # Note: %s is platform-dependent
+  function_to_call: "strip_to_10_most_significant_digits"
+  should_match:
+    - "1672534800000"
+    - "date:1672534800000"
+    - "\\\"ts\\\":1672534800000.000000"
+  should_not_match:
+    - "1672534800"
+    - "date:1672534800"
+    - "\\\"ts\\\":1672534800.000000"
 
 - pretty_format: "date= time="
   regex: "date=\\d{4}-\\d{2}-\\d{2}\\s+time=\\d{2}:\\d{2}:\\d{2}"

@@ -12,6 +12,7 @@ struct RawDateRegexWithTests {
     strftime_format: String,
     should_match: Vec<String>,
     should_not_match: Vec<String>,
+    function_to_call: Option<String>,
 }
 
 impl fmt::Display for RawDateRegexWithTests {
@@ -100,10 +101,15 @@ fn generate_date_regex_vector(parsed: &Vec<RawDateRegexWithTests>, out_dir: &OsS
     for entry in parsed {
         // Write each item in the vec
         generated_code.push_str(&format!(
-            "        DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"({})\").unwrap(),\n        }},\n",
+            "        DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"({})\").unwrap(),\n            function_to_call: {}\n         }},\n",
             entry.pretty_format,
             entry.strftime_format,
-            entry.regex
+            entry.regex,
+            match entry.function_to_call.clone() {
+                Some(function)=> format!("Some(\"{}\".to_string())",function),
+                None => "None".to_string()
+                
+            }
         ));
     }
 
@@ -130,10 +136,15 @@ fn generate_date_regex_tests(parsed: &Vec<RawDateRegexWithTests>, out_dir: &OsSt
                 i, should_match_index
             ));
             test_code.push_str(&format!(
-            "   let re = DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"{}\").unwrap(),\n        }};\n",
+            "   let re = DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"{}\").unwrap(),\n            function_to_call: {}\n         }};\n",
             item.pretty_format,
             item.strftime_format,
-            item.regex
+            item.regex,
+            match item.function_to_call.clone() {
+                Some(function)=> format!("Some(\"{}\".to_string())",function),
+                None => "None".to_string()
+                
+            }
         ));
             test_code.push_str("    let date = NaiveDate::from_ymd_opt(2023, 1, 1).unwrap();\n");
             test_code
@@ -152,10 +163,15 @@ fn generate_date_regex_tests(parsed: &Vec<RawDateRegexWithTests>, out_dir: &OsSt
                 i, should_match_not_index
             ));
             test_code.push_str(&format!(
-            "   let re = DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"{}\").unwrap(),\n        }};\n",
+            "   let re = DateRegex {{\n            pretty_format: \"{}\".to_string(),\n            strftime_format: \"{}\".to_string(),\n            regex: Regex::new(r\"{}\").unwrap(),\n            function_to_call: {}\n        }};\n",
             item.pretty_format,
             item.strftime_format,
-            item.regex
+            item,
+            match item.function_to_call.clone() {
+                Some(function)=> format!("Some(\"{}\".to_string())",function),
+                None => "None".to_string()
+                
+            }
         ));
             test_code.push_str(&format!(
                 r#"     match re.get_timestamp_object_from_string_contianing_date("{}".to_string()) {{

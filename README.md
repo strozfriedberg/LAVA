@@ -86,9 +86,11 @@ For timestamp analysis, LAVA relies on pairs of regex and strftime format string
 ```
 `pretty_format` - Just a human readable representation of the timestamp (Not used for any parsing)
 
-`regex` - regex to capture the timestamp
+`regex` - Regex to capture the timestamp. (backslashes must be escaped in the YML file)
 
-`stftime_format` - format to parse the thing string that is captured. Must follow the formats in https://docs.rs/chrono/latest/chrono/format/strftime/
+`stftime_format` - Format to parse the thing string that is captured. Must follow the formats in https://docs.rs/chrono/latest/chrono/format/strftime/
+
+`function_to_call` - **Optional** - String that references a function name in `date_string_mutations.rs`. This specifies the function that will be called on the captured string, before it is parsed into a datetime object with the specified strftime string. This is necessary for some time formats like Epoch milliseconds, and in the future, Syslog events with no year. Basically any format where the timestamp string on it's own, does not have a valid rust strftime format to parse it. As such you need something to mutate the string so that it can parse properly.
 
 `should_match` - List of strings that should get captured by the regex, successfully parsed by the strftime format, and **match the date January 1st, 2023, at 1 AM**. A test is auto generated for each of these, and if any one of those conditions fail, the test will fail.
 
@@ -97,7 +99,7 @@ For timestamp analysis, LAVA relies on pairs of regex and strftime format string
 ## Design Decisions
 - If a file is is out of order at any point, the time processing will halt, and any time related statistics that file will be disregarded (min/max time, largest time gap, number of time records). The file will still continue to be processed for duplicates and redactions as long as quick mode is not enabled. 
 - If the first line of JSONL is not formatted properly, LAVA will alert on that fact, but not attempt to parse the file. If the first few lines are formatted properly (enough to determine the timestamp format, and direction), but a line farther into the file is not formatted properly, LAVA will alert on this fact every line, but attempt to continue parsing with the previously determined timestamp format and direction.
-- Multipart mode does NOT look for duplicate records across files. Duplicate detection still happens on a per file basis. 
+- Multipart mode does NOT look for duplicate records across files. Duplicate detection still happens on a per file basis.
 
 ## Compiling Tips
 To assist in this process I wrote a powershell script at build.ps1 that will compile the tool for windows and linux. The `-increment` command line will increment the version number, and the `-publish` command line arg will publish a github release with the resulting executables. For the publish functionality you must install the github CLI `https://cli.github.com/`
