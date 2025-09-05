@@ -210,9 +210,7 @@ pub fn set_time_direction_by_scanning_json_file(
             .regex_info
             .get_timestamp_object_from_string_contianing_date(timestamp_str.clone())?
         {
-            if let Some(direction) =
-                direction_checker.process_timestamp(current_datetime)
-            {
+            if let Some(direction) = direction_checker.process_timestamp(current_datetime) {
                 timestamp_hit.direction = Some(direction);
                 return Ok(());
             }
@@ -274,7 +272,9 @@ pub fn stream_json_file(
                             .get_timestamp_object_from_string_contianing_date(string.clone())?,
                         Value::Number(number) => timestamp_hit
                             .regex_info
-                            .get_timestamp_object_from_string_contianing_date(number.to_string().clone())?,
+                            .get_timestamp_object_from_string_contianing_date(
+                                number.to_string().clone(),
+                            )?,
                         _ => {
                             return Err(LavaError::new(
                                 format!(
@@ -544,7 +544,7 @@ mod json_handler_tests {
                 pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(),
                 strftime_format: "%Y-%m-%d %H:%M:%S".to_string(),
                 regex: Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").unwrap(),
-                function_to_call: None
+                function_to_call: None,
             }],
             timestamp_field: None,
             quick_mode: false,
@@ -579,7 +579,7 @@ mod json_handler_tests {
                 pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(),
                 strftime_format: "%Y-%m-%d %H:%M:%S".to_string(),
                 regex: Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").unwrap(),
-                function_to_call: None
+                function_to_call: None,
             }],
             timestamp_field: Some("second_timestamp->test".to_string()),
             quick_mode: false,

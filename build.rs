@@ -12,7 +12,7 @@ struct RawDateRegexWithTests {
     strftime_format: String,
     should_match: Vec<String>,
     should_not_match: Vec<String>,
-    function_to_call: Option<String>
+    function_to_call: Option<String>,
 }
 
 impl fmt::Display for RawDateRegexWithTests {

@@ -1,15 +1,15 @@
+use crate::date_string_mutations::*;
 use crate::errors::*;
 use chrono::NaiveDateTime;
+use phf::phf_map;
 use regex::Regex;
 use serde::Deserialize;
 use std::fmt;
-use phf::phf_map;
-use crate::date_string_mutations::*;
 
 #[cfg(test)]
 mod date_regex_tests;
 
-static FUNCTION_MAP: phf::Map<&'static str, fn(&str)->&str> = phf_map! {
+static FUNCTION_MAP: phf::Map<&'static str, fn(&str) -> &str> = phf_map! {
     "strip_to_10_most_significant_digits" => strip_to_10_most_significant_digits,
 };
 
@@ -18,7 +18,7 @@ pub struct RawDateRegex {
     pub pretty_format: String,
     pub regex: String,
     pub strftime_format: String,
-    pub function_to_call: Option<String>
+    pub function_to_call: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -26,7 +26,7 @@ pub struct DateRegex {
     pub pretty_format: String,
     pub strftime_format: String,
     pub regex: Regex,
-    pub function_to_call: Option<String>
+    pub function_to_call: Option<String>,
 }
 
 impl DateRegex {

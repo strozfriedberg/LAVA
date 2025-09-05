@@ -6,7 +6,7 @@ fn test_date_regex_from_raw() {
         pretty_format: "YYYY-MM-DDTHH:MM:SS.SSS".to_string(),
         strftime_format: "%Y-%m-%dT%H:%M:%S%.3f".to_string(),
         regex: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{1,3}".to_string(),
-        function_to_call: None
+        function_to_call: None,
     };
     let re = DateRegex::new_from_raw_date_regex(raw_re);
     let test_input = "2023-01-01T01:00:00.000";

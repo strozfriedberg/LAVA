@@ -34,7 +34,7 @@ pub fn build_fake_timestamp_hit_from_direction(
         pretty_format: "FAKE_TIMESTAMP".to_string(),
         strftime_format: "%s".to_string(), // Epoch timestamp format, or adjust as needed
         regex,
-        function_to_call: None
+        function_to_call: None,
     };
     Some(IdentifiedTimeInformation {
         column_name: None,
