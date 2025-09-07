@@ -9,8 +9,9 @@ use std::fmt;
 #[cfg(test)]
 mod date_regex_tests;
 
-static FUNCTION_MAP: phf::Map<&'static str, fn(&str) -> &str> = phf_map! {
+static FUNCTION_MAP: phf::Map<&'static str, fn(&str) -> String> = phf_map! {
     "strip_to_10_most_significant_digits" => strip_to_10_most_significant_digits,
+    "append_1970_to_the_left" => append_1970_to_the_left,
 };
 
 #[derive(Deserialize)]
@@ -45,8 +46,8 @@ impl DateRegex {
         if let Some(captures) = self.regex.captures(&string_to_extract_from) {
             // Get the matched string (the datetime)
             if let Some(datetime_str) = captures.get(0) {
-                let datetime_str = match &self.function_to_call {
-                    None => datetime_str.as_str(),
+                let datetime_str: String = match &self.function_to_call {
+                    None => datetime_str.as_str().to_string(),
                     Some(function_to_call) => {
                         let actual_mutation_function = FUNCTION_MAP
                             .get(function_to_call)
@@ -61,7 +62,7 @@ impl DateRegex {
 
                 // Now, parse the extracted datetime string into NaiveDateTime using the strftime_format
                 let parsed_datetime =
-                    NaiveDateTime::parse_from_str(datetime_str, &self.strftime_format).map_err(
+                    NaiveDateTime::parse_from_str(&datetime_str, &self.strftime_format).map_err(
                         |e| {
                             LavaError::new(
                                 format!("NaiveDateTime::parse_from_str was unable to the parse timestamp because {e}"),
