@@ -125,7 +125,7 @@ fn generate_date_regex_tests(parsed: &Vec<RawDateRegexWithTests>, out_dir: &OsSt
     test_code.push_str("#[cfg(test)]\n");
     test_code.push_str("mod generated_date_regex_tests {\n");
     test_code.push_str("    use regex::Regex;\n");
-    test_code.push_str("    use chrono::{NaiveDate, NaiveTime, NaiveDateTime};\n");
+    test_code.push_str("    use chrono::NaiveDateTime;\n");
     test_code.push_str("    use crate::date_regex::DateRegex;\n\n");
 
     for (i, item) in parsed.iter().enumerate() {
