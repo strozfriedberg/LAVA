@@ -129,7 +129,7 @@ fn generate_date_regex_tests(parsed: &Vec<RawDateRegexWithTests>, out_dir: &OsSt
     test_code.push_str("    use crate::date_regex::DateRegex;\n\n");
 
     for (i, item) in parsed.iter().enumerate() {
-        for (should_match_index, should_match_value) in item.should_match.iter().enumerate() {
+        for (should_match_index, test_info_non_split) in item.should_match.iter().enumerate() {
             test_code.push_str("#[test]\n");
             test_code.push_str(&format!(
                 "fn generated_test_date_regex_{}_should_match_{}() {{\n",
@@ -146,11 +146,10 @@ fn generate_date_regex_tests(parsed: &Vec<RawDateRegexWithTests>, out_dir: &OsSt
                 
             }
         ));
-            test_code.push_str("    let date = NaiveDate::from_ymd_opt(2023, 1, 1).unwrap();\n");
-            test_code
-                .push_str("    let time = NaiveTime::from_hms_milli_opt(1, 0, 0, 0).unwrap();\n");
-            test_code.push_str("    let expected_timestamp = NaiveDateTime::new(date, time);\n");
-            test_code.push_str(&format!("    let actual_timestamp = re.get_timestamp_object_from_string_contianing_date(\"{}\".to_string()).unwrap().expect(\"Failed to get timestamp\");\n", should_match_value));
+            if let Some((should_match_value, iso_timestamp_it_should_match_to)) = test_info_non_split.split_once("==") {
+                test_code.push_str(&format!("    let expected_timestamp = NaiveDateTime::parse_from_str(\"{}\", \"%Y-%m-%dT%H:%M:%SZ\", ).unwrap();\n", iso_timestamp_it_should_match_to));
+                test_code.push_str(&format!("    let actual_timestamp = re.get_timestamp_object_from_string_contianing_date(\"{}\".to_string()).unwrap().expect(\"Failed to get timestamp\");\n", should_match_value));
+            };
             test_code.push_str("    assert_eq!(expected_timestamp, actual_timestamp);\n");
             test_code.push_str("}\n");
         }
