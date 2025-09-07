@@ -77,12 +77,12 @@ For timestamp analysis, LAVA relies on pairs of regex and strftime format string
   regex: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z"
   strftime_format: "%Y-%m-%dT%H:%M:%S%.fZ"
   should_match:
-    - "2023-01-01T01:00:00.000000Z"
-    - "2023-01-01T01:00:00.000Z"
-    - "2023-01-01T01:00:00Z"
+    - "2023-01-01T01:00:00.000000Z==2023-01-01T01:00:00Z"
+    - "2023-01-01T01:00:00.000Z==2023-01-01T01:00:00Z"
+    - "2023-01-01T01:00:00Z==2023-01-01T01:00:00Z"
   should_not_match:
-    - "2023-01-01T01:00:00"
-    - "2023-01-01 01:00:00.000000Z"
+    - "2023-01-01T01:00:00==2023-01-01T01:00:00Z"
+    - "2023-01-01 01:00:00.000000Z==2023-01-01T01:00:00Z"
 ```
 `pretty_format` - Just a human readable representation of the timestamp (Not used for any parsing)
 
@@ -92,7 +92,7 @@ For timestamp analysis, LAVA relies on pairs of regex and strftime format string
 
 `function_to_call` - **Optional** - String that references a function name in `date_string_mutations.rs`. This specifies the function that will be called on the captured string, before it is parsed into a datetime object with the specified strftime string. This is necessary for some time formats like Epoch milliseconds, and in the future, Syslog events with no year. Basically any format where the timestamp string on it's own, does not have a valid rust strftime format to parse it. As such you need something to mutate the string so that it can parse properly.
 
-`should_match` - List of strings that should get captured by the regex, successfully parsed by the strftime format, and **match the date January 1st, 2023, at 1 AM**. A test is auto generated for each of these, and if any one of those conditions fail, the test will fail.
+`should_match` - List of strings that follow the pattern `<raw string to parse>==<expected ISO 8601 timestamp>`. Each string will be used to generate a test, where the string on the left side of the `==` should get captured by the regex, successfully parsed by the strftime format, and match the time specified in the ISO format on the right of the `==`. If any part of this process fails, the test will fail.
 
 `should_not_match` - List of strings that should fail one of conditions needed for should_match. 
 
