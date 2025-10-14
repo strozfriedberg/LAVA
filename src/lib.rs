@@ -153,7 +153,7 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
             );
             if num_input_files_processed_for_timestamp_analysis < results.len() {
                 println!(
-                    "\x1b[31m{} log files could not be processed for timestamp analysis. Check LAVA_Errors.log for reason\x1b[0m",
+                    "\x1b[91m{} log files could not be processed for timestamp analysis. Check LAVA_Errors.log for reason\x1b[0m",
                     (results.len() - num_input_files_processed_for_timestamp_analysis)
                         .to_formatted_string(&Locale::en)
                 );
@@ -274,7 +274,7 @@ pub fn process_file(
                     LavaErrorLevel::Medium,
                 ));
                 println!(
-                    "\x1b[31mCould not find a supported timestamp in {}\x1b[0m",
+                    "\x1b[91mCould not find a supported timestamp in {}\x1b[0m",
                     &file_name
                 );
                 None

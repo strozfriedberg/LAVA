@@ -225,7 +225,7 @@ impl LogRecordProcessor {
         self.max_timestamp = None;
         self.largest_time_gap = None;
         println!(
-            "\x1b[31m{} was not sorted on the identified timestamp. Out of order record at index {}\x1b[0m",
+            "\x1b[91m{} was not sorted on the identified timestamp. Out of order record at index {}\x1b[0m",
             self.file_name, record.index
         );
         self.errors.push(LavaError::new(
