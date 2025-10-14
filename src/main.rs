@@ -3,6 +3,7 @@ use lava::main_helpers::{get_full_execution_settings, print_compiled_regexes};
 use lava::process_all_files;
 
 fn main() {
+    let _ = enable_ansi_support::enable_ansi_support(); // don't care about the output of this because if it fails then oh well 
     print_ascii_art();
     let matches = Command::new("LAVA")
         .version("1.0")
