@@ -459,6 +459,8 @@ fn set_time_direction_by_scanning_file(
         return set_time_direction_by_scanning_unstructured_file(log_file, timestamp_hit);
     } else if log_file.log_type == LogType::Json {
         return set_time_direction_by_scanning_json_file(log_file, timestamp_hit);
+    } else if log_file.log_type == LogType::Evtx { // For Evtx I set the direction to Ascending always. It doesn't matter because time processing won't consider the direction.
+        return Ok(())
     }
     Err(LavaError::new(
         "Have not implemented scanning for directions for this file type yet.",
