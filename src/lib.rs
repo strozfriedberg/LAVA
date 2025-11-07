@@ -428,6 +428,8 @@ fn try_to_get_timestamp_hit(
         return try_to_get_timestamp_hit_for_unstructured(log_file, execution_settings);
     } else if log_file.log_type == LogType::Json {
         return try_to_get_timestamp_hit_for_json(log_file, execution_settings);
+    } else if log_file.log_type == LogType::Evtx{
+        return get_fake_timestamp_hit_for_evtx();
     }
 
     Err(LavaError::new(
