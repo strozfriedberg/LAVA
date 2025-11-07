@@ -12,7 +12,7 @@ pub fn get_fake_timestamp_hit_for_evtx() -> Result<Option<IdentifiedTimeInformat
     let regex = Regex::new(".*").ok().unwrap(); // Match anything. This won't actually get used
 
     let fake_evtx_regex_info = DateRegex {
-        pretty_format: "USING EVTX TIMESTAMP".to_string(),
+        pretty_format: "Binary EVTX".to_string(),
         strftime_format: "FAKE_STRFTIME".to_string(),
         regex,
         function_to_call: None,
@@ -21,7 +21,7 @@ pub fn get_fake_timestamp_hit_for_evtx() -> Result<Option<IdentifiedTimeInformat
         column_name: None,
         column_index: None,
         regex_info: fake_evtx_regex_info, 
-        direction: Some(TimeDirection::Descending),
+        direction: Some(TimeDirection::Ascending),
     }))
 }
 
@@ -76,7 +76,7 @@ mod evtx_handler_tests {
         let fp = PathBuf::from("C:\\cases\\rust_testing\\evtx\\Security.evtx");
 
         let mut parser = EvtxParser::from_path(fp).unwrap();
-        for record in parser.records().take(5) {
+        for record in parser.records().take(10) {
             match record {
                 Ok(r) => println!("Record {}\n{}",r.timestamp, r.event_record_id),
                 Err(e) => eprintln!("{}", e),
