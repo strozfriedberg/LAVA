@@ -92,7 +92,7 @@ fn integration_test_successful_run_one_record_csv() {
 
 #[test]
 fn integration_test_successful_run_one_record_json() {
-    let data = r#"{"user": {"time": "2021-05-09 10:00:00","profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:00:00"}"#;
+    let data = r#"{"user": {"time": "2025-05-09 10:00:00","profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:00:00"}"#;
 
     let temp_log_file = TempInputFile::new(LogType::Json, data);
     let log_file = temp_log_file.get_log_file_object();
@@ -454,11 +454,11 @@ fn json_integration_test_successful_run_no_errors() {
     assert_eq!(6, processed.total_num_records);
     assert_eq!(6, processed.timestamp_num_records);
     assert_eq!(
-        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        get_time_from_hardcoded_time_format("2021-05-09 10:00:00"),
         processed.min_timestamp.unwrap()
     );
     assert_eq!(
-        get_time_from_hardcoded_time_format("2025-05-09 10:05:00"),
+        get_time_from_hardcoded_time_format("2021-05-09 10:05:00"),
         processed.max_timestamp.unwrap()
     );
     temp_log_file.delete_temp_file();
@@ -543,11 +543,11 @@ fn json_integration_test_structure_error_line_3() {
     assert_eq!(3, processed.total_num_records);
     assert_eq!(2, processed.timestamp_num_records);
     assert_eq!(
-        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        get_time_from_hardcoded_time_format("2021-05-09 10:00:00"),
         processed.min_timestamp.unwrap()
     );
     assert_eq!(
-        get_time_from_hardcoded_time_format("2025-05-09 10:05:00"),
+        get_time_from_hardcoded_time_format("2021-05-09 10:05:00"),
         processed.max_timestamp.unwrap()
     );
 
@@ -577,11 +577,11 @@ fn json_integration_test_structure_error_line_2() {
     assert_eq!(2, processed.total_num_records);
     assert_eq!(1, processed.timestamp_num_records);
     assert_eq!(
-        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        get_time_from_hardcoded_time_format("2021-05-09 10:00:00"),
         processed.min_timestamp.unwrap()
     );
     assert_eq!(
-        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        get_time_from_hardcoded_time_format("2021-05-09 10:00:00"),
         processed.max_timestamp.unwrap()
     );
 
@@ -613,11 +613,11 @@ fn json_integration_test_structure_error_line_4() {
     assert_eq!(4, processed.total_num_records);
     assert_eq!(3, processed.timestamp_num_records);
     assert_eq!(
-        get_time_from_hardcoded_time_format("2025-05-09 10:00:00"),
+        get_time_from_hardcoded_time_format("2021-05-09 10:00:00"),
         processed.min_timestamp.unwrap()
     );
     assert_eq!(
-        get_time_from_hardcoded_time_format("2025-05-09 10:05:00"),
+        get_time_from_hardcoded_time_format("2021-05-09 10:05:00"),
         processed.max_timestamp.unwrap()
     );
 
@@ -627,10 +627,10 @@ fn json_integration_test_structure_error_line_4() {
 #[test]
 fn json_integration_test_no_direction() {
     // THIS IS ALL JUST WHAT THE EXPECTED BEHAVIOR IS IF THE PROCESSING OBJECT IS INITIALIZED WITH NO DIRECTION
-    let data = r#"{"user": {"time": "2021-05-09 10:00:00","profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:00:00"}
-        {"user": {"time": "2021-05-09 10:05:00","profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:00:00"}
-        {"user": {"time": "2021-05-09 10:02:00","profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:00:00"}
-        {"user": {"time": "2021-05-09 10:05:00","profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:00:00"}"#;
+    let data = r#"{"user": {"time": "2025-05-09 10:00:00","profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:00:00"}
+        {"user": {"time": "2025-05-09 10:00:00","profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:00:00"}
+        {"user": {"time": "2025-05-09 10:00:00","profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:00:00"}
+        {"user": {"time": "2025-05-09 10:00:00","profile":{"name":"Alice","email":"alice@example.com"}},"timestamp":"2025-05-09 10:00:00"}"#;
 
     let temp_log_file = TempInputFile::new(LogType::Json, data);
     let log_file = temp_log_file.get_log_file_object();
