@@ -24,8 +24,11 @@ Note: More in depth statistics are written to a CSV in the output directory
 - JSONL (New Line Separated JSON)
 - Unstructured, plaintext log files
     - Since many log files are simply new line separated plain text, LAVA attempts to handle these formats as well. Because of the unstructured nature of many plaintext logs, results may be unreliable. 
+- Windows XML EventLog (EVTX)
+  - Lava has native support for binary windows event log files. Since windows event logs often have out of order records, this type bypasses the chronology checks that all plaintext records go through. This may produce unreliable results on live systems.
+
 ## Assumptions
-- Input files are sorted based on time
+- Plaintext input files are sorted based on time
 
 ## Command Line Arguments
   `-i, --input <PATH>`
