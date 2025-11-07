@@ -16,14 +16,14 @@ pub fn get_fake_timestamp_hit_for_evtx() -> Result<Option<IdentifiedTimeInformat
 
     let fake_evtx_regex_info = DateRegex {
         pretty_format: "USING EVTX TIMESTAMP".to_string(),
-        strftime_format: "FAKE_STRFTIME".to_string(), // Epoch timestamp format, or adjust as needed
+        strftime_format: "FAKE_STRFTIME".to_string(),
         regex,
         function_to_call: None,
     };
     Ok(Some(IdentifiedTimeInformation {
         column_name: None,
         column_index: None,
-        regex_info: fake_evtx_regex_info, // Assumes DateRegex implements Default
+        regex_info: fake_evtx_regex_info, 
         direction: Some(TimeDirection::Ascending),
     }))
 }
