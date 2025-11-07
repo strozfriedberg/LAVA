@@ -179,7 +179,13 @@ fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile> {
                     log_type: LogType::Json,
                     file_path: file_path.to_path_buf(),
                 })
-            } else {
+            } else if extension == "evtx" {
+                supported_files.push(LogFile {
+                    log_type: LogType::Evtx,
+                    file_path: file_path.to_path_buf(),
+                })
+            }
+            else {
                 supported_files.push(LogFile {
                     log_type: LogType::Unstructured,
                     file_path: file_path.to_path_buf(),
@@ -423,6 +429,7 @@ fn try_to_get_timestamp_hit(
     } else if log_file.log_type == LogType::Json {
         return try_to_get_timestamp_hit_for_json(log_file, execution_settings);
     }
+
     Err(LavaError::new(
         "Have not implemented scanning for timestamp for this file type yet",
         LavaErrorLevel::Critical,
