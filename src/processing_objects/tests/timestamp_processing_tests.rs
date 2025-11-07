@@ -3,6 +3,58 @@ use crate::basic_objects::{ExecutionSettings, TimeDirection, TimeGap};
 use crate::test_helpers::*;
 use csv::StringRecord;
 
+
+
+#[test]
+fn processes_ascending_records_dont_care_about_order_correctly() {
+    let settings = ExecutionSettings::default();
+    let mut processor = LogRecordProcessor::new(
+        &build_fake_timestamp_hit_from_direction(Some(TimeDirection::Ascending)),
+        &settings,
+        "Test".to_string(),
+        None,
+        false
+    );
+
+    processor
+        .process_timestamp(&make_fake_record(
+            0,
+            Some("2024-05-01 12:00:00"),
+            StringRecord::from(vec!["test"]),
+        ))
+        .unwrap();
+    processor
+        .process_timestamp(&make_fake_record(
+            1,
+            Some("2024-05-01 13:00:00"),
+            StringRecord::from(vec!["test"]),
+        ))
+        .unwrap();
+    processor
+        .process_timestamp(&make_fake_record(
+            2,
+            Some("2024-05-01 15:00:00"),
+            StringRecord::from(vec!["test"]),
+        ))
+        .unwrap();
+
+    assert_eq!(
+        processor.min_timestamp.unwrap(),
+        NaiveDateTime::parse_from_str("2024-05-01 12:00:00", "%Y-%m-%d %H:%M:%S").unwrap()
+    );
+    assert_eq!(
+        processor.max_timestamp.unwrap(),
+        NaiveDateTime::parse_from_str("2024-05-01 15:00:00", "%Y-%m-%d %H:%M:%S").unwrap()
+    );
+    let expected_time_gap = TimeGap::new(
+        NaiveDateTime::parse_from_str("2024-05-01 13:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
+        NaiveDateTime::parse_from_str("2024-05-01 15:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
+    );
+
+    assert_eq!(processor.largest_time_gap.unwrap(), expected_time_gap);
+}
+
+
 #[test]
 fn processes_ascending_records_correctly() {
     let settings = ExecutionSettings::default();

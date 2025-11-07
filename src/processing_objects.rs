@@ -264,15 +264,24 @@ impl LogRecordProcessor {
                         self.handle_first_out_of_order_timestamp(record);
                         return Ok(());
                     }
-                    self.max_timestamp = Some(current_timestamp)
                 } else if self.order == Some(TimeDirection::Descending) {
                     if previous_datetime < current_timestamp {
                         self.handle_first_out_of_order_timestamp(record);
                         return Ok(());
                     }
-                    self.min_timestamp = Some(current_timestamp)
                 }
             }
+            if let Some(min_time)  = self.min_timestamp {
+                if current_timestamp < min_time{
+                    self.min_timestamp = Some(current_timestamp);
+                }
+            }
+            if let Some(max_time)  = self.max_timestamp {
+                if current_timestamp > max_time{
+                    self.max_timestamp = Some(current_timestamp);
+                }
+            }
+
             let current_time_gap = TimeGap::new(previous_datetime, current_timestamp);
             self.welford_calculator
                 .push(current_time_gap.get_time_duration_number() as i128);

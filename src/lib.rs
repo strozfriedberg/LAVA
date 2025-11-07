@@ -492,6 +492,8 @@ fn stream_file(
         return stream_unstructured_file(log_file, timestamp_hit, execution_settings);
     } else if log_file.log_type == LogType::Json {
         return stream_json_file(log_file, timestamp_hit, execution_settings);
+    } else if log_file.log_type == LogType::Evtx {
+        return stream_evtx_file(log_file, timestamp_hit, execution_settings);
     }
     Err(LavaError::new(
         "Have not implemented streaming for this file type yet",
