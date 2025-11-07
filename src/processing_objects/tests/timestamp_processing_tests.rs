@@ -11,6 +11,7 @@ fn processes_ascending_records_correctly() {
         &settings,
         "Test".to_string(),
         None,
+        true
     );
 
     processor
@@ -59,6 +60,7 @@ fn processes_ascending_records_same_time_gap_correctly() {
         &settings,
         "Test".to_string(),
         None,
+        true
     );
 
     processor
@@ -107,6 +109,7 @@ fn processes_descending_records_correctly() {
         &settings,
         "Test".to_string(),
         None,
+        true
     );
 
     processor
@@ -155,6 +158,7 @@ fn detects_out_of_order_in_ascending() {
         &settings,
         "Test".to_string(),
         None,
+        true
     );
 
     processor
@@ -186,6 +190,7 @@ fn detects_out_of_order_in_descending() {
         &settings,
         "Test".to_string(),
         None,
+        true
     );
 
     processor
@@ -217,6 +222,7 @@ fn replicate_min_max_issue() {
         &settings,
         "Test".to_string(),
         None,
+        true
     );
 
     processor

@@ -234,6 +234,7 @@ pub fn stream_csv_file(
         execution_settings,
         get_file_stem(log_file)?,
         Some(header_info.headers),
+        true
     );
 
     let mut rdr = get_reader_from_certain_index(header_info.first_data_row, log_file)?;

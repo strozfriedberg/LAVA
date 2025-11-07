@@ -57,6 +57,7 @@ pub struct LogRecordProcessor {
     pub num_redactions: usize,
     pub errors: Vec<LavaError>,
     pub welford_calculator: Welford<i128>,
+    pub care_about_direction: bool,
     process_timestamps: bool,
 }
 
@@ -66,6 +67,7 @@ impl LogRecordProcessor {
         execution_settings: &ExecutionSettings,
         log_file_stem: String,
         headers: Option<StringRecord>,
+        care_about_direction: bool,
     ) -> Self {
         let data_field_headers = match headers {
             Some(csv_headers) => csv_headers,
@@ -88,6 +90,7 @@ impl LogRecordProcessor {
             file_name: log_file_stem,
             data_field_headers: data_field_headers,
             process_timestamps: process_timestamps,
+            care_about_direction: care_about_direction,
             ..Default::default()
         }
     }
@@ -255,19 +258,21 @@ impl LogRecordProcessor {
 
         if let Some(previous_datetime) = self.previous_timestamp {
             // This is where all logic is done if it isn't the first record
-            if self.order == Some(TimeDirection::Ascending) {
-                if previous_datetime > current_timestamp {
-                    self.handle_first_out_of_order_timestamp(record);
-                    return Ok(());
+            // if self.care_about_direction{
+                if self.order == Some(TimeDirection::Ascending) {
+                    if previous_datetime > current_timestamp {
+                        self.handle_first_out_of_order_timestamp(record);
+                        return Ok(());
+                    }
+                    self.max_timestamp = Some(current_timestamp)
+                } else if self.order == Some(TimeDirection::Descending) {
+                    if previous_datetime < current_timestamp {
+                        self.handle_first_out_of_order_timestamp(record);
+                        return Ok(());
+                    }
+                    self.min_timestamp = Some(current_timestamp)
                 }
-                self.max_timestamp = Some(current_timestamp)
-            } else if self.order == Some(TimeDirection::Descending) {
-                if previous_datetime < current_timestamp {
-                    self.handle_first_out_of_order_timestamp(record);
-                    return Ok(());
-                }
-                self.min_timestamp = Some(current_timestamp)
-            }
+            // }
             let current_time_gap = TimeGap::new(previous_datetime, current_timestamp);
             self.welford_calculator
                 .push(current_time_gap.get_time_duration_number() as i128);

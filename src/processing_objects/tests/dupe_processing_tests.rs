@@ -11,6 +11,7 @@ fn test_process_record_no_duplicate() {
         &settings,
         "Test".to_string(),
         None,
+        true
     );
 
     let record = make_fake_record(
@@ -31,6 +32,7 @@ fn test_process_record_with_one_duplicate() {
         &settings,
         "Test".to_string(),
         None,
+        true
     );
 
     let record1 = make_fake_record(
@@ -64,6 +66,7 @@ fn test_process_record_with_two_duplicate() {
         &settings,
         "Test".to_string(),
         None,
+        true
     );
 
     let record1 = make_fake_record(
@@ -97,6 +100,7 @@ fn test_process_record_with_no_dupe_multiple_values() {
         &settings,
         "Test".to_string(),
         None,
+        true
     );
 
     let record1 = make_fake_record(
@@ -130,6 +134,7 @@ fn test_process_record_with_dupe_multiple_values() {
         &settings,
         "Test".to_string(),
         None,
+        true
     );
 
     let record1 = make_fake_record(

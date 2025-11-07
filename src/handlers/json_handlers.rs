@@ -229,6 +229,7 @@ pub fn stream_json_file(
         execution_settings,
         get_file_stem(log_file)?,
         None,
+        true,
     );
     let file = File::open(&log_file.file_path).map_err(|e| {
         LavaError::new(
