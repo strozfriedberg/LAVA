@@ -273,7 +273,8 @@ impl ProcessedLogFile {
             eprintln!("Negative duration not supported by std::time::Duration");
             return None;
         };
-        Some(human_time(std_duration))
+        let duration_whole_seconds = std::time::Duration::from_secs(std_duration.as_secs());
+        Some(human_time(duration_whole_seconds))
     }
 }
 
