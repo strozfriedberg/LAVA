@@ -25,7 +25,7 @@ Note: More in depth statistics are written to a CSV in the output directory
 - Unstructured, plaintext log files
     - Since many log files are simply new line separated plain text, LAVA attempts to handle these formats as well. Because of the unstructured nature of many plaintext logs, results may be unreliable. 
 - Windows XML EventLog (EVTX)
-  - Lava has native support for binary windows event log files. Since windows event logs often have out of order records, this type bypasses the chronology checks that all plaintext records go through. This may produce unreliable results on live systems.
+  - Lava has native support for binary windows event log files. Since windows event logs often have out of order records, this type bypasses the chronology checks that all plaintext records go through. This may produce unreliable results on live systems. The reason being that evtx scans from record 1 down to the previous records. Maybe at the end it gets the most recent one then and sees that as a very large time gap?
 
 ## Assumptions
 - Plaintext input files are sorted based on time
