@@ -23,6 +23,7 @@ num-format = "0.4.4"
 human-time = "0.1.6"
 phf = { version = "0.12.1", features = ["macros"] }
 enable-ansi-support = "0.3.1"
+evtx = "0.8.5"
 
 [build-dependencies]
 serde = { version = "1.0.219", features = ["derive"] }

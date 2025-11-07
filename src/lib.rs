@@ -8,10 +8,12 @@ mod errors;
 use errors::*;
 mod handlers {
     pub mod csv_handlers;
+    pub mod evtx_handlers;
     pub mod json_handlers;
     pub mod unstructured_handlers;
 }
 use handlers::csv_handlers::*;
+use handlers::evtx_handlers::*;
 use handlers::json_handlers::*;
 use handlers::unstructured_handlers::*;
 use num_format::{Locale, ToFormattedString};
