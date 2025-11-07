@@ -258,7 +258,7 @@ impl LogRecordProcessor {
 
         if let Some(previous_datetime) = self.previous_timestamp {
             // This is where all logic is done if it isn't the first record
-            // if self.care_about_direction{
+            if self.care_about_direction{
                 if self.order == Some(TimeDirection::Ascending) {
                     if previous_datetime > current_timestamp {
                         self.handle_first_out_of_order_timestamp(record);
@@ -272,7 +272,7 @@ impl LogRecordProcessor {
                     }
                     self.min_timestamp = Some(current_timestamp)
                 }
-            // }
+            }
             let current_time_gap = TimeGap::new(previous_datetime, current_timestamp);
             self.welford_calculator
                 .push(current_time_gap.get_time_duration_number() as i128);
