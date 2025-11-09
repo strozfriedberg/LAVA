@@ -1,12 +1,11 @@
 use crate::basic_objects::*;
+use crate::date_regex::DateRegex;
 use crate::errors::*;
 use crate::helpers::get_file_stem;
 use crate::processing_objects::*;
 use csv::StringRecord;
-use crate::date_regex::DateRegex;
-use regex::Regex;
 use evtx::EvtxParser;
-
+use regex::Regex;
 
 pub fn get_fake_timestamp_hit_for_evtx() -> Result<Option<IdentifiedTimeInformation>> {
     let regex = Regex::new(".*").ok().unwrap(); // Match anything. This won't actually get used
@@ -20,7 +19,7 @@ pub fn get_fake_timestamp_hit_for_evtx() -> Result<Option<IdentifiedTimeInformat
     Ok(Some(IdentifiedTimeInformation {
         column_name: None,
         column_index: None,
-        regex_info: fake_evtx_regex_info, 
+        regex_info: fake_evtx_regex_info,
         direction: Some(TimeDirection::Ascending),
     }))
 }
@@ -30,8 +29,7 @@ pub fn stream_evtx_file(
     timestamp_hit: &Option<IdentifiedTimeInformation>,
     execution_settings: &ExecutionSettings,
 ) -> Result<LogRecordProcessor> {
-
-    let evtx_parser = EvtxParser::from_path(&log_file.file_path);//Does this need to be mut?
+    let evtx_parser = EvtxParser::from_path(&log_file.file_path); //Does this need to be mut?
 
     match evtx_parser {
         Ok(mut evtx_parser) => {
@@ -48,21 +46,28 @@ pub fn stream_evtx_file(
                         processing_object.process_record(LogFileRecord::new(
                             clean_record.event_record_id as usize,
                             Some(clean_record.timestamp.naive_utc()),
-                            StringRecord::from(vec![clean_record.event_record_id.to_string(),clean_record.data]),
+                            StringRecord::from(vec![
+                                clean_record.event_record_id.to_string(),
+                                clean_record.data,
+                            ]),
                         ))?;
                     }
                     Err(e) => {
-                        processing_object.add_error(LavaError::new(format!("Error reading EVTX record because of {}", e), LavaErrorLevel::Medium));
+                        processing_object.add_error(LavaError::new(
+                            format!("Error reading EVTX record because of {}", e),
+                            LavaErrorLevel::Medium,
+                        ));
                     }
                 }
             }
             Ok(processing_object)
-        },
-        Err(e) => Err(LavaError::new(format!("Failed to open evtx file because {}", e), LavaErrorLevel::Critical))
+        }
+        Err(e) => Err(LavaError::new(
+            format!("Failed to open evtx file because {}", e),
+            LavaErrorLevel::Critical,
+        )),
     }
-
 }
-
 
 #[cfg(test)]
 mod evtx_handler_tests {
@@ -78,7 +83,7 @@ mod evtx_handler_tests {
         let mut parser = EvtxParser::from_path(fp).unwrap();
         for record in parser.records().take(10) {
             match record {
-                Ok(r) => println!("Record {}\n{}",r.timestamp, r.event_record_id),
+                Ok(r) => println!("Record {}\n{}", r.timestamp, r.event_record_id),
                 Err(e) => eprintln!("{}", e),
             }
         }

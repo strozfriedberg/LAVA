@@ -258,7 +258,7 @@ impl LogRecordProcessor {
 
         if let Some(previous_datetime) = self.previous_timestamp {
             // This is where all logic is done if it isn't the first record
-            if self.care_about_direction{
+            if self.care_about_direction {
                 if self.order == Some(TimeDirection::Ascending) {
                     if previous_datetime > current_timestamp {
                         self.handle_first_out_of_order_timestamp(record);
@@ -271,13 +271,13 @@ impl LogRecordProcessor {
                     }
                 }
             }
-            if let Some(min_time)  = self.min_timestamp {
-                if current_timestamp < min_time{
+            if let Some(min_time) = self.min_timestamp {
+                if current_timestamp < min_time {
                     self.min_timestamp = Some(current_timestamp);
                 }
             }
-            if let Some(max_time)  = self.max_timestamp {
-                if current_timestamp > max_time{
+            if let Some(max_time) = self.max_timestamp {
+                if current_timestamp > max_time {
                     self.max_timestamp = Some(current_timestamp);
                 }
             }

@@ -3,8 +3,6 @@ use crate::basic_objects::{ExecutionSettings, TimeDirection, TimeGap};
 use crate::test_helpers::*;
 use csv::StringRecord;
 
-
-
 #[test]
 fn processes_ascending_records_dont_care_about_order_correctly() {
     let settings = ExecutionSettings::default();
@@ -13,7 +11,7 @@ fn processes_ascending_records_dont_care_about_order_correctly() {
         &settings,
         "Test".to_string(),
         None,
-        false
+        false,
     );
 
     processor
@@ -54,7 +52,6 @@ fn processes_ascending_records_dont_care_about_order_correctly() {
     assert_eq!(processor.largest_time_gap.unwrap(), expected_time_gap);
 }
 
-
 #[test]
 fn processes_ascending_records_correctly() {
     let settings = ExecutionSettings::default();
@@ -63,7 +60,7 @@ fn processes_ascending_records_correctly() {
         &settings,
         "Test".to_string(),
         None,
-        true
+        true,
     );
 
     processor
@@ -112,7 +109,7 @@ fn processes_ascending_records_same_time_gap_correctly() {
         &settings,
         "Test".to_string(),
         None,
-        true
+        true,
     );
 
     processor
@@ -161,7 +158,7 @@ fn processes_descending_records_correctly() {
         &settings,
         "Test".to_string(),
         None,
-        true
+        true,
     );
 
     processor
@@ -210,7 +207,7 @@ fn detects_out_of_order_in_ascending() {
         &settings,
         "Test".to_string(),
         None,
-        true
+        true,
     );
 
     processor
@@ -242,7 +239,7 @@ fn detects_out_of_order_in_descending() {
         &settings,
         "Test".to_string(),
         None,
-        true
+        true,
     );
 
     processor
@@ -274,7 +271,7 @@ fn replicate_min_max_issue() {
         &settings,
         "Test".to_string(),
         None,
-        true
+        true,
     );
 
     processor

@@ -11,7 +11,7 @@ fn test_process_record_contains_redaction() {
         &settings,
         "Test".to_string(),
         None,
-        true
+        true,
     );
     let record2 = make_fake_record(
         0,
@@ -39,7 +39,7 @@ fn test_process_record_contains_redactions_multiple_columns() {
         &settings,
         "Test".to_string(),
         None,
-        true
+        true,
     );
     let record3 = make_fake_record(
         0,

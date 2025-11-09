@@ -62,7 +62,7 @@ pub enum LogType {
     Csv,
     Json,
     Unstructured,
-    Evtx
+    Evtx,
 }
 
 #[derive(PartialEq, Debug, Clone)]

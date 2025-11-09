@@ -10,11 +10,13 @@ mod handlers {
     pub mod csv_handlers;
     pub mod evtx_handlers;
     pub mod json_handlers;
+    pub mod live_evtx_handlers;
     pub mod unstructured_handlers;
 }
 use handlers::csv_handlers::*;
 use handlers::evtx_handlers::*;
 use handlers::json_handlers::*;
+use handlers::live_evtx_handlers::*;
 use handlers::unstructured_handlers::*;
 use num_format::{Locale, ToFormattedString};
 mod date_regex;
@@ -184,8 +186,7 @@ fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile> {
                     log_type: LogType::Evtx,
                     file_path: file_path.to_path_buf(),
                 })
-            }
-            else {
+            } else {
                 supported_files.push(LogFile {
                     log_type: LogType::Unstructured,
                     file_path: file_path.to_path_buf(),
@@ -428,7 +429,7 @@ fn try_to_get_timestamp_hit(
         return try_to_get_timestamp_hit_for_unstructured(log_file, execution_settings);
     } else if log_file.log_type == LogType::Json {
         return try_to_get_timestamp_hit_for_json(log_file, execution_settings);
-    } else if log_file.log_type == LogType::Evtx{
+    } else if log_file.log_type == LogType::Evtx {
         return get_fake_timestamp_hit_for_evtx();
     }
 
@@ -459,8 +460,9 @@ fn set_time_direction_by_scanning_file(
         return set_time_direction_by_scanning_unstructured_file(log_file, timestamp_hit);
     } else if log_file.log_type == LogType::Json {
         return set_time_direction_by_scanning_json_file(log_file, timestamp_hit);
-    } else if log_file.log_type == LogType::Evtx { // For Evtx I set the direction to Ascending always. It doesn't matter because time processing won't consider the direction.
-        return Ok(())
+    } else if log_file.log_type == LogType::Evtx {
+        // For Evtx I set the direction to Ascending always. It doesn't matter because time processing won't consider the direction.
+        return Ok(());
     }
     Err(LavaError::new(
         "Have not implemented scanning for directions for this file type yet.",

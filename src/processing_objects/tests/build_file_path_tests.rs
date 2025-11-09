@@ -16,7 +16,7 @@ fn test_build_file_path_duplicate() {
         &settings,
         "Test".to_string(),
         None,
-        true
+        true,
     );
 
     let result = processor
@@ -39,7 +39,7 @@ fn test_build_file_path_duplicate_weird_path() {
         &settings,
         "Test".to_string(),
         None,
-        true
+        true,
     );
 
     let result = processor
@@ -62,7 +62,7 @@ fn test_build_file_path_redaction() {
         &settings,
         "Test".to_string(),
         None,
-        true
+        true,
     );
 
     let result = processor
