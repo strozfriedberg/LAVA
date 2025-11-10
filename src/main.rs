@@ -25,9 +25,9 @@ fn main() {
         print_compiled_regexes();
     } else {
         let execution_settings = get_full_execution_settings(&matches).unwrap(); // I think unwrap is fine here because I want to crash the program if I get an error here
-        if matches.get_flag("live-windows "){
+        if matches.get_flag("live-windows ") {
             process_live_windows_event_logs(execution_settings);
-        }else{
+        } else {
             process_all_files(execution_settings);
         }
     }

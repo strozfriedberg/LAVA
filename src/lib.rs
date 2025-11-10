@@ -46,11 +46,25 @@ include!(concat!(env!("OUT_DIR"), "/generated_date_tests.rs"));
 #[cfg(test)]
 include!(concat!(env!("OUT_DIR"), "/generated_redactions_tests.rs"));
 
-
-
 pub fn process_live_windows_event_logs(execution_settings: ExecutionSettings) {
-}
+    let start = Instant::now();
+    let _ = VERBOSE.set(execution_settings.verbose_mode);
 
+    let all_windows_event_logs = enumerate_event_logs();
+    match all_windows_event_logs {
+        Err(e) => println!("Failed to enumerate live event channels: {}", e),
+        Ok(all_windows_event_logs) => {
+            let results: Vec<ProcessedLogFile> = all_windows_event_logs
+                .par_iter()
+                .map(|channel_name| process_live_evtx(channel_name, &execution_settings).expect("Error processing file"))
+                .collect();
+
+            output_lava_results(execution_settings, start, results);
+
+        }
+
+    }
+}
 
 pub fn process_all_files(execution_settings: ExecutionSettings) {
     let start = Instant::now();
@@ -114,22 +128,22 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
     };
 }
 
-fn output_lava_results(execution_settings: ExecutionSettings, start: Instant, results: Vec<ProcessedLogFile>) {
+fn output_lava_results(
+    execution_settings: ExecutionSettings,
+    start: Instant,
+    results: Vec<ProcessedLogFile>,
+) {
     if let Err(e) = write_errors_to_error_log(&results, &execution_settings) {
         eprintln!("Failed to write errors to error log {}", e);
     }
 
     let results_to_actually_do_stats_on: &Vec<ProcessedLogFile> =
         match execution_settings.multipart_mode {
-            true => &vec![
-                convert_vector_of_processed_log_files_into_one_for_multipart(&results),
-            ],
+            true => &vec![convert_vector_of_processed_log_files_into_one_for_multipart(&results)],
             false => &results,
         };
 
-    if let Err(e) =
-        write_output_to_csv(&results_to_actually_do_stats_on, &execution_settings)
-    {
+    if let Err(e) = write_output_to_csv(&results_to_actually_do_stats_on, &execution_settings) {
         eprintln!("Failed to write to CSV: {}", e);
     }
     if let Err(e) = print_pretty_quick_stats(&results_to_actually_do_stats_on) {
@@ -319,6 +333,12 @@ pub fn process_file(
             return Ok(base_processed_file);
         }
     };
+    port_stats_from_processing_object_into_processed_log_file(execution_settings, &mut base_processed_file, header_info, completed_statistics_object);
+
+    Ok(base_processed_file)
+}
+
+fn port_stats_from_processing_object_into_processed_log_file(execution_settings: &ExecutionSettings, base_processed_file: &mut ProcessedLogFile, header_info: Option<HeaderInfo>, completed_statistics_object: LogRecordProcessor) {
     base_processed_file.first_data_row_used = header_info.map(|n| n.first_data_row.to_string());
     let values_to_alert_on = completed_statistics_object.get_possible_alert_values();
     base_processed_file
@@ -345,8 +365,6 @@ pub fn process_file(
     base_processed_file
         .errors
         .extend(completed_statistics_object.errors);
-
-    Ok(base_processed_file)
 }
 
 fn get_metadata(file_path: &PathBuf) -> Result<(u64, String, String)> {
@@ -440,7 +458,7 @@ fn try_to_get_timestamp_hit(
     } else if log_file.log_type == LogType::Json {
         return try_to_get_timestamp_hit_for_json(log_file, execution_settings);
     } else if log_file.log_type == LogType::Evtx {
-        return get_fake_timestamp_hit_for_evtx();
+        return get_fake_timestamp_hit_for_evtx_file();
     }
 
     Err(LavaError::new(
