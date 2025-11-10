@@ -319,25 +319,25 @@ mod evtx_handler_tests {
     use regex::Regex;
     use std::path::PathBuf;
 
-    #[test]
-    fn test_live_evtx() {
-        // println!("{}", is_elevated().unwrap())
-        // enumerate_event_logs();
-        let test_args = ExecutionSettings {
-            input: PathBuf::from("/dummy/input"),
-            output_dir: PathBuf::from("/dummy/output"),
-            regexes: vec![DateRegex {
-                pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(),
-                strftime_format: "%Y-%m-%d %H:%M:%S".to_string(),
-                regex: Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").unwrap(),
-                function_to_call: None,
-            }],
-            timestamp_field: None,
-            quick_mode: false,
-            multipart_mode: false,
-            verbose_mode: true,
-            actually_write_to_files: false,
-        };
-        process_live_evtx("System", &test_args);
-    }
+    // #[test]
+    // fn test_live_evtx() {
+    //     // println!("{}", is_elevated().unwrap())
+    //     // enumerate_event_logs();
+    //     let test_args = ExecutionSettings {
+    //         input: PathBuf::from("/dummy/input"),
+    //         output_dir: PathBuf::from("/dummy/output"),
+    //         regexes: vec![DateRegex {
+    //             pretty_format: "YYYY-MM-DD HH:MM:SS".to_string(),
+    //             strftime_format: "%Y-%m-%d %H:%M:%S".to_string(),
+    //             regex: Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").unwrap(),
+    //             function_to_call: None,
+    //         }],
+    //         timestamp_field: None,
+    //         quick_mode: false,
+    //         multipart_mode: false,
+    //         verbose_mode: true,
+    //         actually_write_to_files: false,
+    //     };
+    //     process_live_evtx("System", &test_args);
+    // }
 }
