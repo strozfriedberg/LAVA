@@ -46,6 +46,12 @@ include!(concat!(env!("OUT_DIR"), "/generated_date_tests.rs"));
 #[cfg(test)]
 include!(concat!(env!("OUT_DIR"), "/generated_redactions_tests.rs"));
 
+
+
+pub fn process_live_windows_event_logs(execution_settings: ExecutionSettings) {
+}
+
+
 pub fn process_all_files(execution_settings: ExecutionSettings) {
     let start = Instant::now();
     let _ = VERBOSE.set(execution_settings.verbose_mode);
@@ -103,67 +109,71 @@ pub fn process_all_files(execution_settings: ExecutionSettings) {
                 .map(|path| process_file(path, &execution_settings).expect("Error processing file"))
                 .collect();
 
-            if let Err(e) = write_errors_to_error_log(&results, &execution_settings) {
-                eprintln!("Failed to write errors to error log {}", e);
-            }
-
-            let results_to_actually_do_stats_on: &Vec<ProcessedLogFile> =
-                match execution_settings.multipart_mode {
-                    true => &vec![
-                        convert_vector_of_processed_log_files_into_one_for_multipart(&results),
-                    ],
-                    false => &results,
-                };
-
-            if let Err(e) =
-                write_output_to_csv(&results_to_actually_do_stats_on, &execution_settings)
-            {
-                eprintln!("Failed to write to CSV: {}", e);
-            }
-            if let Err(e) = print_pretty_quick_stats(&results_to_actually_do_stats_on) {
-                eprintln!("Failed to print pretty quick stats {}", e);
-            }
-            if let Err(e) = print_pretty_alerts_and_write_to_alerts_output_file(
-                &results_to_actually_do_stats_on,
-                &execution_settings,
-            ) {
-                eprintln!("Failed to output alerts: {}", e);
-            }
-
-            let formatted_total_of_records_with_timestamps = results_to_actually_do_stats_on
-                .iter()
-                .map(|f| f.timestamp_num_records)
-                .sum::<usize>()
-                .to_formatted_string(&Locale::en);
-            let num_input_files_processed_for_timestamp_analysis = results
-                .iter()
-                .filter(|item| item.min_timestamp.is_some())
-                .count();
-
-            let duration_in_secs = start.elapsed().as_secs_f64();
-            match duration_in_secs < 60.0 {
-                true => {
-                    println!("Finished in {:.2} seconds", duration_in_secs);
-                }
-                false => {
-                    println!("Finished in {:.2} minutes", duration_in_secs / 60.0);
-                }
-            }
-
-            println!(
-                "Processed a total of {} records with timestamps across {} log files",
-                formatted_total_of_records_with_timestamps,
-                num_input_files_processed_for_timestamp_analysis.to_formatted_string(&Locale::en)
-            );
-            if num_input_files_processed_for_timestamp_analysis < results.len() {
-                println!(
-                    "\x1b[91m{} log files could not be processed for timestamp analysis. Check LAVA_Errors.log for reason\x1b[0m",
-                    (results.len() - num_input_files_processed_for_timestamp_analysis)
-                        .to_formatted_string(&Locale::en)
-                );
-            }
+            output_lava_results(execution_settings, start, results);
         }
     };
+}
+
+fn output_lava_results(execution_settings: ExecutionSettings, start: Instant, results: Vec<ProcessedLogFile>) {
+    if let Err(e) = write_errors_to_error_log(&results, &execution_settings) {
+        eprintln!("Failed to write errors to error log {}", e);
+    }
+
+    let results_to_actually_do_stats_on: &Vec<ProcessedLogFile> =
+        match execution_settings.multipart_mode {
+            true => &vec![
+                convert_vector_of_processed_log_files_into_one_for_multipart(&results),
+            ],
+            false => &results,
+        };
+
+    if let Err(e) =
+        write_output_to_csv(&results_to_actually_do_stats_on, &execution_settings)
+    {
+        eprintln!("Failed to write to CSV: {}", e);
+    }
+    if let Err(e) = print_pretty_quick_stats(&results_to_actually_do_stats_on) {
+        eprintln!("Failed to print pretty quick stats {}", e);
+    }
+    if let Err(e) = print_pretty_alerts_and_write_to_alerts_output_file(
+        &results_to_actually_do_stats_on,
+        &execution_settings,
+    ) {
+        eprintln!("Failed to output alerts: {}", e);
+    }
+
+    let formatted_total_of_records_with_timestamps = results_to_actually_do_stats_on
+        .iter()
+        .map(|f| f.timestamp_num_records)
+        .sum::<usize>()
+        .to_formatted_string(&Locale::en);
+    let num_input_files_processed_for_timestamp_analysis = results
+        .iter()
+        .filter(|item| item.min_timestamp.is_some())
+        .count();
+
+    let duration_in_secs = start.elapsed().as_secs_f64();
+    match duration_in_secs < 60.0 {
+        true => {
+            println!("Finished in {:.2} seconds", duration_in_secs);
+        }
+        false => {
+            println!("Finished in {:.2} minutes", duration_in_secs / 60.0);
+        }
+    }
+
+    println!(
+        "Processed a total of {} records with timestamps across {} log files",
+        formatted_total_of_records_with_timestamps,
+        num_input_files_processed_for_timestamp_analysis.to_formatted_string(&Locale::en)
+    );
+    if num_input_files_processed_for_timestamp_analysis < results.len() {
+        println!(
+            "\x1b[91m{} log files could not be processed for timestamp analysis. Check LAVA_Errors.log for reason\x1b[0m",
+            (results.len() - num_input_files_processed_for_timestamp_analysis)
+                .to_formatted_string(&Locale::en)
+        );
+    }
 }
 
 fn categorize_files(file_paths: &Vec<PathBuf>) -> Vec<LogFile> {
