@@ -138,7 +138,7 @@ pub fn process_live_evtx(
                 return  Ok(ProcessedLogFile::default());
             }
             Ok(query_handle) => {
-                println!("Processing {}", event_log_name);
+                // println!("Processing {}", event_log_name);
                 let mut base_processed_file = ProcessedLogFile::default();
                 base_processed_file.filename = Some(event_log_name.to_string());
                 base_processed_file.file_path = Some(format!("C:\\Windows\\System32\\winevt\\Logs\\{}.evtx", event_log_name));
