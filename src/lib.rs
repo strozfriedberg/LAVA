@@ -58,14 +58,13 @@ pub fn process_live_windows_event_logs(execution_settings: ExecutionSettings) {
         Ok(is_elevated) => {
             if !is_elevated {
                 println!(
-                    "\x1b[91mUnable to parse live event logs: Administrator privileges are required.\x1b[0m",
+                    "\x1b[91mWarning: Administrator privileges are recommended — some event log channels will be inaccessible without them.\x1b[0m",
                 );
-                return;
             }
         }
     }
-    // let all_windows_event_logs = enumerate_event_logs();
-    let all_windows_event_logs: std::result::Result<Vec<String>, LavaError> = Ok(vec!["System".to_string(), "Security".to_string()]);
+    let all_windows_event_logs = enumerate_event_logs();
+
     match all_windows_event_logs {
         Err(e) => println!("Failed to enumerate live event channels: {}", e),
         Ok(all_windows_event_logs) => {
