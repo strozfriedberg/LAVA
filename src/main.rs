@@ -1,6 +1,8 @@
-use clap::{Arg, ArgGroup, Command, arg};
+use clap::{ArgGroup, Command, arg};
 use lava::main_helpers::{get_full_execution_settings, print_compiled_regexes};
-use lava::{process_all_files, process_live_windows_event_logs};
+use lava::process_all_files;
+#[cfg(windows)]
+use lava::process_live_windows_event_logs;
 
 fn main() {
     let _ = enable_ansi_support::enable_ansi_support(); // don't care about the output of this because if it fails then oh well 
@@ -20,7 +22,7 @@ fn main() {
     #[cfg(windows)]
     {
         command = command
-        .arg(Arg::new("live-windows")
+        .arg(clap::Arg::new("live-windows")
             .short('w')
             .long("live-windows")
             .help("Live Windows mode. Scans event logs on the live system using the Windows API.")
@@ -36,7 +38,7 @@ fn main() {
     {
         command = command.group(
             ArgGroup::new("required")
-                .args(&["input", "printregexes", "help", "live-windows"])
+                .args(&["input", "printregexes", "help"])
                 .required(true)
                 .multiple(false),
         );
@@ -50,6 +52,7 @@ fn main() {
     } else {
         let execution_settings = get_full_execution_settings(&matches).unwrap(); // I think unwrap is fine here because I want to crash the program if I get an error here
         if matches.get_flag("live-windows") {
+            #[cfg(windows)]
             process_live_windows_event_logs(execution_settings);
         } else {
             process_all_files(execution_settings);

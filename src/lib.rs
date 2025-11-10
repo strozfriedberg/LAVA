@@ -10,14 +10,16 @@ mod handlers {
     pub mod csv_handlers;
     pub mod evtx_handlers;
     pub mod json_handlers;
-    pub mod live_evtx_handlers;
     pub mod unstructured_handlers;
+    #[cfg(windows)]
+    pub mod live_evtx_handlers;
 }
 use handlers::csv_handlers::*;
 use handlers::evtx_handlers::*;
 use handlers::json_handlers::*;
-use handlers::live_evtx_handlers::*;
 use handlers::unstructured_handlers::*;
+#[cfg(windows)]
+use handlers::live_evtx_handlers::*;
 use num_format::{Locale, ToFormattedString};
 mod date_regex;
 mod date_string_mutations;
@@ -46,6 +48,7 @@ include!(concat!(env!("OUT_DIR"), "/generated_date_tests.rs"));
 #[cfg(test)]
 include!(concat!(env!("OUT_DIR"), "/generated_redactions_tests.rs"));
 
+#[cfg(windows)]
 pub fn process_live_windows_event_logs(execution_settings: ExecutionSettings) {
     let start = Instant::now();
     let _ = VERBOSE.set(execution_settings.verbose_mode);
