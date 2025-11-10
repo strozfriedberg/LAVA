@@ -50,6 +50,15 @@ pub fn process_live_windows_event_logs(execution_settings: ExecutionSettings) {
     let start = Instant::now();
     let _ = VERBOSE.set(execution_settings.verbose_mode);
 
+    match is_elevated(){
+        Err(e) => println!("Could not determine if process has Administrator Privileges because {}",e ),
+        Ok(is_elevated) => {
+            if !is_elevated{
+                println!(
+            "\x1b[91m Unable to parse live event logs: Administrator privileges are required.\x1b[0m",)
+            }
+        }
+    }
     let all_windows_event_logs = enumerate_event_logs();
     match all_windows_event_logs {
         Err(e) => println!("Failed to enumerate live event channels: {}", e),

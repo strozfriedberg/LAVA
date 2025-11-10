@@ -7,12 +7,49 @@ use quick_xml::events::Event as XmlEvent;
 use std::{ffi::OsString, os::windows::ffi::OsStrExt};
 use windows::{
     Win32::Foundation::ERROR_NO_MORE_ITEMS,
+    Win32::Foundation::HANDLE,
     Win32::System::EventLog::{
         EVT_HANDLE, EVT_QUERY_FLAGS, EvtClose, EvtNext, EvtNextChannelPath, EvtOpenChannelEnum,
         EvtQuery, EvtQueryChannelPath, EvtRender, EvtRenderEventXml,
     },
+    Win32::Security::{
+        GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY,
+    },
+    Win32::System::Threading::{GetCurrentProcess, OpenProcessToken,},
     core::PCWSTR,
 };
+
+
+pub fn is_elevated() -> Result<bool> {
+    unsafe {
+        let mut token_handle = HANDLE(std::ptr::null_mut());
+        let open_process_result = OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token_handle);
+        if let Err(e) = open_process_result{
+            return Err(LavaError::new(
+                    format!("Error calling OpenProcessToken because of {e}"),
+                    LavaErrorLevel::Critical,
+                ));
+        }
+
+        let mut elevation = TOKEN_ELEVATION::default();
+        let mut size = 0u32;
+
+        let get_token_result = GetTokenInformation(
+            token_handle,
+            TokenElevation,
+            Some(&mut elevation as *mut _ as *mut _),
+            std::mem::size_of::<TOKEN_ELEVATION>() as u32,
+            &mut size,
+        );
+        if let Err(e) = get_token_result{
+            return Err(LavaError::new(
+                    format!("Error calling GetTokenInformation because of {e}"),
+                    LavaErrorLevel::Critical,
+                ));
+        }
+        Ok(elevation.TokenIsElevated != 0)
+    }
+}
 
 pub fn enumerate_event_logs() -> Result<Vec<String>> {
     unsafe {
@@ -59,7 +96,7 @@ pub fn enumerate_event_logs() -> Result<Vec<String>> {
 pub fn process_live_evtx(
     event_log_name: &str,
     execution_settings: &ExecutionSettings,
-) -> Result<ProcessedLogFile> {
+) -> Result<()> {
     unsafe {
         // Convert channel name to wide string
         let channel_name: Vec<u16> = OsString::from(event_log_name)
@@ -82,13 +119,13 @@ pub fn process_live_evtx(
             Ok(query_handle) => {
                 println!("Reading events from newest → oldest...");
                 let mut base_processed_file = ProcessedLogFile::default();
-                let mut processing_object = LogRecordProcessor::new(
-                    timestamp_hit,
-                    execution_settings,
-                    get_file_stem(log_file)?,
-                    None,
-                    false,
-                );
+                // let mut processing_object = LogRecordProcessor::new(
+                //     timestamp_hit,
+                //     execution_settings,
+                //     get_file_stem(log_file)?,
+                //     None,
+                //     false,
+                // );
                 // Buffer for events
                 let mut events: [isize; 16] = [0; 16];
 
@@ -119,7 +156,7 @@ pub fn process_live_evtx(
                 }
 
                 let _ = EvtClose(query_handle);
-                Ok()
+                return Ok(())
             }
         }
     }
@@ -196,7 +233,8 @@ mod evtx_handler_tests {
 
     #[test]
     fn test_live_evtx() {
-        enumerate_event_logs();
+        println!("{}", is_elevated().unwrap())
+        // enumerate_event_logs();
 
         // test_read_live_evtx("System");
     }
