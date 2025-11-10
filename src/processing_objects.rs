@@ -51,6 +51,7 @@ pub struct LogRecordProcessor {
     pub min_timestamp: Option<NaiveDateTime>,
     pub max_timestamp: Option<NaiveDateTime>,
     pub previous_timestamp: Option<NaiveDateTime>,
+    pub previous_record_id: Option<usize>,
     pub largest_time_gap: Option<TimeGap>,
     pub duplicate_checker_set: HashSet<u64>,
     pub num_dupes: usize,
@@ -271,6 +272,15 @@ impl LogRecordProcessor {
                     }
                 }
             }
+            // Check the record ID for going backwards
+            if let Some(previous_record) = self.previous_record_id {
+                if previous_record > record.index {
+                    println!("RECORD WENT BACKWARDS FROM {} to {}", previous_record, record.index)
+                }
+            }
+            self.previous_record_id = Some(record.index);
+
+
             if let Some(min_time) = self.min_timestamp {
                 if current_timestamp < min_time {
                     self.min_timestamp = Some(current_timestamp);
@@ -296,6 +306,7 @@ impl LogRecordProcessor {
             }
         } else {
             // This is the first row, inialize both min and max to this value
+            self.previous_record_id = Some(record.index);
             self.min_timestamp = Some(current_timestamp);
             self.max_timestamp = Some(current_timestamp);
         }
