@@ -1,4 +1,4 @@
-use clap::{ArgGroup, Command, arg};
+use clap::{ArgGroup, Command, arg, Arg};
 use lava::main_helpers::{get_full_execution_settings, print_compiled_regexes};
 use lava::{process_all_files, process_live_windows_event_logs};
 
@@ -15,17 +15,21 @@ fn main() {
         .arg(arg!(-t --tf <PATH> "Timestamp field to use for time analysis. Supports -> for nested keys in JSONL."))
         .arg(arg!(-q --quick "Quick mode. Skips resource-intensive processing steps such as file hashing and duplicate detection."))
         .arg(arg!(-m --multipart "Multipart mode. Treats all input files as chunks of the same log."))
-        .arg(arg!(-w --live_windows "Live Windows mode. Scans event logs on the live system using the Windows API."))
+        .arg(Arg::new("live-windows")
+            .short('w')
+            .long("live-windows")
+            .help("Live Windows mode. Scans event logs on the live system using the Windows API.")
+            .action(clap::ArgAction::SetTrue))
         .arg(arg!(-v --verbose "Verbose mode."))// Not implemented yet
         // .disable_version_flag(true)
-        .group(ArgGroup::new("required").args(&["input", "printregexes", "help", "live_windows"]).required(true).multiple(false))
+        .group(ArgGroup::new("required").args(&["input", "printregexes", "help", "live-windows"]).required(true).multiple(false))
         .get_matches();
 
     if matches.get_flag("printregexes") {
         print_compiled_regexes();
     } else {
         let execution_settings = get_full_execution_settings(&matches).unwrap(); // I think unwrap is fine here because I want to crash the program if I get an error here
-        if matches.get_flag("live_windows") {
+        if matches.get_flag("live-windows") {
             process_live_windows_event_logs(execution_settings);
         } else {
             process_all_files(execution_settings);

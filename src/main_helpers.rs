@@ -19,7 +19,7 @@ pub fn print_compiled_regexes() -> () {
 
 pub fn get_full_execution_settings(matches: &ArgMatches) -> Result<ExecutionSettings> {
     // might want to perfrom lots of sanitation here
-    let input_dir = match matches.get_flag("live_windows") {
+    let input_dir = match matches.get_flag("live-windows") {
         true => PathBuf::from("."),
         false => PathBuf::from(
             matches
