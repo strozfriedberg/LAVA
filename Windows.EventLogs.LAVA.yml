@@ -1,0 +1,49 @@
+name: Windows.EventLogs.LAVA
+description: |
+   [Log Anomaly and Validity Analyzer](https://github.com/strozfriedberg/LAVA) (LAVA) is a command line tool that parses a variety of log types, generates statistics about provided log files and alerts on common issues within. This hunt uses it's `--live-windows` mode to parse the event logs on a live system using the windows APIs.
+
+   Useful statistics include:
+
+    - Minimum Timestamp
+    - Maximum Timestamp
+    - Number of Records
+    - Largest Time Gap
+
+author: Colin Meek
+
+tools:
+ - name: LAVA
+
+
+precondition: SELECT OS From info() where OS = 'windows'
+
+
+required_permissions:
+  - EXECVE
+  - FILESYSTEM_WRITE
+
+sources:
+ - name: LAVA
+   query: |
+        -- Fetch the binary
+        LET lava_exe <= SELECT FullPath
+        FROM Artifact.Generic.Utils.FetchBinary(ToolName="LAVA", IsExecutable=TRUE)
+
+        LET TmpDir <= tempdir()
+
+        LET ResultFolder <= TmpDir + '\\LAVA_OUTPUT' 
+
+        -- Build the command line
+        LET cmdline <= filter(list=(
+          lava_exe.FullPath[0],
+          "--live-windows",
+          "-q",
+          "-o", ResultFolder), regex=".+")
+
+        -- Run the tool and divert messages to logs.
+        LET ExecHB <= SELECT *
+        FROM execve(argv=cmdline, cwd=TmpDir, sep="\n", length=9999999)
+        WHERE log(message=Stdout)
+        
+        let uploaded_result <= SELECT * FROM glob(globs='*LAVA_OUTPUT.csv', root=ResultFolder)
+        SELECT Filename,`Largest Time Gap (LTG)`,`Pretty Duration of LTG`,`Duration of LTG (Hours)`, `LTG Number of Standard Deviations Above the Mean` FROM parse_csv(filename=uploaded_result.OSPath[0])
