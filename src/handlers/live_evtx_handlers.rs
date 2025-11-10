@@ -9,7 +9,7 @@ use quick_xml::Reader;
 use quick_xml::events::Event as XmlEvent;
 use std::{ffi::OsString, os::windows::ffi::OsStrExt};
 use windows::{
-    Win32::Foundation::ERROR_NO_MORE_ITEMS,
+    Win32::Foundation::{ERROR_NO_MORE_ITEMS},
     Win32::Foundation::HANDLE,
     Win32::Security::{GetTokenInformation, TOKEN_ELEVATION, TOKEN_QUERY, TokenElevation},
     Win32::System::EventLog::{
@@ -72,10 +72,10 @@ pub fn enumerate_event_logs() -> Result<Vec<String>> {
                         EvtNextChannelPath(enum_handle, Some(&mut buffer[..]), &mut buffer_used);
 
                     if let Err(err) = res {
-                        if err.code().0 as u32 == windows::Win32::Foundation::ERROR_NO_MORE_ITEMS.0
+                        if err.code().0 as u32 == windows::Win32::Foundation::ERROR_NO_MORE_ITEMS.0 || err.message() == "No more data is available.".to_string()
                         {
                             break;
-                        } else {
+                        }else {
                             eprintln!("Error enumerating channels: {:?}", err);
                             break;
                         }
@@ -88,7 +88,26 @@ pub fn enumerate_event_logs() -> Result<Vec<String>> {
                 }
 
                 let _ = EvtClose(enum_handle);
-                Ok(all_windows_event_logs)
+
+                // Test to only get ones that you can read 
+                let flags = EVT_QUERY_FLAGS(0x200);
+                let mut supported_windows_event_logs: Vec<String> = Vec::new();
+
+                for event_log in all_windows_event_logs {
+                    // Try to open query on provided channel
+                    let channel_name: Vec<u16> = OsString::from(event_log.clone())
+                    .encode_wide()
+                    .chain(std::iter::once(0))
+                    .collect();
+                    let query_handle = EvtQuery(None, PCWSTR(channel_name.as_ptr()), PCWSTR::null(), flags.0);
+                    if let Ok(query_handle) = query_handle {
+                        supported_windows_event_logs.push(event_log);
+                        let _ = EvtClose(query_handle);
+                    }
+                    
+                }
+
+                Ok(supported_windows_event_logs)
             }
         }
     }
@@ -122,7 +141,7 @@ pub fn process_live_evtx(
                 println!("Processing {}", event_log_name);
                 let mut base_processed_file = ProcessedLogFile::default();
                 base_processed_file.filename = Some(event_log_name.to_string());
-                base_processed_file.file_path = Some(format!("C:\\Windows\\System32\\winevt\\Logs\\{}", event_log_name));
+                base_processed_file.file_path = Some(format!("C:\\Windows\\System32\\winevt\\Logs\\{}.evtx", event_log_name));
                 let mut processing_object = LogRecordProcessor::new(
                     &Some(build_fake_evtx_timestamp_hit_internal()),
                     execution_settings,
