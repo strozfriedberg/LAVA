@@ -19,12 +19,20 @@ pub fn print_compiled_regexes() -> () {
 
 pub fn get_full_execution_settings(matches: &ArgMatches) -> Result<ExecutionSettings> {
     // might want to perfrom lots of sanitation here
-    let input_dir = PathBuf::from(
-        matches
-            .get_one::<String>("input")
-            .ok_or_else(|| LavaError::new("No input parameter found.", LavaErrorLevel::Critical))?
-            .clone(),
-    );
+    let input_dir = match matches.get_flag("live_windows") {
+        true => PathBuf::from("."),
+        false => {
+            PathBuf::from(
+                matches
+                    .get_one::<String>("input")
+                    .ok_or_else(|| {
+                        LavaError::new("No input parameter found.", LavaErrorLevel::Critical)
+                    })?
+                    .clone(),
+            )
+        }
+    };
+
     let output_dir = PathBuf::from(
         matches
             .get_one::<String>("output")

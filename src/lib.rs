@@ -50,28 +50,35 @@ pub fn process_live_windows_event_logs(execution_settings: ExecutionSettings) {
     let start = Instant::now();
     let _ = VERBOSE.set(execution_settings.verbose_mode);
 
-    match is_elevated(){
-        Err(e) => println!("Could not determine if process has Administrator Privileges because {}",e ),
+    match is_elevated() {
+        Err(e) => println!(
+            "Could not determine if process has Administrator Privileges because {}",
+            e
+        ),
         Ok(is_elevated) => {
-            if !is_elevated{
+            if !is_elevated {
                 println!(
-            "\x1b[91m Unable to parse live event logs: Administrator privileges are required.\x1b[0m",)
+                    "\x1b[91mUnable to parse live event logs: Administrator privileges are required.\x1b[0m",
+                );
+                return;
             }
         }
     }
-    let all_windows_event_logs = enumerate_event_logs();
+    // let all_windows_event_logs = enumerate_event_logs();
+    let all_windows_event_logs: std::result::Result<Vec<String>, LavaError> = Ok(vec!["System".to_string(), "Security".to_string()]);
     match all_windows_event_logs {
         Err(e) => println!("Failed to enumerate live event channels: {}", e),
         Ok(all_windows_event_logs) => {
             let results: Vec<ProcessedLogFile> = all_windows_event_logs
                 .par_iter()
-                .map(|channel_name| process_live_evtx(channel_name, &execution_settings).expect("Error processing file"))
+                .map(|channel_name| {
+                    process_live_evtx(channel_name, &execution_settings)
+                        .expect("Error processing file")
+                })
                 .collect();
 
             output_lava_results(execution_settings, start, results);
-
         }
-
     }
 }
 
@@ -342,12 +349,22 @@ pub fn process_file(
             return Ok(base_processed_file);
         }
     };
-    port_stats_from_processing_object_into_processed_log_file(execution_settings, &mut base_processed_file, header_info, completed_statistics_object);
+    port_stats_from_processing_object_into_processed_log_file(
+        execution_settings,
+        &mut base_processed_file,
+        header_info,
+        completed_statistics_object,
+    );
 
     Ok(base_processed_file)
 }
 
-fn port_stats_from_processing_object_into_processed_log_file(execution_settings: &ExecutionSettings, base_processed_file: &mut ProcessedLogFile, header_info: Option<HeaderInfo>, completed_statistics_object: LogRecordProcessor) {
+fn port_stats_from_processing_object_into_processed_log_file(
+    execution_settings: &ExecutionSettings,
+    base_processed_file: &mut ProcessedLogFile,
+    header_info: Option<HeaderInfo>,
+    completed_statistics_object: LogRecordProcessor,
+) {
     base_processed_file.first_data_row_used = header_info.map(|n| n.first_data_row.to_string());
     let values_to_alert_on = completed_statistics_object.get_possible_alert_values();
     base_processed_file
