@@ -7,7 +7,10 @@ use csv::StringRecord;
 use evtx::EvtxParser;
 use regex::Regex;
 
-pub fn get_fake_timestamp_hit_for_evtx() -> Result<Option<IdentifiedTimeInformation>> {
+pub fn get_fake_timestamp_hit_for_evtx_file() -> Result<Option<IdentifiedTimeInformation>> {
+    Ok(Some(build_fake_evtx_timestamp_hit_internal()))
+}
+pub fn build_fake_evtx_timestamp_hit_internal() -> IdentifiedTimeInformation {
     let regex = Regex::new(".*").ok().unwrap(); // Match anything. This won't actually get used
 
     let fake_evtx_regex_info = DateRegex {
@@ -16,12 +19,12 @@ pub fn get_fake_timestamp_hit_for_evtx() -> Result<Option<IdentifiedTimeInformat
         regex,
         function_to_call: None,
     };
-    Ok(Some(IdentifiedTimeInformation {
+    IdentifiedTimeInformation {
         column_name: None,
         column_index: None,
         regex_info: fake_evtx_regex_info,
         direction: Some(TimeDirection::Ascending),
-    }))
+    }
 }
 
 pub fn stream_evtx_file(
