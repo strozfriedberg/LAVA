@@ -90,44 +90,13 @@ impl OrderedEvtxParser {
         Vec::new().into_iter()
     }
 
-    // /// Iterate over all records (high-level events).
-    // pub fn iter_records(&mut self) -> impl Iterator<Item = Result<evtx::EvtxRecord, EvtxError>> + '_ {
-    //     self.parser.records()
-    // }
+    pub fn iterate_over_all_records(&mut self) -> Vec<SerializedEvtxRecord<String>> {
+        self.chunk_list.clone()
+            .iter()
+            .flat_map(|chunk| self.iterate_over_chunk(chunk.number).collect::<Vec<_>>())
+            .collect()
+    }
 
-    // /// Iterate over chunks (low-level binary chunks inside EVTX file).
-    // pub fn iter_chunks(&mut self) -> impl Iterator<Item = Result<evtx::EvtxChunk, EvtxError>> + '_ {
-    //     self.parser.chunks()
-    // }
-
-    // /// Get all record IDs in a given chunk index.
-    // pub fn record_ids_in_chunk(&mut self, chunk_index: usize) -> Vec<u64> {
-    //     let mut ids = Vec::new();
-    //     for (i, chunk) in self.parser.chunks().enumerate() {
-    //         if i == chunk_index {
-    //             if let Ok(chunk) = chunk {
-    //                 for rec in chunk.records() {
-    //                     if let Ok(rec) = rec {
-    //                         ids.push(rec.event_record_id);
-    //                     }
-    //                 }
-    //             }
-    //             break;
-    //         }
-    //     }
-    //     ids
-    // }
-
-    // /// Quickly get first and last record IDs in all chunks.
-    // pub fn chunk_ranges(&mut self) -> Vec<(u64, u64)> {
-    //     let mut ranges = Vec::new();
-    //     for chunk in self.parser.chunks() {
-    //         if let Ok(c) = chunk {
-    //             ranges.push((c.header.first_event_record_id, c.header.last_event_record_id));
-    //         }
-    //     }
-    //     ranges
-    // }
 }
 
 
@@ -156,55 +125,53 @@ pub fn stream_evtx_file(
     timestamp_hit: &Option<IdentifiedTimeInformation>,
     execution_settings: &ExecutionSettings,
 ) -> Result<LogRecordProcessor> {
-
     let evtx_parser = OrderedEvtxParser::new(&log_file.file_path); //Does this need to be mut?
-
-    if let Ok(mut evtx_parser) = evtx_parser {
-        for x in evtx_parser.iterate_over_chunk(1296).take(10){
-            println!("Record ID {}, Timestamp {}", x.event_record_id, x.timestamp)
+    
+    match evtx_parser {
+        Ok(mut evtx_parser) => {
+            let mut processing_object = LogRecordProcessor::new(
+                timestamp_hit,
+                execution_settings,
+                get_file_stem(log_file)?,
+                None,
+                false,
+            );
+            println!("Before calling iterate over all records");
+            for record in evtx_parser.iterate_over_all_records() {
+                println!("in loop");
+                    processing_object.process_record(LogFileRecord::new(
+                            record.event_record_id as usize,
+                            Some(record.timestamp.naive_utc()),
+                            StringRecord::from(vec![
+                                record.data,
+                            ]),
+                        ))?;
+                // match record {
+                //     Ok(clean_record) => {
+                //         processing_object.process_record(LogFileRecord::new(
+                //             clean_record.event_record_id as usize,
+                //             Some(clean_record.timestamp.naive_utc()),
+                //             StringRecord::from(vec![
+                //                 clean_record.event_record_id.to_string(),
+                //                 clean_record.data,
+                //             ]),
+                //         ))?;
+                //     }
+                //     Err(e) => {
+                //         processing_object.add_error(LavaError::new(
+                //             format!("Error reading EVTX record because of {}", e),
+                //             LavaErrorLevel::Medium,
+                //         ));
+                //     }
+                // }
+            }
+            Ok(processing_object)
         }
-    }
-
-    Err(LavaError::new(
-            format!("Failed to open evtx file because"),
+        Err(e) => Err(LavaError::new(
+            format!("Failed to open evtx file because {}", e),
             LavaErrorLevel::Critical,
-        ))
-    // match evtx_parser {
-    //     Ok(mut evtx_parser) => {
-    //         let mut processing_object = LogRecordProcessor::new(
-    //             timestamp_hit,
-    //             execution_settings,
-    //             get_file_stem(log_file)?,
-    //             None,
-    //             false,
-    //         );
-    //         for record in evtx_parser.records() {
-    //             match record {
-    //                 Ok(clean_record) => {
-    //                     processing_object.process_record(LogFileRecord::new(
-    //                         clean_record.event_record_id as usize,
-    //                         Some(clean_record.timestamp.naive_utc()),
-    //                         StringRecord::from(vec![
-    //                             clean_record.event_record_id.to_string(),
-    //                             clean_record.data,
-    //                         ]),
-    //                     ))?;
-    //                 }
-    //                 Err(e) => {
-    //                     processing_object.add_error(LavaError::new(
-    //                         format!("Error reading EVTX record because of {}", e),
-    //                         LavaErrorLevel::Medium,
-    //                     ));
-    //                 }
-    //             }
-    //         }
-    //         Ok(processing_object)
-    //     }
-    //     Err(e) => Err(LavaError::new(
-    //         format!("Failed to open evtx file because {}", e),
-    //         LavaErrorLevel::Critical,
-    //     )),
-    // }
+        )),
+    }
 }
 
 #[cfg(test)]
