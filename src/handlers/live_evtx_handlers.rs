@@ -9,12 +9,12 @@ use quick_xml::Reader;
 use quick_xml::events::Event as XmlEvent;
 use std::{ffi::OsString, os::windows::ffi::OsStrExt};
 use windows::{
-    Win32::Foundation::{ERROR_NO_MORE_ITEMS},
+    Win32::Foundation::ERROR_NO_MORE_ITEMS,
     Win32::Foundation::HANDLE,
     Win32::Security::{GetTokenInformation, TOKEN_ELEVATION, TOKEN_QUERY, TokenElevation},
     Win32::System::EventLog::{
         EVT_HANDLE, EVT_QUERY_FLAGS, EvtClose, EvtNext, EvtNextChannelPath, EvtOpenChannelEnum,
-        EvtQuery, EvtQueryChannelPath, EvtRender, EvtRenderEventXml,
+        EvtQuery, EvtRender, EvtRenderEventXml,
     },
     Win32::System::Threading::{GetCurrentProcess, OpenProcessToken},
     core::PCWSTR,
@@ -72,10 +72,11 @@ pub fn enumerate_event_logs() -> Result<Vec<String>> {
                         EvtNextChannelPath(enum_handle, Some(&mut buffer[..]), &mut buffer_used);
 
                     if let Err(err) = res {
-                        if err.code().0 as u32 == windows::Win32::Foundation::ERROR_NO_MORE_ITEMS.0 || err.message() == "No more data is available.".to_string()
+                        if err.code().0 as u32 == windows::Win32::Foundation::ERROR_NO_MORE_ITEMS.0
+                            || err.message() == "No more data is available.".to_string()
                         {
                             break;
-                        }else {
+                        } else {
                             eprintln!("Error enumerating channels: {:?}", err);
                             break;
                         }
@@ -89,22 +90,22 @@ pub fn enumerate_event_logs() -> Result<Vec<String>> {
 
                 let _ = EvtClose(enum_handle);
 
-                // Test to only get ones that you can read 
+                // Test to only get ones that you can read
                 let flags = EVT_QUERY_FLAGS(0x200);
                 let mut supported_windows_event_logs: Vec<String> = Vec::new();
 
                 for event_log in all_windows_event_logs {
                     // Try to open query on provided channel
                     let channel_name: Vec<u16> = OsString::from(event_log.clone())
-                    .encode_wide()
-                    .chain(std::iter::once(0))
-                    .collect();
-                    let query_handle = EvtQuery(None, PCWSTR(channel_name.as_ptr()), PCWSTR::null(), flags.0);
+                        .encode_wide()
+                        .chain(std::iter::once(0))
+                        .collect();
+                    let query_handle =
+                        EvtQuery(None, PCWSTR(channel_name.as_ptr()), PCWSTR::null(), flags.0);
                     if let Ok(query_handle) = query_handle {
                         supported_windows_event_logs.push(event_log);
                         let _ = EvtClose(query_handle);
                     }
-                    
                 }
 
                 Ok(supported_windows_event_logs)
@@ -131,17 +132,24 @@ pub fn process_live_evtx(
         let query_handle = EvtQuery(None, PCWSTR(channel_name.as_ptr()), PCWSTR::null(), flags.0);
         match query_handle {
             Err(e) => {
-                println!("ERROR on {} {}",event_log_name,LavaError::new(
-                    format!("Error opening EvtQuery because of {e}"),
-                    LavaErrorLevel::Critical,
-                ));
-                return  Ok(ProcessedLogFile::default());
+                println!(
+                    "ERROR on {} {}",
+                    event_log_name,
+                    LavaError::new(
+                        format!("Error opening EvtQuery because of {e}"),
+                        LavaErrorLevel::Critical,
+                    )
+                );
+                return Ok(ProcessedLogFile::default());
             }
             Ok(query_handle) => {
                 // println!("Processing {}", event_log_name);
                 let mut base_processed_file = ProcessedLogFile::default();
                 base_processed_file.filename = Some(event_log_name.to_string());
-                base_processed_file.file_path = Some(format!("C:\\Windows\\System32\\winevt\\Logs\\{}.evtx", event_log_name));
+                base_processed_file.file_path = Some(format!(
+                    "C:\\Windows\\System32\\winevt\\Logs\\{}.evtx",
+                    event_log_name
+                ));
                 let mut processing_object = LogRecordProcessor::new(
                     &Some(build_fake_evtx_timestamp_hit_internal()),
                     execution_settings,
@@ -201,34 +209,35 @@ unsafe fn render_event_xml(event: EVT_HANDLE) -> Option<String> {
     let mut property_count = 0u32;
 
     // First call to get buffer size
-    let _ = EvtRender(
-        None,
-        event,
-        EvtRenderEventXml.0,
-        0,
-        None,
-        &mut buffer_used,
-        &mut property_count,
-    );
+    unsafe {
+        let _ = EvtRender(
+            None,
+            event,
+            EvtRenderEventXml.0,
+            0,
+            None,
+            &mut buffer_used,
+            &mut property_count,
+        );
+        let mut buffer = vec![0u16; (buffer_used / 2 + 1) as usize];
 
-    let mut buffer = vec![0u16; (buffer_used / 2 + 1) as usize];
-
-    if EvtRender(
-        None,
-        event,
-        EvtRenderEventXml.0,
-        buffer_used,
-        Some(buffer.as_mut_ptr() as *mut _),
-        &mut buffer_used,
-        &mut property_count,
-    )
-    .is_ok()
-    {
-        Some(String::from_utf16_lossy(
-            &buffer[..(buffer_used / 2) as usize],
-        ))
-    } else {
-        None
+        if EvtRender(
+            None,
+            event,
+            EvtRenderEventXml.0,
+            buffer_used,
+            Some(buffer.as_mut_ptr() as *mut _),
+            &mut buffer_used,
+            &mut property_count,
+        )
+        .is_ok()
+        {
+            Some(String::from_utf16_lossy(
+                &buffer[..(buffer_used / 2) as usize],
+            ))
+        } else {
+            None
+        }
     }
 }
 
@@ -306,9 +315,9 @@ fn extract_field_from_xml(
 mod evtx_handler_tests {
 
     use super::*;
-    use std::path::PathBuf;
     use crate::date_regex::DateRegex;
     use regex::Regex;
+    use std::path::PathBuf;
 
     #[test]
     fn test_live_evtx() {

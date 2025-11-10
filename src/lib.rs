@@ -64,11 +64,14 @@ pub fn process_live_windows_event_logs(execution_settings: ExecutionSettings) {
         }
     }
     let all_windows_event_logs = enumerate_event_logs();
-    
+
     match all_windows_event_logs {
         Err(e) => println!("Failed to enumerate live event channels: {}", e),
         Ok(all_windows_event_logs) => {
-            println!("Found {} accessible channels, starting to process now.", all_windows_event_logs.len());
+            println!(
+                "Found {} accessible channels, starting to process now.",
+                all_windows_event_logs.len()
+            );
             let results: Vec<ProcessedLogFile> = all_windows_event_logs
                 .par_iter()
                 .map(|channel_name| {
