@@ -1,4 +1,4 @@
-use clap::{ArgGroup, Command, arg, Arg};
+use clap::{Arg, ArgGroup, Command, arg};
 use lava::main_helpers::{get_full_execution_settings, print_compiled_regexes};
 use lava::{process_all_files, process_live_windows_event_logs};
 
@@ -15,7 +15,7 @@ fn main() {
         .arg(arg!(-t --tf <PATH> "Timestamp field to use for time analysis. Supports -> for nested keys in JSONL."))
         .arg(arg!(-q --quick "Quick mode. Skips resource-intensive processing steps such as file hashing and duplicate detection."))
         .arg(arg!(-m --multipart "Multipart mode. Treats all input files as chunks of the same log."));
-        // .disable_version_flag(true)
+    // .disable_version_flag(true)
 
     #[cfg(windows)]
     {
@@ -34,10 +34,15 @@ fn main() {
     }
     #[cfg(not(windows))]
     {
-    command = command.group(ArgGroup::new("required").args(&["input", "printregexes", "help", "live-windows"]).required(true).multiple(false));
+        command = command.group(
+            ArgGroup::new("required")
+                .args(&["input", "printregexes", "help", "live-windows"])
+                .required(true)
+                .multiple(false),
+        );
     }
 
-    command = command.arg(arg!(-v --verbose "Verbose mode."));// Not implemented yet
+    command = command.arg(arg!(-v --verbose "Verbose mode.")); // Not implemented yet
 
     let matches = command.get_matches();
     if matches.get_flag("printregexes") {
