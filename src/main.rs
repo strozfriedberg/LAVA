@@ -1,6 +1,6 @@
 use clap::{ArgGroup, Command, arg};
 use lava::main_helpers::{get_full_execution_settings, print_compiled_regexes};
-use lava::process_all_files;
+use lava::{process_all_files, process_live_windows_event_logs};
 
 fn main() {
     let _ = enable_ansi_support::enable_ansi_support(); // don't care about the output of this because if it fails then oh well 

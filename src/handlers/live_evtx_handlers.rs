@@ -1,20 +1,56 @@
 use quick_xml::Reader;
 use quick_xml::events::Event as XmlEvent;
+use crate::processing_objects::*;
 use std::{ffi::OsString, os::windows::ffi::OsStrExt, ptr::null_mut};
 use windows::{
     Win32::Foundation::ERROR_NO_MORE_ITEMS,
     Win32::System::EventLog::{
-        EVT_HANDLE, EVT_QUERY_FLAGS, EvtClose, EvtNext, EvtQuery, EvtQueryChannelPath, EvtRender,
+        EVT_HANDLE, EVT_QUERY_FLAGS, EvtClose, EvtNext, EvtQuery, EvtQueryChannelPath, EvtRender, EvtNextChannelPath, EvtOpenChannelEnum,
         EvtRenderEventXml,
     },
     core::PCWSTR,
 };
 
-fn test_read_live_evtx() -> windows::core::Result<()> {
+fn enumerate_event_logs() -> windows::core::Result<Vec<String>> {
+    unsafe {
+        // Open channel enumeration
+        let enum_handle: EVT_HANDLE = EvtOpenChannelEnum(None, 0)?;
+
+        let mut buffer: Vec<u16> = vec![0u16; 256];
+        let mut buffer_used = 0u32;
+        let mut all_windows_event_logs: Vec<String> = Vec::new();
+        loop {
+            let res = EvtNextChannelPath(
+                enum_handle,
+                Some(&mut buffer[..]),
+                &mut buffer_used,
+            );
+
+            if let Err(err) = res {
+                if err.code().0 as u32 == windows::Win32::Foundation::ERROR_NO_MORE_ITEMS.0 {
+                    break;
+                } else {
+                    eprintln!("Error enumerating channels: {:?}", err);
+                    break;
+                }
+            }
+
+            // Convert UTF-16 buffer to Rust String
+            let channel_name = String::from_utf16_lossy(&buffer[..(buffer_used as usize - 1)]);
+            all_windows_event_logs.push(channel_name);
+        }
+
+        let _ = EvtClose(enum_handle);
+        Ok(all_windows_event_logs)
+    }
+    
+}
+
+fn test_read_live_evtx(event_log_name: &str) -> windows::core::Result<()> {
     unsafe {
         println!("BEGINNINNG");
         // Convert channel name to wide string
-        let channel_name: Vec<u16> = OsString::from("Security")
+        let channel_name: Vec<u16> = OsString::from(event_log_name)
             .encode_wide()
             .chain(std::iter::once(0))
             .collect();
@@ -25,8 +61,16 @@ fn test_read_live_evtx() -> windows::core::Result<()> {
         // Open query on Security channel
         let query_handle = EvtQuery(None, PCWSTR(channel_name.as_ptr()), PCWSTR::null(), flags.0);
         match query_handle {
+            Err(e) => println!("{}", e),
             Ok(query_handle) => {
                 println!("Reading events from newest → oldest...");
+                // let mut processing_object = LogRecordProcessor::new(
+                //     timestamp_hit,
+                //     execution_settings,
+                //     get_file_stem(log_file)?,
+                //     None,
+                //     false,
+                // );
                 // Buffer for events
                 let mut events: [isize; 16] = [0; 16];
 
@@ -54,12 +98,10 @@ fn test_read_live_evtx() -> windows::core::Result<()> {
                         }
                         let _ = EvtClose(EVT_HANDLE(*evt));
                     }
-                    break;
                 }
 
                 let _ = EvtClose(query_handle);
             }
-            Err(e) => println!("{}", e),
         }
     }
 
@@ -135,6 +177,8 @@ mod evtx_handler_tests {
 
     #[test]
     fn test_live_evtx() {
-        test_read_live_evtx();
+        enumerate_event_logs();
+
+        // test_read_live_evtx("System");
     }
 }
