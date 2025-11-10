@@ -307,6 +307,7 @@ impl LogRecordProcessor {
         } else {
             // This is the first row, inialize both min and max to this value
             self.previous_record_id = Some(record.index);
+            println!("First Record ID {}", record.index);
             self.min_timestamp = Some(current_timestamp);
             self.max_timestamp = Some(current_timestamp);
         }

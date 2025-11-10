@@ -23,7 +23,7 @@ num-format = "0.4.4"
 human-time = "0.1.6"
 phf = { version = "0.12.1", features = ["macros"] }
 enable-ansi-support = "0.3.1"
-evtx = "0.8.5"
+evtx = { version = "0.8.5", default-features = false }
 quick-xml = "0.38.3"
 
 [target.'cfg(windows)'.dependencies]
