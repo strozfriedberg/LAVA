@@ -6,7 +6,7 @@ use crate::errors::*;
 use crate::helpers::get_file_stem;
 use crate::processing_objects::*;
 use csv::StringRecord;
-use evtx::EvtxParser;
+use evtx::{EvtxParser,SerializedEvtxRecord,ParserSettings};
 use regex::Regex;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -35,7 +35,8 @@ impl PartialOrd for Chunk {
 
 struct OrderedEvtxParser {
     parser: EvtxParser<std::fs::File>,
-    chunk_list: Vec<Chunk>
+    chunk_list: Vec<Chunk>,
+    file_path: PathBuf
 }
 
 impl OrderedEvtxParser {
@@ -63,14 +64,36 @@ impl OrderedEvtxParser {
         // println!("{:?}", starting_chunk_list);
         Ok(Self {
             parser: parser,
-            chunk_list: starting_chunk_list
+            chunk_list: starting_chunk_list,
+            file_path:path.to_path_buf()
         })
     }
 
-    /// Iterate over all records (high-level events).
-    pub fn iter_records(&mut self) -> impl Iterator<Item = Result<evtx::EvtxRecord, EvtxError>> + '_ {
-        self.parser.records()
+    pub fn iterate_over_chunk(&mut self, chunk_id: u64) -> impl Iterator<Item=SerializedEvtxRecord<String>>{
+
+        let find_chunk_result =  self.parser.find_next_chunk(chunk_id);
+        if let Some(chunk_result) = find_chunk_result {
+            let(result, number) = chunk_result;
+            let settings = ParserSettings::new(); // play with this later
+            // println!("Chunk number {}", number);
+            if let Ok(mut successful) = result{
+                let parsed_chunk_data = successful.parse(settings.into());
+                if let Ok(mut parsed) = parsed_chunk_data{
+                    return parsed
+                    .iter()
+                    .map(|event| event.unwrap().clone().into_xml().unwrap())
+                    .collect::<Vec<_>>() // collect into Vec to satisfy lifetime
+                    .into_iter();
+                }
+            }
+        }
+        Vec::new().into_iter()
     }
+
+    // /// Iterate over all records (high-level events).
+    // pub fn iter_records(&mut self) -> impl Iterator<Item = Result<evtx::EvtxRecord, EvtxError>> + '_ {
+    //     self.parser.records()
+    // }
 
     // /// Iterate over chunks (low-level binary chunks inside EVTX file).
     // pub fn iter_chunks(&mut self) -> impl Iterator<Item = Result<evtx::EvtxChunk, EvtxError>> + '_ {
@@ -135,6 +158,13 @@ pub fn stream_evtx_file(
 ) -> Result<LogRecordProcessor> {
 
     let evtx_parser = OrderedEvtxParser::new(&log_file.file_path); //Does this need to be mut?
+
+    if let Ok(mut evtx_parser) = evtx_parser {
+        for x in evtx_parser.iterate_over_chunk(1296).take(10){
+            println!("Record ID {}, Timestamp {}", x.event_record_id, x.timestamp)
+        }
+    }
+
     Err(LavaError::new(
             format!("Failed to open evtx file because"),
             LavaErrorLevel::Critical,
@@ -226,7 +256,7 @@ mod evtx_handler_tests {
                     for event in parsed.iter().take(10){
                         if let Ok(event) = event{
                             println!("ID: {}", event.event_record_id);
-                            // , event.clone().into_xml().unwrap().data
+                            // let test = event.clone().into_xml().unwrap()
                         }
 
                     }
