@@ -76,19 +76,37 @@ pub fn stream_evtx_file(
 mod evtx_handler_tests {
 
     use evtx::EvtxParser;
-    use std::path::PathBuf;
+    use evtx::ParserSettings;
+    use std::{num, path::PathBuf};
 
     #[test]
     fn test_evtx() {
         // Change this to a path of your .evtx sample.
-        let fp = PathBuf::from("C:\\cases\\rust_testing\\evtx\\Security.evtx");
+        let fp = PathBuf::from("C:\\cases\\rust_testing\\Logs\\Logs\\Security.evtx");
 
         let mut parser = EvtxParser::from_path(fp).unwrap();
-        for record in parser.records().take(10) {
-            match record {
-                Ok(r) => println!("Record {}\n{}", r.timestamp, r.event_record_id),
-                Err(e) => eprintln!("{}", e),
+        let test =  parser.find_next_chunk(1);
+        if let Some(test) = test {
+            let(result, number) = test;
+            let settings = ParserSettings::new();
+            println!("Chunk number {}", number);
+            if let Ok(mut successful) = result{
+                let test23 = successful.parse(settings.into());
+                if let Ok(mut parsed) = test23{
+                    for event in parsed.iter().take(10){
+                        if let Ok(event) = event{
+                            println!("ID: {}, Data: {}", event.event_record_id, event.clone().into_xml().unwrap().data);
+                        }
+
+                    }
+                }
             }
         }
+        // for chunk in parser.chunks() {
+        //     match chunk {
+        //         Ok(r) => println!("Chunk Offset {}, First Record ID in chunk {}, Last Record ID {}",r.header,  r.header.first_event_record_id, r.header.last_event_record_id),
+        //         Err(e) => eprintln!("{}", e),
+        //     }
+        // }
     }
 }
