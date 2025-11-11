@@ -275,11 +275,13 @@ impl LogRecordProcessor {
             // Check the record ID for going backwards
             if let Some(previous_record) = self.previous_record_id {
                 if previous_record > record.index {
-                    println!("RECORD WENT BACKWARDS FROM {} to {}", previous_record, record.index)
+                    println!(
+                        "RECORD WENT BACKWARDS FROM {} to {}",
+                        previous_record, record.index
+                    )
                 }
             }
             self.previous_record_id = Some(record.index);
-
 
             if let Some(min_time) = self.min_timestamp {
                 if current_timestamp < min_time {
