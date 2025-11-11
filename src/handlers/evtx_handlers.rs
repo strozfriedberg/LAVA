@@ -77,35 +77,39 @@ impl OrderedEvtxParser {
         })
     }
 
-    pub fn iterate_over_chunk(
-        &mut self,
-        chunk_id: u64,
-    ) -> impl Iterator<Item = SerializedEvtxRecord<String>> {
-        let find_chunk_result = self.parser.find_next_chunk(chunk_id);
-        if let Some(chunk_result) = find_chunk_result {
-            let (result, number) = chunk_result;
-            let settings = ParserSettings::new(); // play with this later
-            // println!("Chunk number {}", number);
-            if let Ok(mut successful) = result {
-                let parsed_chunk_data = successful.parse(settings.into());
-                if let Ok(mut parsed) = parsed_chunk_data {
-                    return parsed
-                        .iter()
-                        .map(|event| event.unwrap().clone().into_xml().unwrap())
-                        .collect::<Vec<_>>() // collect into Vec to satisfy lifetime
-                        .into_iter();
+    /// Processes all records in order, calling the provided closure for each record.
+    /// This is more memory-efficient than collecting all records into a Vec.
+    pub fn process_all_records<F>(&mut self, mut process_record: F) -> Result<()>
+    where
+        F: FnMut(SerializedEvtxRecord<String>) -> Result<()>,
+    {
+        // Iterate over chunks in order without cloning the list
+        for chunk in &self.chunk_list {
+            let find_chunk_result = self.parser.find_next_chunk(chunk.number);
+            if let Some(chunk_result) = find_chunk_result {
+                let (result, _number) = chunk_result;
+                if let Ok(mut successful) = result {
+                    // Create settings for each chunk to avoid move issues
+                    let settings = ParserSettings::new();
+                    let parsed_chunk_data = successful.parse(settings.into());
+                    if let Ok(mut parsed) = parsed_chunk_data {
+                        // Process records in this chunk one at a time
+                        for event_result in parsed.iter() {
+                            match event_result {
+                                Ok(event) => {
+                                    match event.clone().into_xml() {
+                                        Ok(record) => process_record(record)?,
+                                        Err(e) => eprintln!("Error converting event to XML: {}", e),
+                                    }
+                                }
+                                Err(e) => eprintln!("Error parsing event: {}", e),
+                            }
+                        }
+                    }
                 }
             }
         }
-        Vec::new().into_iter()
-    }
-
-    pub fn iterate_over_all_records(&mut self) -> Vec<SerializedEvtxRecord<String>> {
-        self.chunk_list
-            .clone()
-            .iter()
-            .flat_map(|chunk| self.iterate_over_chunk(chunk.number).collect::<Vec<_>>())
-            .collect()
+        Ok(())
     }
 }
 
@@ -149,14 +153,14 @@ pub fn stream_evtx_file(
             match evtx_parser {
                 Ok(mut evtx_parser) => {
                     println!("Before calling iterate over all records");
-                    for record in evtx_parser.iterate_over_all_records() {
-                        // println!("in loop");
+                    evtx_parser.process_all_records(|record| {
                         processing_object.process_record(LogFileRecord::new(
                             record.event_record_id as usize,
                             Some(record.timestamp.naive_utc()),
                             StringRecord::from(vec![record.data]),
                         ))?;
-                    }
+                        Ok(())
+                    })?;
                     Ok(processing_object)
                 }
                 Err(e) => Err(LavaError::new(
@@ -190,8 +194,7 @@ mod evtx_handler_tests {
     use super::*;
     use evtx::EvtxParser;
     use evtx::ParserSettings;
-    use std::str::FromStr;
-    use std::{num, path::PathBuf};
+    use std::path::PathBuf;
 
     #[test]
     fn test_stream_evtx() {
@@ -214,7 +217,7 @@ mod evtx_handler_tests {
             log_type: LogType::Evtx,
             file_path: PathBuf::from("C:\\cases\\rust_testing\\Logs\\Logs\\Security.evtx"),
         };
-        stream_evtx_file(
+        let _ = stream_evtx_file(
             &test_file,
             &Some(build_fake_evtx_timestamp_hit_internal()),
             &test_args,
