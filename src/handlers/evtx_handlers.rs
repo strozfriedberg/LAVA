@@ -191,15 +191,21 @@ mod evtx_handler_tests {
     use evtx::EvtxParser;
     use evtx::ParserSettings;
     use std::path::PathBuf;
+    use std::fs;
+    use std::str::FromStr;
 
     #[test]
-    fn validate_normal_crate_does_not_always_return_in_order() {
+    fn test_out_of_order_evtx_normal_crate_1() {
         let file_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-                .join("samples")
-                .join("evtx")
-                .join("security.evtx");
-        let mut parser = EvtxParser::from_path(&file_path).unwrap();
+                        .join("samples")
+                        .join("evtx")
+                        .join("out_of_order")
+                        .join("2-vss_0-Microsoft-Windows-RemoteDesktopServices-RdpCoreTS%4Operational.evtx");
+        assert!(does_normal_evtx_crate_parse_in_order(&file_path), "2-vss_0-Microsoft-Windows-RemoteDesktopServices-RdpCoreTS%4Operational.evtx was IN order when parsed by normal crate");
+    }
 
+    fn does_normal_evtx_crate_parse_in_order(file_path: &PathBuf) -> bool {
+        let mut parser = EvtxParser::from_path(&file_path).unwrap();
         let mut previous_record_id: Option<u64> = None;
         let mut out_of_order = false;
         for record in parser.records() {
@@ -209,7 +215,7 @@ mod evtx_handler_tests {
                         Some(prev_id) => {
                             if r.event_record_id < prev_id {
                                 out_of_order = true;
-                                println!("Out of order detected: current ID {} is less than previous ID {}", r.event_record_id, prev_id);
+                                println!("Out of order detected: current ID {} is less than previous ID {} in {}`", r.event_record_id, prev_id, file_path.display());
                                 break;
                             }
                             previous_record_id = Some(r.event_record_id);
@@ -220,7 +226,7 @@ mod evtx_handler_tests {
                 Err(e) => eprintln!("{}", e),
             }
         }
-        assert!(out_of_order, "Expected to find out-of-order records, but all were in order.");
+        out_of_order
     }
 
     #[test]
