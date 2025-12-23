@@ -40,7 +40,6 @@ impl PartialOrd for Chunk {
 struct OrderedEvtxParser {
     parser: EvtxParser<std::fs::File>,
     chunk_list: Vec<Chunk>,
-    file_path: PathBuf,
 }
 
 impl OrderedEvtxParser {
@@ -72,8 +71,7 @@ impl OrderedEvtxParser {
         // println!("{:?}", starting_chunk_list);
         Ok(Self {
             parser: parser,
-            chunk_list: starting_chunk_list,
-            file_path: path.to_path_buf(),
+            chunk_list: starting_chunk_list
         })
     }
 
@@ -152,7 +150,7 @@ pub fn stream_evtx_file(
             let evtx_parser = OrderedEvtxParser::new(&log_file.file_path); //Does this need to be mut?
             match evtx_parser {
                 Ok(mut evtx_parser) => {
-                    println!("Before calling iterate over all records");
+                    // println!("Before calling iterate over all records");
                     evtx_parser.process_all_records(|record| {
                         processing_object.process_record(LogFileRecord::new(
                             record.event_record_id as usize,
