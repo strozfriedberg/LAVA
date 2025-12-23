@@ -204,6 +204,26 @@ mod evtx_handler_tests {
         assert!(does_normal_evtx_crate_parse_in_order(&file_path), "2-vss_0-Microsoft-Windows-RemoteDesktopServices-RdpCoreTS%4Operational.evtx was IN order when parsed by normal crate");
     }
 
+    #[test]
+    fn test_out_of_order_evtx_normal_crate_2() {
+        let file_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                        .join("samples")
+                        .join("evtx")
+                        .join("out_of_order")
+                        .join("2-vss_0-Microsoft-Windows-TerminalServices-RemoteConnectionManager%4Operational.evtx");
+        assert!(does_normal_evtx_crate_parse_in_order(&file_path), "2-vss_0-Microsoft-Windows-TerminalServices-RemoteConnectionManager%4Operational.evtx was IN order when parsed by normal crate");
+    }
+
+    #[test]
+    fn test_out_of_order_evtx_normal_crate_3() {
+        let file_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                        .join("samples")
+                        .join("evtx")
+                        .join("out_of_order")
+                        .join("E_ShadowCopy6_windows_system32_winevt_logs_Microsoft-Windows-CAPI2%4Operational.evtx");
+        assert!(does_normal_evtx_crate_parse_in_order(&file_path), "E_ShadowCopy6_windows_system32_winevt_logs_Microsoft-Windows-CAPI2%4Operational.evtx was IN order when parsed by normal crate");
+    }
+
     fn does_normal_evtx_crate_parse_in_order(file_path: &PathBuf) -> bool {
         let mut parser = EvtxParser::from_path(&file_path).unwrap();
         let mut previous_record_id: Option<u64> = None;
