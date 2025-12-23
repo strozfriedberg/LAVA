@@ -272,15 +272,7 @@ impl LogRecordProcessor {
                     }
                 }
             }
-            // Check the record ID for going backwards
-            if let Some(previous_record) = self.previous_record_id {
-                if previous_record > record.index {
-                    println!(
-                        "RECORD WENT BACKWARDS FROM {} to {}",
-                        previous_record, record.index
-                    )
-                }
-            }
+
             self.previous_record_id = Some(record.index);
 
             if let Some(min_time) = self.min_timestamp {
@@ -309,7 +301,7 @@ impl LogRecordProcessor {
         } else {
             // This is the first row, inialize both min and max to this value
             self.previous_record_id = Some(record.index);
-            println!("First Record ID {}", record.index);
+            // println!("First Record ID {}", record.index);
             self.min_timestamp = Some(current_timestamp);
             self.max_timestamp = Some(current_timestamp);
         }
