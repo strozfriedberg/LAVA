@@ -71,7 +71,7 @@ impl OrderedEvtxParser {
         // println!("{:?}", starting_chunk_list);
         Ok(Self {
             parser: parser,
-            chunk_list: starting_chunk_list
+            chunk_list: starting_chunk_list,
         })
     }
 
@@ -94,12 +94,10 @@ impl OrderedEvtxParser {
                         // Process records in this chunk one at a time
                         for event_result in parsed.iter() {
                             match event_result {
-                                Ok(event) => {
-                                    match event.clone().into_xml() {
-                                        Ok(record) => process_record(record)?,
-                                        Err(e) => eprintln!("Error converting event to XML: {}", e),
-                                    }
-                                }
+                                Ok(event) => match event.clone().into_xml() {
+                                    Ok(record) => process_record(record)?,
+                                    Err(e) => eprintln!("Error converting event to XML: {}", e),
+                                },
                                 Err(e) => eprintln!("Error parsing event: {}", e),
                             }
                         }
@@ -177,7 +175,7 @@ pub fn stream_evtx_file(
                             Some(r.timestamp.naive_utc()),
                             StringRecord::from(vec![r.data]),
                         ))?;
-                    },
+                    }
                     Err(e) => eprintln!("{}", e),
                 }
             }
@@ -193,6 +191,37 @@ mod evtx_handler_tests {
     use evtx::EvtxParser;
     use evtx::ParserSettings;
     use std::path::PathBuf;
+
+    #[test]
+    fn validate_normal_crate_does_not_always_return_in_order() {
+        let file_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("samples")
+                .join("evtx")
+                .join("security.evtx");
+        let mut parser = EvtxParser::from_path(&file_path).unwrap();
+
+        let mut previous_record_id: Option<u64> = None;
+        let mut out_of_order = false;
+        for record in parser.records() {
+            match record {
+                Ok(r) => {
+                    match previous_record_id {
+                        Some(prev_id) => {
+                            if r.event_record_id < prev_id {
+                                out_of_order = true;
+                                println!("Out of order detected: current ID {} is less than previous ID {}", r.event_record_id, prev_id);
+                                break;
+                            }
+                            previous_record_id = Some(r.event_record_id);
+                        }
+                        None => {previous_record_id = Some(r.event_record_id);}
+                    }
+                }
+                Err(e) => eprintln!("{}", e),
+            }
+        }
+        assert!(out_of_order, "Expected to find out-of-order records, but all were in order.");
+    }
 
     #[test]
     fn test_stream_evtx() {
@@ -213,7 +242,10 @@ mod evtx_handler_tests {
         };
         let test_file = LogFile {
             log_type: LogType::Evtx,
-            file_path: PathBuf::from("C:\\cases\\rust_testing\\Logs\\Logs\\Security.evtx"),
+            file_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("samples")
+                .join("evtx")
+                .join("security.evtx"),
         };
         let _ = stream_evtx_file(
             &test_file,
